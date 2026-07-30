@@ -1,57 +1,105 @@
-# Clase 09: Introducción a Temporal.io y Ejecución Duradera
+# Clase 09: Temporal.io: arquitectura y ejecución duradera
 
-## Objetivos de la sesión
-- Comprender los conceptos fundamentales de Temporal.io y el paradigma de Ejecución Duradera (Durable Execution).
-- Entender la arquitectura de Temporal: Servidor, Workers, Workflows y Activities.
-- Aprender las reglas estrictas del determinismo en los Workflows de Temporal.
-- Instalar y utilizar Temporal CLI para interactuar con el servidor local y visualizar ejecuciones.
-- Desarrollar un primer Workflow y Activity en Java utilizando el SDK oficial de Temporal.
+**Bloque:** Bloque 3 — Workflows resilientes y sistemas distribuidos  
+**Duración:** 4 horas  
 
-## Cronograma propuesto
-- **Hora 1:** Introducción a la Ejecución Duradera y Arquitectura de Temporal.io. Conceptos clave: Workflow, Activity, Worker y Task Queue.
-- **Hora 2:** Configuración del entorno de desarrollo. Instalación de Temporal CLI, ejecución del servidor local y exploración de la interfaz web (Temporal UI).
-- **Hora 3:** Desarrollo del primer Workflow y Activity en Java. Reglas de determinismo, inyección de dependencias y manejo de estado.
-- **Hora 4:** Ejercicios prácticos, pruebas de resiliencia (simulación de caídas del worker durante la ejecución) y resolución de dudas.
+## Objetivos de aprendizaje
+- Explicar por qué cron, colas y estados manuales no bastan para procesos largos.
+- Identificar Temporal Service, Namespace, Task Queue, Worker, Workflow, Activity, Client y Event History.
+- Crear y ejecutar un Workflow con interfaz e implementación Java.
+- Observar replay, reinicio del Worker y continuidad del proceso.
+- Aplicar reglas de determinismo desde el primer ejercicio.
 
-## Ejercicios prácticos
+## Cronograma de la clase
 
-### Ejercicio 1: Guiado - Hola Mundo con Temporal en Java
-**Descripción:** En este ejercicio paso a paso, configuraremos un proyecto Java con el SDK de Temporal, crearemos un Workflow simple que salude a un usuario y un Worker que lo ejecute.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–10 | Historia de un proceso fallido | Analizar un proceso de aprobación interrumpido. |
+| 10–35 | Arquitectura Temporal | Dibujar componentes y responsabilidades. |
+| 35–60 | Determinismo y Event History | Simular replay en pizarra. |
+| 60–80 | Ejercicios E01–E03 | CLI, Workflow y Activity mínimos. |
+| 80–95 | Receso | Verificar servidor local y UI. |
+| 95–120 | Demo de durabilidad | Detener Worker durante Workflow.sleep y reanudar. |
+| 120–160 | Laboratorio E04–E06 | Aprobación durable básica. |
+| 160–185 | Desafíos E07–E08 | Determinism review e historia. |
+| 185–195 | Cierre y tarea | Ticket: clasificar 8 operaciones como Workflow o Activity. |
 
-**Pasos:**
-1. Inicia el servidor local de Temporal usando la terminal: `temporal server start-dev`.
-2. Crea un proyecto Maven o Gradle y añade la dependencia `io.temporal:temporal-sdk`.
-3. Define una interfaz para la Activity (ej. `GreetingActivities`) con un método `composeGreeting(String name)`.
-4. Implementa la Activity retornando un saludo formateado.
-5. Define una interfaz para el Workflow (ej. `GreetingWorkflow`) anotada con `@WorkflowInterface` y un método principal con `@WorkflowMethod`.
-6. Implementa el Workflow llamando a la Activity mediante un stub (`Workflow.newActivityStub`).
-7. Crea una clase `Worker` que registre el Workflow y la Activity, y comience a escuchar en una Task Queue específica.
-8. Crea una clase `Starter` para iniciar la ejecución del Workflow desde el cliente y observar el resultado.
+## Cómo ejecutar
 
-**Asistencia de IA:**
-- *Modo Chat (ChatGPT/Claude):* "Actúa como un experto en Temporal.io. Dame el código paso a paso para crear un 'Hola Mundo' en Java usando el SDK de Temporal. Incluye las dependencias de Maven, la Activity, el Workflow, el Worker y el Starter."
-- *Claude Code / Cursor:* "Configura un proyecto básico de Temporal en Java en este directorio. Crea las interfaces e implementaciones para un Workflow de saludo simple y un script para ejecutar el Worker."
+Para iniciar el servidor de desarrollo de Temporal:
+```bash
+temporal server start-dev
+```
 
-### Ejercicio 2: Semi-guiado - Workflow de Procesamiento de Pedidos
-**Descripción:** Crea un Workflow que simule el procesamiento de un pedido de e-commerce. Debe orquestar al menos tres Activities secuenciales: `verificarInventario`, `procesarPago` y `enviarConfirmacion`.
+Para ejecutar los tests de los ejercicios:
+```bash
+./mvnw test
+```
 
-**Pistas:**
-- Recuerda que las Activities pueden fallar. Temporal reintentará automáticamente las Activities fallidas según su política de reintentos.
-- Usa `ActivityOptions` dentro del Workflow para configurar los timeouts (ej. `setStartToCloseTimeout`).
-- Simula un fallo aleatorio en `procesarPago` lanzando una `RuntimeException` para observar cómo Temporal realiza los reintentos automáticos y cómo se refleja en la Temporal UI.
+## Ejercicios de clase
 
-**Asistencia de IA:**
-- *Modo Chat:* "Estoy creando un Workflow de procesamiento de pedidos en Temporal con Java. ¿Cómo configuro las `ActivityOptions` para que la actividad de pago tenga un timeout de 5 segundos y un máximo de 3 reintentos?"
-- *Claude Code / Cursor:* "Revisa mi clase `OrderWorkflowImpl`. Añade la configuración necesaria para que las llamadas a las actividades tengan políticas de reintento personalizadas y timeouts adecuados."
+### C09-E01 — Temporal local
+**Especificación:** Iniciar Temporal CLI dev server, abrir UI y describir namespace/task queue.
+**Criterios de aceptación:** Servidor accesible; no usar Docker Compose legado si CLI está disponible.
+**Archivos involucrados:** N/A (Solo comandos)
+**Comando para verificar:** `temporal server start-dev` y acceder a http://localhost:8233
 
-### Ejercicio 3: Desafío - Workflow con Espera (Sleep) y Señales (Signals)
-**Descripción:** Diseña un Workflow para una campaña de marketing por correo electrónico. El Workflow debe enviar un correo de bienvenida, esperar 3 días de forma duradera y luego enviar un correo de seguimiento. Además, el Workflow debe poder recibir una "Señal" (Signal) en cualquier momento para cancelar la campaña (por ejemplo, si el usuario se da de baja), lo que debería terminar el Workflow inmediatamente sin enviar más correos.
+### C09-E02 — Saludo duradero
+**Especificación:** Implementar interfaz `@WorkflowInterface` y método `@WorkflowMethod`.
+**Criterios de aceptación:** Workflow ID explícito; resultado visible en UI.
+**Archivos involucrados:** `SaludoWorkflow.java`, `SaludoWorkflowImpl.java`, `SaludoWorker.java`, `SaludoWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SaludoWorkflowTest`
 
-**Requisitos:**
-- Uso de `Workflow.sleep(Duration)` para la espera duradera (no uses `Thread.sleep`).
-- Definición de un método anotado con `@SignalMethod` en la interfaz del Workflow para recibir la notificación de cancelación.
-- Manejo del estado interno del Workflow (una variable booleana) para saber si la campaña fue cancelada y usar `Workflow.await()` o condicionales tras el sleep.
+### C09-E03 — Registrar auditoría
+**Especificación:** Mover escritura simulada de auditoría a `@ActivityInterface`.
+**Criterios de aceptación:** No hace I/O desde Workflow; Activity registrada en Worker.
+**Archivos involucrados:** `AuditoriaActivity.java`, `AuditoriaActivityImpl.java`, `SaludoWorkflowImpl.java`, `SaludoWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SaludoWorkflowTest`
 
-**Asistencia de IA:**
-- *Modo Chat:* "Necesito diseñar un Workflow en Temporal (Java) que espere varios días entre tareas usando `Workflow.sleep`, pero que pueda ser interrumpido si recibe una señal externa de 'cancelación' mediante un `@SignalMethod`. ¿Cuál es el patrón correcto para implementar esto respetando el determinismo?"
-- *Claude Code / Cursor:* "Implementa un `MarketingCampaignWorkflow` que envíe un email, haga un `Workflow.sleep` de 3 días, y envíe otro email. Añade un `@SignalMethod` para cancelar la campaña. Asegúrate de que la espera se interrumpa o se evalúe la condición de cancelación correctamente antes de enviar el segundo correo."
+### C09-E04 — Espera de revisión
+**Especificación:** Usar `Workflow.sleep` para simular plazo y observar Timer events.
+**Criterios de aceptación:** No `Thread.sleep`; replay correcto.
+**Archivos involucrados:** `RevisionWorkflow.java`, `RevisionWorkflowImpl.java`, `RevisionWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=RevisionWorkflowTest`
+
+### C09-E05 — Reinicio controlado
+**Especificación:** Iniciar Workflow, detener Worker, esperar y reiniciar.
+**Criterios de aceptación:** Mismo Workflow continúa; diferencia Workflow ID/Run ID explicada.
+**Archivos involucrados:** `ReinicioWorker.java`
+**Comando para verificar:** Ejecutar `ReinicioWorker` manualmente, detenerlo, y volver a ejecutarlo.
+
+### C09-E06 — Aprobación v0
+**Especificación:** Workflow que registra solicitud, espera plazo y marca vencida si no hay decisión simulada.
+**Criterios de aceptación:** Estado solo en Workflow; Activity para persistencia/notificación.
+**Archivos involucrados:** `AprobacionWorkflow.java`, `AprobacionWorkflowImpl.java`, `AprobacionActivity.java`, `AprobacionWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=AprobacionWorkflowTest`
+
+### C09-E07 — Detectar no determinismo
+**Especificación:** Encontrar 10 usos prohibidos en un Workflow: UUID, Instant.now, HTTP, DB, Thread, etc.
+**Criterios de aceptación:** Cada corrección usa API Temporal o Activity adecuada.
+**Archivos involucrados:** `NoDeterministaWorkflowImpl.java`
+**Comando para verificar:** Revisión manual y corrección del código.
+
+### C09-E08 — Leer la historia
+**Especificación:** Etiquetar eventos de un run y relacionarlos con líneas del código.
+**Criterios de aceptación:** Distingue Workflow Task, Activity Task y Timer.
+**Archivos involucrados:** `history-walkthrough.md`
+**Comando para verificar:** Revisión manual del documento.
+
+## Tareas para el hogar
+
+### C09-T01 — Workflow de expediente
+**Especificación:** Orquestar creación, validación y notificación simulada con 3 Activities.
+**Criterios de aceptación:** Determinismo revisado; Workflow ID de negocio; 8 pruebas.
+
+### C09-T02 — Guía de reglas Temporal
+**Especificación:** Crear checklist de código permitido/prohibido dentro de Workflow con ejemplos Java.
+**Criterios de aceptación:** Incluye reloj, aleatoriedad, I/O, threads, config y versionado.
+
+### C09-T03 — Análisis de historia
+**Especificación:** Exportar una Event History y explicar 15 eventos relevantes.
+**Criterios de aceptación:** Relaciona comandos con eventos y reintentos.
+
+### C09-T04 — Integración Spring inicial
+**Especificación:** Crear aplicación Spring Boot que inyecte WorkflowClient e inicie Workflow desde endpoint.
+**Criterios de aceptación:** Controller no contiene lógica de orquestación; configuración externalizada.

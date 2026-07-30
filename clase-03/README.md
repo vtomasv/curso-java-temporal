@@ -1,59 +1,117 @@
-# Clase 03: Depuración, Pruebas y Documentación
+# Clase 03: Excepciones, logging, depuración y gestión de memoria
 
-## Objetivos de la sesión
-- Comprender y aplicar técnicas de depuración moderna en aplicaciones Java.
-- Escribir pruebas unitarias efectivas utilizando JUnit 5 y aserciones fluidas con AssertJ.
-- Documentar código de manera profesional utilizando JavaDoc.
-- Integrar herramientas de Inteligencia Artificial para la generación, análisis y mejora de pruebas automatizadas.
+**Bloque:** Bloque 1 — Fundamentos de Java moderno  
+**Duración:** 4 horas
 
-## Cronograma propuesto
-- **0:00 - 0:45**: Introducción a la depuración moderna (breakpoints, evaluación de expresiones, depuración remota).
-- **0:45 - 1:30**: Fundamentos de pruebas unitarias con JUnit 5 (anotaciones, ciclo de vida, pruebas parametrizadas).
-- **1:30 - 1:45**: *Descanso*.
-- **1:45 - 2:30**: Aserciones avanzadas y legibles con AssertJ.
-- **2:30 - 3:15**: Buenas prácticas de documentación con JavaDoc y generación de reportes.
-- **3:15 - 4:00**: Uso de IA (ChatGPT, Claude, Copilot) para la creación y refactorización de tests.
+## Objetivos de aprendizaje
+- Distinguir errores recuperables, errores de programación y fallos de infraestructura.
+- Diseñar excepciones personalizadas, preservar causas y usar try-with-resources.
+- Aplicar logging estructurado con SLF4J/Logback y contexto de correlación.
+- Usar breakpoints, watches, call stack, conditional breakpoints y análisis de stack traces.
+- Explicar heap, stack, alcance, elegibilidad para GC y fugas por referencias retenidas.
 
-## Ejercicios prácticos
+## Cronograma de la clase
 
-### Ejercicio 1: Guiado
-**Configuración y Primeras Pruebas con JUnit 5 y AssertJ**
-En este ejercicio, configuraremos un proyecto básico con Maven/Gradle, añadiremos las dependencias de JUnit 5 y AssertJ, y escribiremos pruebas para una clase `CalculadoraFinanciera`.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–10 | Quiz y análisis de un stack trace | Pedir hipótesis antes de ejecutar el depurador. |
+| 10–35 | Exposición de excepciones | Construir una taxonomía de errores del dominio. |
+| 35–60 | Demo try-with-resources y logging | Mostrar causa, contexto y cierre automático. |
+| 60–80 | Ejercicios E01–E03 | Revisar que no se traguen excepciones. |
+| 80–95 | Receso | Preparar escenario de debugging. |
+| 95–125 | Depuración guiada | Usar breakpoint de excepción y breakpoint condicional. |
+| 125–160 | Laboratorio E04–E06 | Fault injection y corrección basada en evidencia. |
+| 160–185 | Desafíos E07–E08 | Analizar memoria y logs con correlación. |
+| 185–195 | Cierre y tarea | Entregar “postmortem” de cinco líneas. |
 
-**Pasos:**
-1. Crea un nuevo proyecto Java y añade las dependencias de `junit-jupiter` y `assertj-core`.
-2. Crea la clase `CalculadoraFinanciera` con un método `calcularInteresCompuesto(double capital, double tasa, int anios)`.
-3. Crea la clase de prueba `CalculadoraFinancieraTest`.
-4. Escribe un test básico usando `@Test` y verifica el resultado usando `assertThat()` de AssertJ.
-5. Ejecuta la prueba y verifica que pase. Introduce un error intencional y observa el mensaje de fallo de AssertJ.
+## Ejercicios de Clase
 
-**Asistencia de IA:**
-- **Modo Chat (ChatGPT/Claude):** "Actúa como un profesor de Java. Explícame paso a paso cómo configurar JUnit 5 y AssertJ en un proyecto Maven y dame un ejemplo básico de un test para una calculadora."
-- **Claude Code / Codex:** "Genera el archivo pom.xml con las dependencias de JUnit 5 y AssertJ. Luego, crea una clase CalculadoraFinanciera y su respectiva clase de prueba con un test básico."
+### C03-E01 — Parser robusto
+**Especificación:** Procesar CSV de solicitudes y reportar número de línea, campo y causa sin detener todo el lote.  
+**Criterios de aceptación:** Entradas válidas continúan; errores preservan causa y contexto.  
+**Archivos involucrados:** `CsvParser.java`, `CsvParserTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=CsvParserTest`
 
-### Ejercicio 2: Semi-guiado
-**Depuración y Pruebas Parametrizadas**
-Tienes una clase `ValidadorContrasenas` con un método `esValida(String password)` que contiene un bug lógico. Debes usar el depurador de tu IDE para encontrar el error, corregirlo y luego escribir pruebas parametrizadas para cubrir múltiples casos.
+### C03-E02 — Importador seguro
+**Especificación:** Leer archivo con BufferedReader y recurso simulado que puede fallar al cerrar.  
+**Criterios de aceptación:** No hay cierre manual duplicado; recursos siempre cerrados.  
+**Archivos involucrados:** `SafeImporter.java`, `SafeImporterTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=SafeImporterTest`
 
-**Pistas:**
-- El método falla cuando la contraseña tiene exactamente 8 caracteres y contiene un número, pero no caracteres especiales.
-- Pon un breakpoint en la primera línea del método y evalúa las condiciones paso a paso.
-- Usa `@ParameterizedTest` y `@CsvSource` de JUnit 5 para probar contraseñas válidas e inválidas.
+### C03-E03 — Trazabilidad de operación
+**Especificación:** Agregar SLF4J con correlationId, niveles y mensajes parametrizados.  
+**Criterios de aceptación:** No loguea contraseñas/tokens; evita concatenación costosa.  
+**Archivos involucrados:** `OperationTracker.java`, `OperationTrackerTest.java`, `logback.xml`  
+**Comando para verificar:** `./mvnw test -Dtest=OperationTrackerTest`
 
-**Asistencia de IA:**
-- **Modo Chat (ChatGPT/Claude):** "Tengo este código Java para validar contraseñas que tiene un bug: [pegar código]. ¿Puedes darme pistas de dónde podría estar el error sin darme la solución directa? Luego, muéstrame cómo estructurar un @ParameterizedTest en JUnit 5 para probar varios casos."
-- **Claude Code / Codex:** "Analiza el método esValida en ValidadorContrasenas.java, encuentra el bug lógico y sugiere una corrección. Después, genera pruebas parametrizadas usando @CsvSource para cubrir al menos 5 casos límite."
+### C03-E04 — Error intermitente por límite
+**Especificación:** Depurar cálculo que falla solo para prioridad máxima y fin de mes.  
+**Criterios de aceptación:** Incluye evidencia de variables inspeccionadas y prueba regresiva.  
+**Archivos involucrados:** `PriorityCalculator.java`, `PriorityCalculatorTest.java`, `debug-notes.md`  
+**Comando para verificar:** `./mvnw test -Dtest=PriorityCalculatorTest`
 
-### Ejercicio 3: Desafío
-**TDD, Documentación y Cobertura con IA**
-Desarrolla un sistema de `GestorDeReservas` para un hotel utilizando Desarrollo Guiado por Pruebas (TDD). El sistema debe permitir reservar habitaciones, cancelar reservas y verificar disponibilidad.
+### C03-E05 — Transición inválida
+**Especificación:** Crear InvalidStateTransitionException y traducir errores de bajo nivel a lenguaje del dominio.  
+**Criterios de aceptación:** Causa original preservada cuando corresponde.  
+**Archivos involucrados:** `InvalidStateTransitionException.java`, `StateService.java`, `StateServiceTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=StateServiceTest`
 
-**Requisitos:**
-- Escribe las pruebas antes que el código de producción.
-- Utiliza AssertJ para aserciones complejas (ej. verificar que una lista de reservas contiene ciertos elementos o extraer propiedades).
-- Documenta todas las clases y métodos públicos utilizando JavaDoc, explicando los parámetros, valores de retorno y excepciones lanzadas.
-- Utiliza una herramienta de IA para analizar la cobertura de tus pruebas y sugerir casos de prueba faltantes (edge cases).
+### C03-E06 — Repositorio inestable
+**Especificación:** Repositorio fake falla cada tercer llamado; servicio reacciona sin ocultar el fallo.  
+**Criterios de aceptación:** No implementa reintento infinito; logs incluyen intento y operación.  
+**Archivos involucrados:** `UnstableRepository.java`, `ResilientService.java`, `ResilientServiceTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=ResilientServiceTest`
 
-**Asistencia de IA:**
-- **Modo Chat (ChatGPT/Claude):** "Estoy practicando TDD en Java. Quiero crear un GestorDeReservas de hotel. ¿Puedes actuar como mi par de programación? Yo te daré mi primer test y tú me guiarás sobre qué código de producción escribir, y luego me sugerirás el siguiente test. Además, ayúdame a redactar el JavaDoc profesional para la clase."
-- **Claude Code / Codex:** "Revisa la clase GestorDeReservasTest.java. Identifica casos límite (edge cases) que no estoy cubriendo, como reservas en fechas pasadas o solapamiento de fechas, y genera los tests correspondientes usando JUnit 5 y AssertJ. Finalmente, genera el JavaDoc para la clase GestorDeReservas.java."
+### C03-E07 — Fuga por listener
+**Especificación:** Detectar objetos retenidos por listeners no removidos y corregir el ciclo de vida.  
+**Criterios de aceptación:** Prueba demuestra que colección no crece indefinidamente.  
+**Archivos involucrados:** `EventManager.java`, `EventManagerTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=EventManagerTest`
+
+### C03-E08 — Postmortem mínimo
+**Especificación:** A partir de logs desordenados, reconstruir una operación y proponer 5 mejoras de logging.  
+**Criterios de aceptación:** Diferencia hechos, hipótesis y acción preventiva.  
+**Archivos involucrados:** `postmortem.md`  
+**Comando para verificar:** Revisión manual del archivo Markdown.
+
+## Tareas para el Hogar
+
+### C03-T01 — Importador de lotes
+**Esfuerzo:** 60-90 min  
+**Especificación:** Importar solicitudes desde CSV con resumen de éxitos/fallos, errores de dominio y logging por lote.  
+**Criterios de aceptación:** Ningún catch vacío; recursos cerrados; logs sin PII innecesaria.  
+**Entregable:** Aplicación y 15 pruebas.
+
+### C03-T02 — Laboratorio de debugging
+**Esfuerzo:** 60-90 min  
+**Especificación:** Resolver cuatro bugs entregados y documentar para cada uno síntoma, hipótesis, evidencia, causa y prueba regresiva.  
+**Criterios de aceptación:** No se acepta solo “se corrigió”.  
+**Entregable:** `docs/debug-lab.md` y commits separados.
+
+### C03-T03 — Experimento de memoria
+**Esfuerzo:** 60-90 min  
+**Especificación:** Construir un programa que retenga referencias, observar crecimiento con herramienta del JDK y corregirlo.  
+**Criterios de aceptación:** No afirmar que GC libera objetos alcanzables; resultados reproducibles.  
+**Entregable:** Informe con capturas y explicación.
+
+### C03-T04 — Política de errores y logs
+**Esfuerzo:** 60-90 min  
+**Especificación:** Redactar estándar de 1–2 páginas para el proyecto integrador.  
+**Criterios de aceptación:** Incluye niveles, correlación, datos prohibidos y ejemplos.  
+**Entregable:** `docs/error-logging-policy.md`.
+
+## Cómo ejecutar
+
+Para compilar y ejecutar todas las pruebas de los ejercicios:
+
+```bash
+cd ejercicios
+./mvnw clean test
+```
+
+Para ejecutar un test específico:
+
+```bash
+cd ejercicios
+./mvnw test -Dtest=NombreDelTest
+```

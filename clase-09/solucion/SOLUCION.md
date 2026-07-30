@@ -1,123 +1,292 @@
-# Clase 09 — Resolución paso a paso: Primer Workflow con Temporal
+# Solución Clase 09: Temporal.io: arquitectura y ejecución duradera
 
-Esta guía resuelve los ejercicios de la carpeta `ejercicios/` explicando cada decisión. Léela **después** de haber intentado la resolución por tu cuenta (con o sin IA).
+## C09-E01 — Temporal local
 
-## Paso 0. Preparar el entorno
+**Por qué:** Para desarrollar con Temporal necesitamos un servidor local. El CLI provee un servidor de desarrollo en memoria que es rápido y fácil de usar.
 
-1. Abre una terminal y arranca el servidor de desarrollo de Temporal:
-   ```bash
-   temporal server start-dev
-   ```
-2. Abre http://localhost:8233 en tu navegador. Deberías ver la Web UI de Temporal sin workflows todavía.
-3. En otra terminal, sitúate en la carpeta del ejercicio:
-   ```bash
-   cd clase-09/ejercicios
-   mvn -q test   # los tests aún no hacen nada: hay TODOs pendientes
-   ```
+**Comandos:**
+```bash
+temporal server start-dev
+```
+El servidor estará accesible en `localhost:7233` y la UI en `http://localhost:8233`.
+El namespace por defecto es `default`.
 
-> **Nota importante:** el test usa `TestWorkflowEnvironment`, un servidor Temporal en memoria incluido en la dependencia `temporal-testing`. Esto significa que los tests pasan **sin necesidad** del servidor local; el servidor `start-dev` se usa para la parte de exploración visual con la Web UI.
+## C09-E02 — Saludo duradero
 
-## Paso 1. Definir la interfaz del Workflow (`HelloWorldWorkflow.java`)
+**Por qué:** Un Workflow en Temporal se define mediante una interfaz anotada con `@WorkflowInterface` y un método principal anotado con `@WorkflowMethod`. El Worker es el proceso que aloja la ejecución del Workflow.
 
-Un workflow en Temporal se define primero como **interfaz Java** anotada:
-
+**SaludoWorkflow.java:**
 ```java
-@WorkflowInterface
-public interface HelloWorldWorkflow {
+package com.sigeo.clase09;
 
+import io.temporal.workflow.WorkflowInterface;
+import io.temporal.workflow.WorkflowMethod;
+
+@WorkflowInterface
+public interface SaludoWorkflow {
     @WorkflowMethod
-    String getGreeting(String name);
+    String saludar(String nombre);
 }
 ```
 
-Explicación de las decisiones:
-
-- `@WorkflowInterface` marca la interfaz como contrato de un workflow. Temporal genera *stubs* (proxies) a partir de ella, tanto para el cliente que lo invoca como para el worker que lo ejecuta.
-- `@WorkflowMethod` señala el **punto de entrada**. Cada workflow tiene exactamente un método con esta anotación.
-- Los parámetros y el retorno deben ser **serializables** (Temporal los persiste en el historial de eventos). Un `String` es el caso más simple; en proyectos reales usarás records o clases de datos.
-
-## Paso 2. Implementar el Workflow (`HelloWorldWorkflowImpl.java`)
-
+**SaludoWorkflowImpl.java (Parte 1):**
 ```java
-@WorkflowImpl(taskQueues = "HelloWorldTaskQueue")
-public class HelloWorldWorkflowImpl implements HelloWorldWorkflow {
+package com.sigeo.clase09;
 
+public class SaludoWorkflowImpl implements SaludoWorkflow {
     @Override
-    public String getGreeting(String name) {
-        return "Hola " + name + " desde Temporal!";
+    public String saludar(String nombre) {
+        return "Hola, " + nombre;
     }
 }
 ```
 
-Explicación:
-
-- `@WorkflowImpl(taskQueues = "HelloWorldTaskQueue")` es la anotación del **starter de Spring Boot** de Temporal: registra automáticamente esta implementación en el worker que escucha la *task queue* indicada.
-- La **task queue** es el canal que conecta a quien pide ejecutar el workflow (cliente) con quien lo ejecuta (worker). Si el nombre no coincide en ambos lados, el workflow queda esperando eternamente: es el error más común de principiante.
-- El código de un workflow debe ser **determinista**: sin `new Date()`, sin `Random`, sin llamadas de red directas. Todo efecto secundario va en Activities (lo veremos en la clase 10).
-
-## Paso 3. Completar el test
-
-En `HelloWorldWorkflowTest.java`, descomenta el registro de la implementación y la aserción:
-
+**SaludoWorker.java:**
 ```java
-worker.registerWorkflowImplementationTypes(HelloWorldWorkflowImpl.class);
-...
-String result = workflow.getGreeting("Mundo");
-assertEquals("Hola Mundo desde Temporal!", result);
+package com.sigeo.clase09;
+
+import io.temporal.client.WorkflowClient;
+import io.temporal.serviceclient.WorkflowServiceStubs;
+import io.temporal.worker.Worker;
+import io.temporal.worker.WorkerFactory;
+
+public class SaludoWorker {
+    public static void main(String[] args) {
+        WorkflowServiceStubs service = WorkflowServiceStubs.newLocalServiceStubs();
+        WorkflowClient client = WorkflowClient.newInstance(service);
+        WorkerFactory factory = WorkerFactory.newInstance(client);
+        
+        Worker worker = factory.newWorker("SALUDO_TASK_QUEUE");
+        worker.registerWorkflowImplementationTypes(SaludoWorkflowImpl.class);
+        
+        factory.start();
+    }
+}
 ```
 
-Explicación del arnés de pruebas:
+## C09-E03 — Registrar auditoría
 
-1. `TestWorkflowEnvironment.newInstance()` levanta un servidor Temporal **en memoria** con tiempo virtual (los `Workflow.sleep` de horas se resuelven en milisegundos).
-2. `testEnv.newWorker("HelloWorldTaskQueue")` crea el worker de prueba en la misma task queue.
-3. `newWorkflowStub(...)` crea el proxy cliente: al llamar `getGreeting`, el test actúa como el cliente real.
+**Por qué:** Los Workflows deben ser deterministas y no pueden realizar I/O directamente. Para interactuar con el mundo exterior (como escribir en una base de datos o llamar a una API), usamos Activities.
 
-Ejecuta y verifica:
+**AuditoriaActivity.java:**
+```java
+package com.sigeo.clase09;
 
-```bash
-mvn test
-# [INFO] Tests run: 1, Failures: 0, Errors: 0 — BUILD SUCCESS
+import io.temporal.activity.ActivityInterface;
+import io.temporal.activity.ActivityMethod;
+
+@ActivityInterface
+public interface AuditoriaActivity {
+    @ActivityMethod
+    void registrarAuditoria(String mensaje);
+}
 ```
 
-## Paso 4. Ejecutarlo contra el servidor real y observar la Web UI
+**SaludoWorkflowImpl.java (Completo):**
+```java
+package com.sigeo.clase09;
 
-Con `temporal server start-dev` corriendo, configura `src/main/resources/application.yml`:
+import io.temporal.activity.ActivityOptions;
+import io.temporal.workflow.Workflow;
+import java.time.Duration;
 
-```yaml
-spring:
-  temporal:
-    connection:
-      target: local
-    workers-auto-discovery:
-      packages:
-        - com.curso.solucion09
+public class SaludoWorkflowImpl implements SaludoWorkflow {
+
+    private final AuditoriaActivity auditoriaActivity = Workflow.newActivityStub(
+            AuditoriaActivity.class,
+            ActivityOptions.newBuilder()
+                    .setStartToCloseTimeout(Duration.ofSeconds(10))
+                    .build()
+    );
+
+    @Override
+    public String saludar(String nombre) {
+        auditoriaActivity.registrarAuditoria("Se saludó a: " + nombre);
+        return "Hola, " + nombre;
+    }
+}
 ```
 
-Arranca la aplicación (`mvn spring-boot:run`) y dispara el workflow desde el CLI:
+## C09-E04 — Espera de revisión
 
-```bash
-temporal workflow start \
-  --task-queue HelloWorldTaskQueue \
-  --type HelloWorldWorkflow \
-  --input '"Estudiante"' \
-  --workflow-id hola-01
+**Por qué:** `Thread.sleep` bloquea el hilo y no es duradero. Si el Worker se reinicia, el estado se pierde. `Workflow.sleep` registra un Timer en Temporal Service, liberando el hilo y permitiendo que el Workflow se reanude exactamente donde se quedó, incluso si el Worker se reinicia.
+
+**RevisionWorkflow.java:**
+```java
+package com.sigeo.clase09;
+
+import io.temporal.workflow.WorkflowInterface;
+import io.temporal.workflow.WorkflowMethod;
+
+@WorkflowInterface
+public interface RevisionWorkflow {
+    @WorkflowMethod
+    String iniciarRevision(int diasEspera);
+}
 ```
 
-Ahora abre http://localhost:8233 y localiza el workflow `hola-01`. Observa: el **Event History** (WorkflowExecutionStarted → WorkflowTaskCompleted → WorkflowExecutionCompleted), la task queue, la entrada y el resultado. Esta trazabilidad completa de cada ejecución es la esencia de la *durable execution*.
+**RevisionWorkflowImpl.java:**
+```java
+package com.sigeo.clase09;
 
-## Errores frecuentes y cómo diagnosticarlos
+import io.temporal.workflow.Workflow;
+import java.time.Duration;
 
-| Síntoma | Causa | Solución |
-|---|---|---|
-| El workflow queda "Running" para siempre | No hay worker en esa task queue (nombre distinto o app caída) | Verificar el nombre exacto de la queue en ambos lados |
-| `Workflow implementation doesn't implement any interface annotated with @WorkflowInterface` | Falta `@WorkflowInterface` o la clase no implementa la interfaz | Revisar anotaciones |
-| El test se cuelga | Se registró la interfaz en vez de la implementación | `registerWorkflowImplementationTypes(...Impl.class)` |
-| `Connection refused: localhost:7233` al ejecutar la app | Servidor Temporal no iniciado | `temporal server start-dev` |
+public class RevisionWorkflowImpl implements RevisionWorkflow {
+    @Override
+    public String iniciarRevision(int diasEspera) {
+        Workflow.sleep(Duration.ofDays(diasEspera));
+        return "Revisión completada después de " + diasEspera + " días";
+    }
+}
+```
 
-## Cómo pudo ayudarte la IA en este ejercicio
+## C09-E05 — Reinicio controlado
 
-Un prompt eficaz de depuración para este contexto habría sido:
+**Por qué:** Demuestra la durabilidad de Temporal. Al detener el Worker, el Workflow no falla, simplemente se queda esperando a que un Worker esté disponible para procesar la siguiente tarea (en este caso, cuando el Timer expire).
 
-> "Tengo un workflow de Temporal en Java con Spring Boot (starter 1.30.x). Lo inicio con `temporal workflow start` y queda en Running sin terminar. Esta es mi interfaz, mi implementación y mi application.yml: [pegar]. Dame las 3 causas más probables ordenadas y cómo verificar cada una."
+**ReinicioWorker.java:**
+```java
+package com.sigeo.clase09;
 
-Observa que el prompt: da el stack exacto y versiones, incluye el código relevante, y pide diagnóstico ordenado en lugar de un fix ciego.
+import io.temporal.client.WorkflowClient;
+import io.temporal.serviceclient.WorkflowServiceStubs;
+import io.temporal.worker.Worker;
+import io.temporal.worker.WorkerFactory;
+
+public class ReinicioWorker {
+    public static void main(String[] args) {
+        WorkflowServiceStubs service = WorkflowServiceStubs.newLocalServiceStubs();
+        WorkflowClient client = WorkflowClient.newInstance(service);
+        WorkerFactory factory = WorkerFactory.newInstance(client);
+        
+        Worker worker = factory.newWorker("REVISION_TASK_QUEUE");
+        worker.registerWorkflowImplementationTypes(RevisionWorkflowImpl.class);
+        
+        factory.start();
+    }
+}
+```
+
+## C09-E06 — Aprobación v0
+
+**Por qué:** Combina Workflows, Activities y Signals. `Workflow.await` permite pausar la ejecución hasta que una condición sea verdadera o se alcance un timeout, ideal para esperar interacciones humanas.
+
+**AprobacionWorkflow.java:**
+```java
+package com.sigeo.clase09;
+
+import io.temporal.workflow.SignalMethod;
+import io.temporal.workflow.WorkflowInterface;
+import io.temporal.workflow.WorkflowMethod;
+
+@WorkflowInterface
+public interface AprobacionWorkflow {
+    @WorkflowMethod
+    String solicitarAprobacion(String idSolicitud);
+
+    @SignalMethod
+    void recibirDecision(boolean aprobado);
+}
+```
+
+**AprobacionActivity.java:**
+```java
+package com.sigeo.clase09;
+
+import io.temporal.activity.ActivityInterface;
+import io.temporal.activity.ActivityMethod;
+
+@ActivityInterface
+public interface AprobacionActivity {
+    @ActivityMethod
+    void notificarResultado(String idSolicitud, String resultado);
+}
+```
+
+**AprobacionWorkflowImpl.java:**
+```java
+package com.sigeo.clase09;
+
+import io.temporal.activity.ActivityOptions;
+import io.temporal.workflow.Workflow;
+import java.time.Duration;
+
+public class AprobacionWorkflowImpl implements AprobacionWorkflow {
+
+    private final AprobacionActivity activity = Workflow.newActivityStub(
+            AprobacionActivity.class,
+            ActivityOptions.newBuilder()
+                    .setStartToCloseTimeout(Duration.ofSeconds(10))
+                    .build()
+    );
+    
+    private Boolean decision = null;
+
+    @Override
+    public String solicitarAprobacion(String idSolicitud) {
+        // Esperar hasta 7 días por una decisión
+        Workflow.await(Duration.ofDays(7), () -> decision != null);
+        
+        String resultado;
+        if (decision == null) {
+            resultado = "VENCIDA";
+        } else if (decision) {
+            resultado = "APROBADA";
+        } else {
+            resultado = "RECHAZADA";
+        }
+        
+        activity.notificarResultado(idSolicitud, resultado);
+        return resultado;
+    }
+
+    @Override
+    public void recibirDecision(boolean aprobado) {
+        this.decision = aprobado;
+    }
+}
+```
+
+## C09-E07 — Detectar no determinismo
+
+**Por qué:** Los Workflows deben ser deterministas para que el replay funcione correctamente. Si el código produce resultados diferentes en cada ejecución, Temporal lanzará un `NonDeterministicWorkflowError`.
+
+**Correcciones en NoDeterministaWorkflowImpl.java:**
+```java
+package com.sigeo.clase09;
+
+import io.temporal.workflow.Workflow;
+import java.time.Instant;
+import java.util.UUID;
+
+public class DeterministaWorkflowImpl {
+
+    public String ejecutarProceso() {
+        // CORRECCIÓN 1: Usar Workflow.randomUUID()
+        String id = Workflow.randomUUID().toString();
+        
+        // CORRECCIÓN 2: Usar Workflow.currentTimeMillis()
+        long inicio = Workflow.currentTimeMillis();
+        
+        // CORRECCIÓN 3: Usar Workflow.sleep()
+        Workflow.sleep(1000);
+        
+        // CORRECCIÓN 4: Usar Workflow.newRandom()
+        double random = Workflow.newRandom().nextDouble();
+        
+        // CORRECCIÓN 5: Usar el logger de Temporal
+        Workflow.getLogger(DeterministaWorkflowImpl.class).info("Proceso ejecutado: " + id);
+        
+        return "Completado";
+    }
+}
+```
+
+## C09-E08 — Leer la historia
+
+**Por qué:** Comprender el Event History es fundamental para depurar Workflows en Temporal.
+
+**Respuestas:**
+1. `WorkflowTaskScheduled` indica que el Worker debe ejecutar lógica del Workflow (avanzar el estado). `ActivityTaskScheduled` indica que el Worker debe ejecutar el código de una Activity (efectos secundarios).
+2. Durante el replay, el código del Workflow se vuelve a ejecutar desde el principio, pero las Activities y Timers NO se vuelven a ejecutar. En su lugar, Temporal inyecta los resultados previamente registrados en el Event History.

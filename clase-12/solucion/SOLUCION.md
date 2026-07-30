@@ -1,42 +1,156 @@
-# Clase 12 — Resolución paso a paso
+# Solución de Ejercicios - Clase 12
 
-Esta guía explica una forma correcta y didáctica de resolver la clase centrada en **Temporal saga y compensaciones**. Debe leerse después de intentar los ejercicios de la carpeta `ejercicios/`, idealmente ejecutando pruebas y revisando cada cambio con apoyo de IA.
+## C12-E01 — Mapa de pasos
 
-## Paso 0. Preparación
+**Por qué:** Es fundamental definir claramente qué acciones componen la saga y cuáles son sus compensaciones semánticas (no un simple rollback de base de datos, sino una acción de negocio que anule el efecto).
 
-Antes de comenzar, revisa el `README.md` de la clase, ejecuta el proyecto base y verifica que el entorno compile. Si la clase usa Spring Boot, ejecuta `mvn -q test` o `mvn -q compile` para validar dependencias. Si usa Temporal, asegúrate además de poder levantar un entorno local o al menos de contar con `temporal-testing` para pruebas en memoria.
+```java
+package com.sigeo.clase12;
 
-## Paso 1. Modelar la transacción distribuida
+import java.util.List;
 
-Divide el caso de negocio en pasos explícitos y define qué se debe deshacer si uno falla.
+public class SagaSteps {
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+    public record StepDefinition(String name, String action, String compensation) {}
 
-## Paso 2. Registrar compensaciones en orden correcto
+    public List<StepDefinition> getSagaSteps() {
+        return List.of(
+            new StepDefinition("Reserva", "Reservar recurso", "Cancelar reserva de recurso"),
+            new StepDefinition("Presupuesto", "Asignar presupuesto", "Liberar presupuesto"),
+            new StepDefinition("Agenda", "Agendar operación", "Cancelar agenda"),
+            new StepDefinition("Notificación", "Enviar notificación", "Enviar notificación de cancelación")
+        );
+    }
+}
+```
 
-Agrega una compensación inmediatamente después de cada paso exitoso para no olvidarla.
+## C12-E02 — Saga mínima
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+**Por qué:** Temporal provee la clase `Saga` para registrar compensaciones. Si un paso falla, se llama a `saga.compensate()` para ejecutar las compensaciones en orden inverso.
 
-## Paso 3. Probar fallos controlados
+```java
+// En SagaWorkflowImpl.java
+@Override
+public String executeSaga(String reservationId, boolean failAtBudget, boolean failAtAgenda, boolean failAtNotification) {
+    Saga saga = new Saga(new Saga.Options.Builder().setParallelCompensation(false).build());
+    try {
+        activities.reserveResource(reservationId);
+        saga.addCompensation(activities::cancelResource, reservationId);
 
-Haz visible el valor del patrón Saga provocando un error intermedio y verificando el rollback lógico.
+        activities.allocateBudget(reservationId, failAtBudget);
+        saga.addCompensation(activities::releaseBudget, reservationId);
+        
+        status = "COMPLETED";
+        return status;
+    } catch (Exception e) {
+        status = "COMPENSATING";
+        saga.compensate();
+        status = "COMPENSATED";
+        throw e;
+    }
+}
+```
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+## C12-E03 — Fallo por etapa
 
-## Errores frecuentes
+**Por qué:** Al parametrizar los fallos, podemos probar que la saga se detiene en el punto exacto de fallo y compensa solo lo que ya se había ejecutado exitosamente.
 
-| Error | Efecto | Cómo corregirlo |
-|---|---|---|
-| Registrar compensaciones al final | Si falla antes, no queda nada para deshacer | Registrar tras cada paso exitoso |
-| Compensaciones no idempotentes | Repeticiones peligrosas | Diseñar actividades seguras ante reintentos |
+```java
+// En SagaWorkflowImpl.java (continuación)
+        activities.scheduleAgenda(reservationId, failAtAgenda);
+        saga.addCompensation(activities::cancelAgenda, reservationId);
 
-## Cómo usar la IA en este ejercicio
+        activities.sendNotification(reservationId, failAtNotification);
+        // No hay compensación para notificación si es el último paso
+```
 
-Un buen uso de la IA en esta clase consiste en pedir **explicaciones justificadas**, revisiones de diseño y ayuda de depuración sobre fragmentos pequeños. Tres prompts útiles son los siguientes:
+## C12-E04 — Compensación inestable
 
-> "Estoy resolviendo la clase y quiero implementar esta parte sin perder la arquitectura. Te comparto mi código actual y el objetivo. Propón el siguiente cambio mínimo y explícame por qué es mejor que dos alternativas."
+**Por qué:** Las compensaciones también pueden fallar. Deben tener políticas de reintento robustas (incluso infinitas) para asegurar que el sistema eventualmente alcance un estado consistente.
 
-> "Este test falla con el siguiente error. Antes de darme un fix, enumera las tres causas más probables y cómo verificar cada una desde Java/Maven."
+```java
+// En SagaWorkflowImpl.java
+    private final ActivityOptions compensationOptions = ActivityOptions.newBuilder()
+            .setStartToCloseTimeout(Duration.ofSeconds(10))
+            .setRetryOptions(RetryOptions.newBuilder()
+                    .setMaximumAttempts(10) // Más reintentos para compensaciones
+                    .build())
+            .build();
+    private final SagaActivities compensationActivities = Workflow.newActivityStub(SagaActivities.class, compensationOptions);
 
-> "Revisa este código como si fueras un profesor de desarrollo de software: identifica problemas de diseño, de legibilidad y de pruebas, y proponme un plan de mejora en tres pasos."
+// Usar compensationActivities en saga.addCompensation
+```
+
+## C12-E05 — Doble cancelación
+
+**Por qué:** Las compensaciones deben ser idempotentes porque Temporal puede reintentarlas si hay fallos de red o caídas del worker.
+
+```java
+// En SagaActivitiesImpl.java
+    @Override
+    public void cancelResource(String reservationId) {
+        if (cancelledResources.add(reservationId)) {
+            System.out.println("Canceling resource for " + reservationId);
+        } else {
+            System.out.println("Resource already canceled for " + reservationId + ", ignoring.");
+        }
+    }
+```
+
+## C12-E06 — Endpoint de operación
+
+**Por qué:** El cliente HTTP no debe bloquearse esperando que termine una saga larga. Se inicia asíncronamente y se provee un endpoint para consultar el estado.
+
+```java
+// En SagaController.java
+    @PostMapping
+    public Map<String, String> startSaga(@RequestParam(defaultValue = "false") boolean failAtBudget) {
+        String workflowId = "saga-" + UUID.randomUUID().toString();
+        SagaWorkflow workflow = workflowClient.newWorkflowStub(SagaWorkflow.class,
+                WorkflowOptions.newBuilder()
+                        .setWorkflowId(workflowId)
+                        .setTaskQueue("SAGA_TASK_QUEUE")
+                        .build());
+        
+        WorkflowClient.start(workflow::executeSaga, workflowId, failAtBudget, false, false);
+        return Map.of("workflowId", workflowId, "status", "STARTED");
+    }
+
+    @GetMapping("/{workflowId}")
+    public Map<String, String> getSagaStatus(@PathVariable String workflowId) {
+        SagaWorkflow workflow = workflowClient.newWorkflowStub(SagaWorkflow.class, workflowId);
+        return Map.of("workflowId", workflowId, "status", workflow.getStatus());
+    }
+```
+
+## C12-E07 — Contextos separados
+
+**Por qué:** Para dominios complejos, es mejor delegar partes de la saga a Child Workflows que encapsulan su propia lógica y estado.
+
+```java
+// En SagaWorkflowImpl.java
+    @Override
+    public String executeSaga(String reservationId, boolean failAtBudget, boolean failAtAgenda, boolean failAtNotification) {
+        ResourceChildWorkflow child = Workflow.newChildWorkflowStub(ResourceChildWorkflow.class);
+        child.processResource(reservationId);
+        // ...
+    }
+```
+
+## C12-E08 — Evento de completitud
+
+**Por qué:** El patrón Outbox asegura que la actualización de la base de datos local y la publicación del evento ocurran de forma atómica.
+
+```java
+// En OutboxService.java
+    @Transactional
+    public void saveEvent(String eventId, String payload) {
+        // Guardar en tabla outbox
+        // jdbcTemplate.update("INSERT INTO outbox (id, payload) VALUES (?, ?)", eventId, payload);
+    }
+
+    @Scheduled(fixedDelay = 5000)
+    public void publishPendingEvents() {
+        // Leer de outbox, publicar en RabbitMQ/Kafka, y marcar como procesado
+    }
+```

@@ -1,59 +1,112 @@
-# Clase 14: Integración de IA en Aplicaciones Java (Parte 2)
+# Clase 14: Inteligencia artificial en aplicaciones Java y agentes durables
 
-## Objetivos de la sesión
-- Comprender los conceptos fundamentales de RAG (Retrieval-Augmented Generation) y su importancia en aplicaciones de IA.
-- Aprender a generar y utilizar embeddings para representar texto vectorialmente.
-- Integrar y consultar bases de datos vectoriales (ej. ChromaDB, Pinecone o PgVector) desde una aplicación Spring Boot.
-- Implementar Function Calling para permitir que los modelos de lenguaje interactúen con herramientas y APIs externas.
-- Construir un flujo completo de RAG utilizando Spring AI.
+**Bloque:** Bloque 4 — IA y tecnologías avanzadas  
+**Duración:** 4 horas
 
-## Cronograma propuesto (4 horas)
-- **0:00 - 0:45**: Introducción a Embeddings y Bases de Datos Vectoriales. Conceptos teóricos y configuración inicial.
-- **0:45 - 1:30**: Implementación de RAG (Retrieval-Augmented Generation) con Spring AI.
-- **1:30 - 1:45**: *Descanso*.
-- **1:45 - 2:45**: Function Calling: Teoría, configuración y casos de uso prácticos.
-- **2:45 - 3:45**: Desarrollo del proyecto integrador (Ejercicios prácticos).
-- **3:45 - 4:00**: Revisión de soluciones, dudas y cierre de la sesión.
+## Objetivos de aprendizaje
+- Usar Spring AI para chat, structured output y tool calling con configuración externalizada.
+- Diseñar prompts con contrato, contexto, límites y validación de salida.
+- Implementar RAG básico con chunking, embeddings y vector store.
+- Ejecutar llamadas de modelo y herramientas externas como Activities Temporal.
+- Aplicar guardrails, evaluación, privacidad, costos y fallback.
 
-## Ejercicios prácticos
+## Cronograma de la clase
 
-### Ejercicio 1: Guiado - Generación de Embeddings y Almacenamiento Vectorial
-**Descripción:** En este ejercicio, configuraremos una base de datos vectorial en memoria (como `SimpleVectorStore` de Spring AI) y crearemos un endpoint que reciba un texto, genere su embedding y lo almacene.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–10 | Evaluación de casos de uso | Clasificar IA necesaria, útil o innecesaria. |
+| 10–35 | Fundamentos y Spring AI | Explicar variabilidad y contrato. |
+| 35–60 | Demo structured output | Validar JSON/DTO y fallback. |
+| 60–80 | Ejercicios E01–E03 | Prompts, DTO y tool calling. |
+| 80–95 | Receso | Preparar documentos RAG. |
+| 95–120 | RAG y seguridad | Mostrar retrieval y prompt injection. |
+| 120–160 | Laboratorio E04–E06 | RAG + Activity Temporal. |
+| 160–185 | Desafíos E07–E08 | Evaluación y costos. |
+| 185–195 | Cierre y preparación de visita | Entregar guía de observación para visita profesional del 26–30 OCT. |
 
-**Pasos:**
-1. Agrega las dependencias de Spring AI para el modelo de embeddings (ej. OpenAI) y el Vector Store.
-2. Configura las credenciales (API Key) en el archivo `application.properties`.
-3. Crea un servicio `DocumentService` que inyecte `VectorStore`.
-4. Implementa un método que convierta un `String` en un objeto `Document` y lo guarde usando `vectorStore.add()`.
-5. Crea un controlador REST con un endpoint POST `/api/documents` para probar la funcionalidad.
+## Ejercicios de clase
 
-**Asistencia de IA:**
-- *Modo Chat:* "Actúa como un experto en Spring AI. ¿Cómo configuro un `SimpleVectorStore` en una aplicación Spring Boot 3 paso a paso?"
-- *Claude Code / Codex:* "Genera un servicio en Java llamado `DocumentService` que utilice `VectorStore` de Spring AI para guardar una lista de documentos de texto."
+### C14-E01 — Clasificador estructurado
+**Especificación:** Diseñar prompt que clasifique solicitud y devuelva DTO con categoría, urgencia y explicación breve.
+**Criterios de aceptación:** Salida validada; valores fuera de enum rechazados.
+**Archivos involucrados:** `ClasificadorService.java`, `ClasificacionDTO.java`, `ClasificadorServiceTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ClasificadorServiceTest`
 
-### Ejercicio 2: Semi-guiado - Implementación de un flujo RAG básico
-**Descripción:** Construye un endpoint de chat que utilice RAG. El sistema debe buscar documentos relevantes en la base vectorial antes de enviar la pregunta al LLM, enriqueciendo así el contexto de la respuesta.
+### C14-E02 — Fallback sin IA
+**Especificación:** Ante timeout o salida inválida, usar clasificación determinista simple.
+**Criterios de aceptación:** La operación crítica continúa; fallo de IA es observable.
+**Archivos involucrados:** `ClasificadorService.java`, `ClasificadorServiceTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ClasificadorServiceTest`
 
-**Pistas:**
-- Necesitarás inyectar tanto el `ChatClient` (o `ChatModel`) como el `VectorStore`.
-- Utiliza `vectorStore.similaritySearch(query)` para obtener los documentos relacionados con la pregunta del usuario.
-- Concatena el contenido de los documentos recuperados y úsalos como contexto en el `SystemPrompt` o en el mensaje del usuario antes de llamar al modelo.
-- Devuelve la respuesta generada por el LLM.
+### C14-E03 — Consulta de catálogo
+**Especificación:** Exponer herramienta read-only para consultar recursos; el modelo no modifica DB.
+**Criterios de aceptación:** Allowlist; valida parámetros; autorización en backend.
+**Archivos involucrados:** `CatalogoTools.java`, `AsistenteService.java`, `AsistenteServiceTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=AsistenteServiceTest`
 
-**Asistencia de IA:**
-- *Modo Chat:* "Tengo un `VectorStore` y un `ChatClient` en Spring AI. ¿Me puedes dar un ejemplo de cómo hacer una búsqueda de similitud y usar los resultados como contexto para el LLM?"
-- *Claude Code / Codex:* "Completa el método `askWithContext(String question)`: realiza una búsqueda en `vectorStore`, extrae el texto de los documentos, crea un prompt que incluya este contexto y la pregunta, y retorna la respuesta del `ChatClient`."
+### C14-E04 — Asistente de normativa
+**Especificación:** Ingerir 3 documentos, recuperar fragmentos y responder con referencias internas.
+**Criterios de aceptación:** Respuesta distingue "no encontrado"; muestra fuente/chunk.
+**Archivos involucrados:** `NormativaRagService.java`, `NormativaRagServiceTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=NormativaRagServiceTest`
 
-### Ejercicio 3: Desafío - Asistente Inteligente con Function Calling y RAG
-**Descripción:** Crea un asistente virtual para una tienda que combine RAG y Function Calling. El asistente debe ser capaz de responder preguntas sobre las políticas de la tienda (usando RAG con documentos previamente cargados) y consultar el estado de un pedido en tiempo real (usando Function Calling).
+### C14-E05 — Prompt injection lab
+**Especificación:** Probar documentos que intentan cambiar instrucciones y mitigar mediante separación de roles/allowlist.
+**Criterios de aceptación:** No ejecuta herramienta no autorizada ni revela prompt/secretos.
+**Archivos involucrados:** `SeguridadAiService.java`, `SeguridadAiServiceTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SeguridadAiServiceTest`
 
-**Requisitos:**
-- Carga un documento de texto con políticas de devolución en el Vector Store al iniciar la aplicación.
-- Define una función (ej. `@Bean` de tipo `Function<OrderRequest, OrderStatus>`) que simule la búsqueda de un pedido por su ID.
-- Configura el `ChatClient` para que tenga acceso a esta función.
-- El endpoint principal debe recibir la pregunta del usuario, buscar contexto en el Vector Store, y enviar todo al LLM habilitando la llamada a funciones.
-- Prueba preguntando: "¿Cuál es la política de devoluciones?" y "Quiero saber el estado de mi pedido 12345".
+### C14-E06 — Análisis durable
+**Especificación:** Llamar al modelo desde Activity con timeout, retry limitado y registro de modelo/promptVersion.
+**Criterios de aceptación:** No model call en Workflow; error permanente no se reintenta sin límite.
+**Archivos involucrados:** `AnalisisAiActivity.java`, `AnalisisAiActivityImpl.java`, `AnalisisWorkflow.java`, `AnalisisWorkflowImpl.java`, `AnalisisWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=AnalisisWorkflowTest`
 
-**Asistencia de IA:**
-- *Modo Chat:* "Quiero implementar Function Calling en Spring AI. ¿Cómo registro un `@Bean` de tipo `Function` y cómo le indico al `ChatClient` que puede usar esa función durante una conversación?"
-- *Claude Code / Codex:* "Refactoriza este servicio de chat para incluir opciones de llamada a función. Añade la función `getOrderStatus` a las opciones del prompt (prompt options) al hacer la petición al modelo de OpenAI."
+### C14-E07 — Conjunto dorado
+**Especificación:** Crear 20 preguntas/respuestas esperadas y medir exactitud, abstención y fuentes.
+**Criterios de aceptación:** Métricas definidas; casos fallidos analizados.
+**Archivos involucrados:** `EvaluacionAiTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=EvaluacionAiTest`
+
+### C14-E08 — Presupuesto de tokens
+**Especificación:** Comparar dos configuraciones y establecer límites de tokens/latencia/costo simulado.
+**Criterios de aceptación:** Decisión basada en datos y calidad mínima.
+**Archivos involucrados:** `application.yaml`, `PresupuestoTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=PresupuestoTest`
+
+## Tareas para el hogar
+
+### C14-T01 — Asistente SIGEO
+**Especificación:** Implementar ayuda contextual con structured output y RAG sobre documentación del sistema.
+**Criterios de aceptación:** No toma decisiones irreversibles; fuentes visibles.
+
+### C14-T02 — AI Activity resiliente
+**Especificación:** Integrar llamada de IA como Activity con retry, timeout, fallback y trazabilidad de versión.
+**Criterios de aceptación:** Determinismo preservado; payloads minimizados.
+
+### C14-T03 — Red-team de prompts
+**Especificación:** Crear 15 ataques de inyección/exfiltración/tool abuse y registrar mitigaciones.
+**Criterios de aceptación:** Severidad, evidencia y prueba regresiva.
+
+### C14-T04 — Guía visita profesional
+**Especificación:** Preparar 12 preguntas sobre arquitectura, seguridad, DevOps, mensajería, Temporal/alternativas e IA responsable.
+**Criterios de aceptación:** Preguntas abiertas y vinculadas al curso.
+
+## Cómo ejecutar
+
+1. Iniciar servidor Temporal en desarrollo:
+   ```bash
+   temporal server start-dev
+   ```
+2. Iniciar RabbitMQ (si aplica):
+   ```bash
+   docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+   ```
+3. Configurar variable de entorno para Spring AI (usando un mock o clave real para pruebas locales):
+   ```bash
+   export OPENAI_API_KEY="tu-api-key"
+   ```
+4. Ejecutar tests:
+   ```bash
+   ./mvnw test
+   ```

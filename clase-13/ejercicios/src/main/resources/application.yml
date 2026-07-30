@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: sigeo-worker
+  temporal:
+    connection:
+      target: ${TEMPORAL_TARGET:127.0.0.1:7233}
+    namespace: ${TEMPORAL_NAMESPACE:default}
+    workers:
+      - task-queue: SIGEO_TASK_QUEUE
+        workflow-classes:
+          - com.sigeo.clase13.VencimientoWorkflowImpl
+          - com.sigeo.clase13.InteraccionWorkflowImpl
+          - com.sigeo.clase13.VersionadoWorkflowImpl
+          - com.sigeo.clase13.SearchAttributesWorkflowImpl
+          - com.sigeo.clase13.CorrelacionWorkflowImpl

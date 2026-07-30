@@ -1,42 +1,123 @@
-# Clase 11 — Resolución paso a paso
+# Solución de Ejercicios - Clase 11
 
-Esta guía explica una forma correcta y didáctica de resolver la clase centrada en **Temporal signals, queries y timers**. Debe leerse después de intentar los ejercicios de la carpeta `ejercicios/`, idealmente ejecutando pruebas y revisando cada cambio con apoyo de IA.
+## C11-E01 — Aprobar o rechazar
+**Por qué:** Las señales (Signals) permiten enviar datos asíncronos a un Workflow en ejecución. Usamos variables de estado para guardar la decisión.
 
-## Paso 0. Preparación
+```java
+@Override
+public void approve(String commandId) {
+    if (this.decision == null) {
+        this.decision = "APPROVED";
+        this.lastCommandId = commandId;
+    }
+}
 
-Antes de comenzar, revisa el `README.md` de la clase, ejecuta el proyecto base y verifica que el entorno compile. Si la clase usa Spring Boot, ejecuta `mvn -q test` o `mvn -q compile` para validar dependencias. Si usa Temporal, asegúrate además de poder levantar un entorno local o al menos de contar con `temporal-testing` para pruebas en memoria.
+@Override
+public void reject(String commandId, String reason) {
+    if (this.decision == null) {
+        this.decision = "REJECTED";
+        this.rejectionReason = reason;
+        this.lastCommandId = commandId;
+    }
+}
+```
 
-## Paso 1. Exponer señales y consultas
+## C11-E02 — Estado consultable
+**Por qué:** Las consultas (Queries) permiten leer el estado interno del Workflow sin mutarlo ni generar eventos en el historial.
 
-Modela la interacción externa con métodos dedicados para mutar o inspeccionar el estado del workflow.
+```java
+@Override
+public ApprovalState getState() {
+    return new ApprovalState(this.decision, this.rejectionReason, this.priority);
+}
+```
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+## C11-E03 — Vencimiento automático
+**Por qué:** `Workflow.await` bloquea la ejecución hasta que una condición sea verdadera o se alcance un timeout. Es la forma correcta de esperar en Temporal, nunca `Thread.sleep`.
 
-## Paso 2. Esperar decisiones sin bloquear infraestructura
+```java
+boolean acted = Workflow.await(Duration.ofMinutes(30), () -> this.decision != null);
+if (!acted) {
+    this.decision = "TIMEOUT";
+}
+```
 
-Usa Workflow.await para suspender el flujo hasta que llegue una condición relevante.
+## C11-E04 — Cambiar prioridad confirmado
+**Por qué:** Los Updates permiten enviar datos, validarlos antes de aceptarlos y retornar un resultado síncrono al cliente.
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+```java
+@UpdateValidatorMethod
+public void validateUpdatePriority(int newPriority) {
+    if (newPriority < 1 || newPriority > 5) {
+        throw new IllegalArgumentException("Prioridad debe estar entre 1 y 5");
+    }
+    if (this.decision != null) {
+        throw new IllegalStateException("No se puede cambiar prioridad de una solicitud ya decidida");
+    }
+}
 
-## Paso 3. Agregar timers duraderos
+@Override
+public int updatePriority(int newPriority) {
+    this.priority = newPriority;
+    return this.priority;
+}
+```
 
-Modela recordatorios y escalamiento con Workflow.sleep sin perder estado si el worker cae.
+## C11-E05 — Comando repetido
+**Por qué:** Para evitar procesar el mismo comando dos veces (por reintentos de red), guardamos los IDs de los comandos procesados.
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+```java
+private final Set<String> processedCommands = new HashSet<>();
 
-## Errores frecuentes
+@Override
+public void approve(String commandId) {
+    if (processedCommands.contains(commandId)) {
+        return; // Deduplicación
+    }
+    if (this.decision == null) {
+        this.decision = "APPROVED";
+        processedCommands.add(commandId);
+    }
+}
+```
 
-| Error | Efecto | Cómo corregirlo |
-|---|---|---|
-| Modificar estado desde query | Las queries deben ser de solo lectura | Reservar cambios de estado a signals o updates |
-| Usar APIs no deterministas dentro del workflow | Replay inconsistente | Quedarse en APIs propias de Temporal |
+## C11-E06 — Revisión especializada
+**Por qué:** Los Child Workflows permiten modularizar la lógica y distribuir el historial. Se configuran con opciones como `ParentClosePolicy`.
 
-## Cómo usar la IA en este ejercicio
+```java
+ChildWorkflowOptions options = ChildWorkflowOptions.newBuilder()
+    .setWorkflowId(Workflow.getInfo().getWorkflowId() + "-review")
+    .setParentClosePolicy(ParentClosePolicy.PARENT_CLOSE_POLICY_TERMINATE)
+    .build();
+TechnicalReviewWorkflow reviewWorkflow = Workflow.newChildWorkflowStub(TechnicalReviewWorkflow.class, options);
+String reviewResult = reviewWorkflow.performReview(requestDetails);
+```
 
-Un buen uso de la IA en esta clase consiste en pedir **explicaciones justificadas**, revisiones de diseño y ayuda de depuración sobre fragmentos pequeños. Tres prompts útiles son los siguientes:
+## C11-E07 — Bandeja de eventos larga
+**Por qué:** Cuando un Workflow procesa muchos eventos, su historial crece demasiado. `ContinueAsNew` reinicia el historial pasando el estado actual a una nueva ejecución.
 
-> "Estoy resolviendo la clase y quiero implementar esta parte sin perder la arquitectura. Te comparto mi código actual y el objetivo. Propón el siguiente cambio mínimo y explícame por qué es mejor que dos alternativas."
+```java
+@Override
+public void processEvents(int count) {
+    for (int i = 0; i < 50; i++) {
+        Workflow.await(() -> !eventQueue.isEmpty());
+        String event = eventQueue.poll();
+        this.processedCount++;
+    }
+    // Continuar como nuevo después de 50 eventos
+    Workflow.continueAsNew(this.processedCount);
+}
+```
 
-> "Este test falla con el siguiente error. Antes de darme un fix, enumera las tres causas más probables y cómo verificar cada una desde Java/Maven."
+## C11-E08 — Aprobación vs expiración
+**Por qué:** Si una señal llega casi al mismo tiempo que un timer expira, el orden de evaluación en `Workflow.await` determina el resultado. Temporal garantiza determinismo.
 
-> "Revisa este código como si fueras un profesor de desarrollo de software: identifica problemas de diseño, de legibilidad y de pruebas, y proponme un plan de mejora en tres pasos."
+```java
+// Si la señal llega en el mismo milisegundo que el timer, 
+// la condición this.decision != null se evalúa primero.
+boolean acted = Workflow.await(Duration.ofMinutes(30), () -> this.decision != null);
+if (!acted) {
+    this.decision = "TIMEOUT";
+}
+// El resultado es consistente: si hay decisión, no es TIMEOUT.
+```

@@ -1,57 +1,111 @@
-# Clase 12: Orquestación Compleja y Patrón Saga
+# Clase 12: Microservicios, transacciones distribuidas y patrón Saga
 
-## Objetivos de la sesión
-* Comprender los desafíos de las transacciones distribuidas en arquitecturas de microservicios.
-* Aprender e implementar el Patrón Saga (Coreografía y Orquestación) para mantener la consistencia de los datos.
-* Diseñar y ejecutar transacciones de compensación ante fallos en procesos distribuidos.
-* Integrar herramientas y frameworks en Spring Boot para la orquestación de servicios.
-* **Nota:** Esta sesión incluye la Evaluación Sumativa 2.
+**Bloque:** Bloque 3 — Workflows resilientes y sistemas distribuidos
+**Duración:** 4 horas
 
-## Cronograma propuesto (4 horas)
-* **00:00 - 00:45:** Teoría: Transacciones distribuidas, Teorema CAP y el Patrón Saga (Coreografía vs. Orquestación).
-* **00:45 - 01:30:** Ejercicio 1 (Guiado): Implementación de una Saga basada en Coreografía con eventos (Spring Boot + Kafka/RabbitMQ).
-* **01:30 - 01:45:** Descanso.
-* **01:45 - 02:30:** Ejercicio 2 (Semi-guiado): Orquestación centralizada y manejo de transacciones de compensación.
-* **02:30 - 03:15:** Ejercicio 3 (Desafío): Diseño de un flujo complejo de e-commerce con múltiples servicios y fallos simulados.
-* **03:15 - 04:00:** Evaluación Sumativa 2 (Prueba práctica/teórica sobre microservicios, mensajería y Saga).
+## Objetivos de aprendizaje
+- Explicar por qué una transacción ACID no cruza microservicios de forma práctica.
+- Distinguir saga orquestada y coreografiada, y seleccionar Temporal para orquestación.
+- Diseñar pasos, compensaciones y orden inverso de rollback.
+- Manejar fallos de compensación y estados parcialmente compensados.
+- Integrar Spring Boot, PostgreSQL y Temporal sin mezclar transacciones locales con Workflow state.
 
-## Ejercicios prácticos
+## Cronograma de la clase
 
-### Ejercicio 1: Guiado - Saga basada en Coreografía (Paso a paso)
-**Descripción:** Implementaremos un flujo simple de creación de pedidos donde el servicio de `OrderService` emite un evento, y el `InventoryService` lo escucha para reservar stock. Si falla, emite un evento de fallo para que `OrderService` cancele el pedido.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–10 | Juego de estados parciales | Analizar qué revertir en cinco fallos. |
+| 10–35 | Transacciones distribuidas | Comparar 2PC, saga y coreografía. |
+| 35–60 | Demo Saga Temporal | Ejecutar flujo con fallo inducido. |
+| 60–80 | Ejercicios E01–E03 | Pasos y compensaciones. |
+| 80–95 | Receso | Preparar servicios stub. |
+| 95–120 | Fallos de compensación e idempotencia | Mostrar estado “requiere intervención”. |
+| 120–160 | Laboratorio E04–E06 | Saga completa. |
+| 160–185 | Desafíos E07–E08 | Outbox y child workflow. |
+| 185–195 | Cierre y tarea | Defensa de diseño de compensación. |
 
-**Pasos:**
-1. Crear dos microservicios en Spring Boot: `order-service` e `inventory-service`.
-2. Configurar Spring Cloud Stream o Kafka Template para la emisión de eventos.
-3. En `order-service`, crear un endpoint POST para iniciar un pedido en estado `PENDING` y emitir el evento `OrderCreated`.
-4. En `inventory-service`, escuchar `OrderCreated`. Si hay stock, emitir `InventoryReserved`. Si no, emitir `InventoryFailed`.
-5. En `order-service`, escuchar la respuesta y actualizar el estado del pedido a `APPROVED` o `CANCELLED`.
+## Ejercicios de clase
 
-**Asistencia de IA:**
-* *Prompt para Chat:* "Actúa como un experto en Spring Boot. Muéstrame paso a paso cómo configurar Spring Cloud Stream con Kafka para emitir un evento `OrderCreated` desde un servicio y escucharlo en otro."
-* *Prompt para Claude Code/Codex:* "Genera la configuración de `application.yml` y las clases productora y consumidora en Spring Boot para un sistema de mensajería pub/sub usando Kafka."
+### C12-E01 — Mapa de pasos
+**Especificación:** Definir pasos reserva-presupuesto-agenda-notificación y compensación de cada uno.
+**Criterios de aceptación:** Compensaciones son semánticas, no “rollback SQL remoto”.
+**Archivos involucrados:** `SagaSteps.java`
+**Comando para verificar:** `./mvnw test -Dtest=SagaStepsTest`
 
-### Ejercicio 2: Semi-guiado - Orquestación con un Coordinador Central
-**Descripción:** Cambiaremos el enfoque a Orquestación. Crearemos un `SagaOrchestrator` que coordine las llamadas REST o eventos a `PaymentService` e `InventoryService`.
+### C12-E02 — Saga mínima
+**Especificación:** Implementar dos pasos y compensar el primero si falla el segundo.
+**Criterios de aceptación:** Compensación registrada en orden seguro e idempotente.
+**Archivos involucrados:** `SagaWorkflowImpl.java`, `SagaActivities.java`
+**Comando para verificar:** `./mvnw test -Dtest=SagaWorkflowTest#testSagaMinima`
 
-**Pistas:**
-* Usa un patrón de máquina de estados (State Machine) o un servicio orquestador dedicado.
-* El orquestador debe llamar a `PaymentService`. Si el pago es exitoso, llama a `InventoryService`.
-* Si `InventoryService` falla, el orquestador debe ejecutar explícitamente una llamada de compensación a `PaymentService` para reembolsar el dinero.
+### C12-E03 — Fallo por etapa
+**Especificación:** Parametrizar fallo en cada paso y verificar estado final.
+**Criterios de aceptación:** Todos los recursos quedan liberados o marcados para intervención.
+**Archivos involucrados:** `SagaWorkflowImpl.java`, `SagaWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SagaWorkflowTest#testFalloPorEtapa`
 
-**Asistencia de IA:**
-* *Prompt para Chat:* "Tengo un orquestador en Spring Boot que llama a dos servicios externos vía REST. ¿Cómo puedo implementar un mecanismo de compensación robusto si la segunda llamada falla, asegurando que la primera acción se revierta?"
-* *Prompt para Claude Code/Codex:* "Crea un servicio `OrderOrchestrator` en Java que use `RestTemplate` o `WebClient` para llamar a `/pay` y `/reserve`. Si `/reserve` devuelve error 500, implementa el bloque catch que llame a `/refund`."
+### C12-E04 — Compensación inestable
+**Especificación:** Hacer fallar liberación temporalmente y configurar retry diferente.
+**Criterios de aceptación:** No pierde necesidad de compensar; visibilidad del fallo.
+**Archivos involucrados:** `SagaWorkflowImpl.java`, `SagaActivities.java`
+**Comando para verificar:** `./mvnw test -Dtest=SagaWorkflowTest#testCompensacionInestable`
 
-### Ejercicio 3: Desafío - Flujo Complejo de E-commerce con Fallos Simulados
-**Descripción:** Diseña e implementa un flujo completo de compra que involucre 4 servicios: `Order`, `Payment`, `Inventory`, y `Shipping`.
+### C12-E05 — Doble cancelación
+**Especificación:** Compensar dos veces sin error ni efecto duplicado.
+**Criterios de aceptación:** Resultado estable ante repetición y concurrencia.
+**Archivos involucrados:** `SagaActivitiesImpl.java`, `SagaActivitiesTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SagaActivitiesTest#testDobleCancelacion`
 
-**Requisitos:**
-* Debes elegir entre Coreografía u Orquestación y justificar tu decisión.
-* Implementa un endpoint que permita simular fallos (ej. forzar que `Shipping` falle el 50% de las veces).
-* Asegúrate de que todas las transacciones de compensación (reembolso de pago, liberación de inventario) se ejecuten correctamente cuando ocurra un fallo en cualquier punto de la cadena.
-* Escribe tests de integración que validen tanto el "Happy Path" como los escenarios de compensación.
+### C12-E06 — Endpoint de operación
+**Especificación:** POST inicia saga y GET consulta estado/resultado.
+**Criterios de aceptación:** HTTP no espera indefinidamente; IDs correlacionados.
+**Archivos involucrados:** `SagaController.java`
+**Comando para verificar:** `./mvnw test -Dtest=SagaControllerTest`
 
-**Asistencia de IA:**
-* *Prompt para Chat:* "Quiero diseñar un patrón Saga para 4 microservicios (Order, Payment, Inventory, Shipping). ¿Cuáles son los pros y contras de usar Coreografía vs Orquestación para este caso específico? Ayúdame a diseñar el diagrama de secuencia para el escenario donde Shipping falla."
-* *Prompt para Claude Code/Codex:* "Escribe un test de integración en Spring Boot usando Testcontainers y WireMock que simule un flujo Saga completo donde el tercer servicio falla, verificando que los endpoints de compensación de los dos primeros servicios sean llamados."
+### C12-E07 — Contextos separados
+**Especificación:** Convertir reserva de recurso y presupuesto en child workflows.
+**Criterios de aceptación:** Task queues y ownership definidos.
+**Archivos involucrados:** `SagaWorkflowImpl.java`, `ResourceChildWorkflow.java`
+**Comando para verificar:** `./mvnw test -Dtest=SagaWorkflowTest#testChildWorkflows`
+
+### C12-E08 — Evento de completitud
+**Especificación:** Diseñar tabla outbox y publicador idempotente al finalizar saga.
+**Criterios de aceptación:** Evita commit DB + publish no atómico; clave de dedupe definida.
+**Archivos involucrados:** `OutboxService.java`, `OutboxTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=OutboxTest`
+
+## Tareas para el hogar
+
+### C12-T01 — Saga de asignación
+**Esfuerzo:** 60-90 min
+**Especificación:** Implementar saga de 4 pasos con 4 fallos inducibles y compensaciones.
+**Criterios de aceptación:** Estados finales documentados; no hay efectos duplicados.
+
+### C12-T02 — Panel de seguimiento
+**Esfuerzo:** 60-90 min
+**Especificación:** Exponer estado de saga, pasos completados y compensaciones desde Query/DB.
+**Criterios de aceptación:** No usa Query para I/O; combina fuentes en capa de consulta.
+
+### C12-T03 — Chaos script
+**Esfuerzo:** 60-90 min
+**Especificación:** Ejecutar 50 sagas con probabilidades de fallo y resumir resultados.
+**Criterios de aceptación:** Cero invariantes rotas; fallos pendientes identificables.
+
+### C12-T04 — ADR de consistencia
+**Esfuerzo:** 60-90 min
+**Especificación:** Comparar saga orquestada, coreografía y 2PC para el caso.
+**Criterios de aceptación:** Incluye operación, observabilidad y recuperación.
+
+## Cómo ejecutar
+1. Iniciar servidor Temporal localmente:
+   ```bash
+   temporal server start-dev
+   ```
+2. Ejecutar los tests:
+   ```bash
+   ./mvnw test
+   ```
+3. Ejecutar la aplicación Spring Boot:
+   ```bash
+   ./mvnw spring-boot:run
+   ```

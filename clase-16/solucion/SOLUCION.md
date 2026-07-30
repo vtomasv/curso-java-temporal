@@ -1,42 +1,180 @@
-# Clase 16 — Resolución paso a paso
+# Solución Clase 16 - Proyecto Integrador
 
-Esta guía explica una forma correcta y didáctica de resolver la clase centrada en **Proyecto integrador: diseño y arquitectura**. Debe leerse después de intentar los ejercicios de la carpeta `ejercicios/`, idealmente ejecutando pruebas y revisando cada cambio con apoyo de IA.
+Este documento contiene las soluciones a los ejercicios de código (E08) de la clase 16. Los ejercicios E01 a E07 son de diseño y planificación, por lo que sus entregables son documentos Markdown, diagramas y tableros de issues.
 
-## Paso 0. Preparación
+## C16-E08 — Camino mínimo (Walking Skeleton)
 
-Antes de comenzar, revisa el `README.md` de la clase, ejecuta el proyecto base y verifica que el entorno compile. Si la clase usa Spring Boot, ejecuta `mvn -q test` o `mvn -q compile` para validar dependencias. Si usa Temporal, asegúrate además de poder levantar un entorno local o al menos de contar con `temporal-testing` para pruebas en memoria.
+El objetivo de este ejercicio es tener un esqueleto funcional que conecte la API REST, la base de datos y Temporal.
 
-## Paso 1. Aterrizar el problema
+### 1. Implementar `SolicitudWorkflowImpl`
 
-Describe actores, objetivos, restricciones y eventos clave antes de pensar en clases o endpoints.
+El workflow debe orquestar el cambio de estados y llamar a las actividades correspondientes.
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+```java
+package com.sigeo.clase16.workflow;
 
-## Paso 2. Definir arquitectura y datos
+import io.temporal.activity.ActivityOptions;
+import io.temporal.workflow.Workflow;
+import java.time.Duration;
 
-Construye diagramas Mermaid coherentes con una solución multicapa y con flujos Temporal identificables.
+public class SolicitudWorkflowImpl implements SolicitudWorkflow {
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+    private String estado = "INICIADO";
 
-## Paso 3. Planificar iteraciones asistidas por IA
+    private final SolicitudActivities activities = Workflow.newActivityStub(
+            SolicitudActivities.class,
+            ActivityOptions.newBuilder()
+                    .setStartToCloseTimeout(Duration.ofSeconds(10))
+                    .build()
+    );
 
-Divide el proyecto en incrementos pequeños que puedan validarse con pruebas y revisiones.
+    @Override
+    public void procesarSolicitud(Long solicitudId) {
+        // 1. Actualizar estado a "PROCESANDO"
+        this.estado = "PROCESANDO";
+        
+        // 2. Llamar a la actividad guardarEstadoSolicitud
+        activities.guardarEstadoSolicitud(solicitudId, this.estado);
+        
+        // Simulamos un procesamiento
+        Workflow.sleep(Duration.ofSeconds(5));
+        
+        // 3. Actualizar estado a "COMPLETADO"
+        this.estado = "COMPLETADO";
+        
+        // 4. Llamar a la actividad guardarEstadoSolicitud
+        activities.guardarEstadoSolicitud(solicitudId, this.estado);
+    }
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+    @Override
+    public String getEstadoActual() {
+        return estado;
+    }
+}
+```
 
-## Errores frecuentes
+### 2. Implementar `SolicitudActivitiesImpl`
 
-| Error | Efecto | Cómo corregirlo |
-|---|---|---|
-| Empezar a programar sin diagrama | Se pierde visión de sistema | Diseñar primero contratos y componentes |
-| No definir criterios de aceptación | La IA produce entregables ambiguos | Fijar alcance verificable por iteración |
+La actividad debe interactuar con la base de datos para persistir el estado.
 
-## Cómo usar la IA en este ejercicio
+```java
+package com.sigeo.clase16.workflow;
 
-Un buen uso de la IA en esta clase consiste en pedir **explicaciones justificadas**, revisiones de diseño y ayuda de depuración sobre fragmentos pequeños. Tres prompts útiles son los siguientes:
+import com.sigeo.clase16.domain.Solicitud;
+import com.sigeo.clase16.repository.SolicitudRepository;
+import org.springframework.stereotype.Component;
 
-> "Estoy resolviendo la clase y quiero implementar esta parte sin perder la arquitectura. Te comparto mi código actual y el objetivo. Propón el siguiente cambio mínimo y explícame por qué es mejor que dos alternativas."
+@Component
+public class SolicitudActivitiesImpl implements SolicitudActivities {
 
-> "Este test falla con el siguiente error. Antes de darme un fix, enumera las tres causas más probables y cómo verificar cada una desde Java/Maven."
+    private final SolicitudRepository repository;
 
-> "Revisa este código como si fueras un profesor de desarrollo de software: identifica problemas de diseño, de legibilidad y de pruebas, y proponme un plan de mejora en tres pasos."
+    public SolicitudActivitiesImpl(SolicitudRepository repository) {
+        this.repository = repository;
+    }
+
+    @Override
+    public void guardarEstadoSolicitud(Long solicitudId, String estado) {
+        Solicitud solicitud = repository.findById(solicitudId)
+                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada: " + solicitudId));
+        
+        solicitud.setEstado(estado);
+        repository.save(solicitud);
+    }
+}
+```
+
+### 3. Implementar `SolicitudController`
+
+El controlador debe iniciar el workflow y retornar los IDs.
+
+```java
+package com.sigeo.clase16.controller;
+
+import com.sigeo.clase16.domain.Solicitud;
+import com.sigeo.clase16.repository.SolicitudRepository;
+import com.sigeo.clase16.config.TemporalConfig;
+import com.sigeo.clase16.workflow.SolicitudWorkflow;
+import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowOptions;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/solicitudes")
+public class SolicitudController {
+
+    private final SolicitudRepository repository;
+    private final WorkflowClient workflowClient;
+
+    public SolicitudController(SolicitudRepository repository, WorkflowClient workflowClient) {
+        this.repository = repository;
+        this.workflowClient = workflowClient;
+    }
+
+    @PostMapping
+    public ResponseEntity<Map<String, String>> iniciarSolicitud(@RequestBody Map<String, String> request) {
+        String descripcion = request.getOrDefault("descripcion", "Sin descripción");
+        
+        // 1. Crear y guardar una nueva Solicitud en la BD con estado "CREADO"
+        Solicitud solicitud = new Solicitud(descripcion, "CREADO");
+        solicitud = repository.save(solicitud);
+        
+        // 2. Iniciar el workflow SolicitudWorkflow
+        String workflowId = "solicitud-" + solicitud.getId() + "-" + UUID.randomUUID().toString();
+        
+        SolicitudWorkflow workflow = workflowClient.newWorkflowStub(
+                SolicitudWorkflow.class,
+                WorkflowOptions.newBuilder()
+                        .setWorkflowId(workflowId)
+                        .setTaskQueue(TemporalConfig.TASK_QUEUE)
+                        .build()
+        );
+        
+        // Ejecución asíncrona
+        WorkflowClient.start(workflow::procesarSolicitud, solicitud.getId());
+        
+        // 3. Actualizar la solicitud con el workflowId
+        solicitud.setWorkflowId(workflowId);
+        repository.save(solicitud);
+        
+        // 4. Retornar el ID de la solicitud y el workflowId
+        return ResponseEntity.ok(Map.of(
+                "solicitudId", solicitud.getId().toString(),
+                "workflowId", workflowId
+        ));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Solicitud> getSolicitud(@PathVariable Long id) {
+        return repository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @GetMapping("/{id}/workflow-estado")
+    public ResponseEntity<Map<String, String>> getWorkflowEstado(@PathVariable Long id) {
+        return repository.findById(id).map(solicitud -> {
+            if (solicitud.getWorkflowId() == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "La solicitud no tiene un workflow asociado"));
+            }
+            
+            SolicitudWorkflow workflow = workflowClient.newWorkflowStub(
+                    SolicitudWorkflow.class,
+                    solicitud.getWorkflowId()
+            );
+            
+            String estado = workflow.getEstadoActual();
+            
+            return ResponseEntity.ok(Map.of(
+                    "solicitudId", id.toString(),
+                    "workflowId", solicitud.getWorkflowId(),
+                    "estadoWorkflow", estado
+            ));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+}
+```

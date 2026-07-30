@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: sigeo-integrador
+  profiles:
+    active: h2
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: sigeo
+    password: sigeo_dev
+
+temporal:
+  target: localhost:7233
+  namespace: default
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+---
+spring:
+  config:
+    activate:
+      on-profile: h2
+  datasource:
+    url: jdbc:h2:mem:sigeodb;DB_CLOSE_DELAY=-1
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sigeo
+    username: sigeo
+    password: sigeo_dev
+    driver-class-name: org.postgresql.Driver

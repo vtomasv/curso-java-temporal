@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: sigeo-clase12
+  datasource:
+    url: jdbc:h2:mem:sigeo_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  temporal:
+    connection:
+      target: local
+    workers:
+      - task-queue: SAGA_TASK_QUEUE
+        name: saga-worker
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sigeo
+    username: sigeo
+    password: sigeo_dev
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update

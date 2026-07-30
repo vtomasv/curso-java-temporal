@@ -1,57 +1,110 @@
-# Clase 11: Patrones Avanzados en Temporal: Señales y Consultas
+# Clase 11: Interacción con Workflows: Signals, Queries, Updates, timers y Continue-As-New
 
-## Objetivos de la sesión
-* Comprender y aplicar el uso de `@SignalMethod` para enviar datos a un Workflow en ejecución de forma asíncrona.
-* Implementar `@QueryMethod` para consultar el estado interno de un Workflow sin modificar su historial ni su estado.
-* Utilizar `Workflow.await` para pausar la ejecución de un Workflow hasta que se cumpla una condición específica.
-* Diseñar e implementar timers duraderos (`Workflow.sleep` o timeouts en `await`) para manejar esperas prolongadas de forma resiliente.
-* Integrar señales, consultas y timers en casos de uso reales, como procesos de aprobación o carritos de compras.
+**Bloque:** Bloque 3 — Workflows resilientes y sistemas distribuidos  
+**Duración:** 4 horas
 
-## Cronograma propuesto (4 horas)
-* **00:00 - 00:45**: Introducción a Señales (`@SignalMethod`) y Consultas (`@QueryMethod`). Conceptos, diferencias y casos de uso.
-* **00:45 - 01:30**: Ejercicio Guiado: Implementación de un Workflow interactivo básico con señales y consultas.
-* **01:30 - 01:45**: Descanso.
-* **01:45 - 02:30**: Uso de `Workflow.await` y Timers duraderos. Manejo de tiempos de espera, condiciones y reinicio de timers.
-* **02:30 - 03:15**: Ejercicio Semi-guiado: Proceso de aprobación de documentos con límite de tiempo (timeout).
-* **03:15 - 04:00**: Ejercicio Desafío: Sistema de carrito de compras abandonado con notificaciones y cierre automático.
+## Objetivos de Aprendizaje
+- Usar Signals para eventos asíncronos, Queries para lectura y Updates para operaciones confirmadas.
+- Validar mensajes y evitar condiciones de carrera lógicas en el Workflow.
+- Esperar condiciones con `Workflow.await` y usar timers durables.
+- Orquestar Child Workflows y manejar su política de cierre.
+- Aplicar Continue-As-New para limitar Event History y preservar estado esencial.
 
-## Ejercicios prácticos
+## Cronograma de la Clase
 
-### Ejercicio 1: Guiado - Contador Interactivo con Señales y Consultas
-**Descripción:** Crear un Workflow que mantenga un contador numérico interno. El Workflow debe permitir incrementar o decrementar el contador mediante señales, y consultar el valor actual en cualquier momento mediante una consulta. El Workflow se mantendrá en ejecución hasta que reciba una señal explícita de "finalizar".
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–10 | Clasificación de comandos | Elegir Signal/Query/Update para 8 casos. |
+| 10–35 | Message passing | Explicar garantías y restricciones. |
+| 35–60 | Demo aprobación con Signal/Query | Interactuar desde CLI/cliente. |
+| 60–80 | Ejercicios E01–E03 | Signals, queries y await. |
+| 80–95 | Receso | Preparar Updates y child workflow. |
+| 95–120 | Updates, hijos y CAN | Mostrar validación y continuidad. |
+| 120–160 | Laboratorio E04–E06 | Proceso interactivo completo. |
+| 160–185 | Desafíos E07–E08 | Deduplicación e history. |
+| 185–195 | Cierre y tarea | Ticket: justificar Signal vs Update. |
 
-**Pasos:**
-1. Define la interfaz del Workflow (`ContadorWorkflow`) con un método principal `@WorkflowMethod`, métodos para modificar el contador `@SignalMethod` (ej. `incrementar`, `decrementar`, `finalizar`), y un método para obtener el valor `@QueryMethod` (ej. `obtenerValor`).
-2. Implementa la interfaz. Usa una variable local entera para el contador y un booleano `activo` para controlar el ciclo de vida del Workflow.
-3. En el método principal, usa `Workflow.await(() -> !activo)` para mantener el Workflow en ejecución hasta que la variable cambie a falso (cuando se reciba la señal de finalizar).
-4. Crea un iniciador (Starter) que inicie el Workflow, envíe un par de señales de incremento, consulte el valor imprimiéndolo en consola, y luego envíe la señal de finalizar.
+## Ejercicios de Clase
 
-**Asistencia de IA:**
-* *Prompt para Chat:* "Actúa como un experto en Temporal con Java. Ayúdame a crear un Workflow paso a paso que tenga un contador interno. Necesito usar `@SignalMethod` para cambiar el valor y `@QueryMethod` para leerlo. Dame primero la interfaz y explícame cada anotación."
-* *Prompt para Claude Code / Codex:* "Genera una interfaz de Temporal Workflow en Java llamada `ContadorWorkflow` con un `@WorkflowMethod` void iniciar(), tres `@SignalMethod` (incrementar, decrementar, finalizar) y un `@QueryMethod` int obtenerValor(). Luego genera su implementación usando `Workflow.await` para mantenerlo vivo hasta recibir la señal de finalizar."
+### C11-E01 — Aprobar o rechazar
+**Especificación:** Agregar señales `approve` y `reject` a un Workflow en espera.
+**Criterios de aceptación:** Ignora transición inválida de forma definida; resultado durable.
+**Archivos involucrados:** `ApprovalWorkflow.java`, `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testApproveSignal`
 
-### Ejercicio 2: Semi-guiado - Proceso de Aprobación de Documentos con Timeout
-**Descripción:** Implementar un Workflow que simule la revisión de un documento importante. El Workflow debe esperar la aprobación o rechazo de un supervisor mediante una señal. Si el supervisor no responde en un tiempo determinado (ej. 2 minutos simulados), el Workflow debe auto-rechazar el documento usando un timer duradero.
+### C11-E02 — Estado consultable
+**Especificación:** Exponer estado, historial resumido y deadline sin modificar Workflow.
+**Criterios de aceptación:** Query no hace I/O ni muta estado.
+**Archivos involucrados:** `ApprovalWorkflow.java`, `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testQueryState`
 
-**Pistas:**
-* Necesitarás un `@SignalMethod` para recibir la decisión (ej. un String que sea "APROBADO" o "RECHAZADO").
-* En tu método principal, puedes usar la versión de `await` que acepta un timeout: `Workflow.await(Duration.ofMinutes(2), () -> decision != null)`.
-* Recuerda que `Workflow.await` con timeout devuelve `true` si la condición se cumplió (llegó la señal), o `false` si el tiempo expiró. Usa este valor de retorno booleano para saber si fue un timeout y actuar en consecuencia.
-* Crea un Worker y un Starter para probar los dos escenarios: enviando la señal a tiempo, y dejando que expire el tiempo.
+### C11-E03 — Vencimiento automático
+**Especificación:** Esperar decisión o timeout, lo que ocurra primero.
+**Criterios de aceptación:** No usar `Thread.sleep`; resultado correcto en ambos caminos.
+**Archivos involucrados:** `ApprovalWorkflow.java`, `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testTimeout`
 
-**Asistencia de IA:**
-* *Prompt para Chat:* "Estoy haciendo un Workflow en Temporal (Java) que espera una señal de aprobación. ¿Cómo puedo usar `Workflow.await` con un timeout de 2 minutos para que, si no llega la señal, el estado cambie a 'RECHAZADO' automáticamente? Dame un ejemplo del bloque de código del método principal."
-* *Prompt para Claude Code / Codex:* "Crea un Workflow de Temporal llamado `AprobacionWorkflow`. Debe tener un `@SignalMethod` para recibir un String 'decision'. En el `@WorkflowMethod`, espera hasta 2 minutos por la decisión usando `Workflow.await`. Si expira el tiempo, asigna 'TIMEOUT_RECHAZADO' a la decisión y retorna ese valor."
+### C11-E04 — Cambiar prioridad confirmado
+**Especificación:** Update valida estado y retorna nueva prioridad.
+**Criterios de aceptación:** Entrada inválida rechazada antes de handler; respuesta confirmada.
+**Archivos involucrados:** `ApprovalWorkflow.java`, `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testUpdatePriority`
 
-### Ejercicio 3: Desafío - Carrito de Compras Abandonado
-**Descripción:** Diseñar e implementar un Workflow para gestionar un carrito de compras de e-commerce. El Workflow debe permitir agregar items (señal), remover items (señal), consultar los items actuales (consulta) y realizar el checkout (señal). Si el carrito permanece inactivo (sin recibir señales de agregar/remover) por más de 1 hora (puedes usar 1 minuto para facilitar las pruebas), el Workflow debe enviar un correo recordatorio (simulado mediante una Actividad) y, si pasa otra hora sin actividad, vaciar el carrito y terminar.
+### C11-E05 — Comando repetido
+**Especificación:** Incluir `commandId` y evitar procesar dos veces misma aprobación.
+**Criterios de aceptación:** Reintento del cliente no duplica transición.
+**Archivos involucrados:** `ApprovalWorkflow.java`, `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testDeduplication`
 
-**Requisitos:**
-* Interfaz de Workflow con múltiples `@SignalMethod` y al menos un `@QueryMethod` para devolver la lista de productos.
-* Uso avanzado de `Workflow.await` y manejo de estado interno (lista de items y marca de tiempo de la última actualización).
-* Integración con una Actividad (`NotificacionActivity.enviarRecordatorio()`).
-* Lógica para reiniciar el timer de inactividad cada vez que se modifica el carrito (el Workflow no debe expirar si el usuario sigue agregando productos).
+### C11-E06 — Revisión especializada
+**Especificación:** Delegar evaluación técnica a child workflow con timeout/cancelación.
+**Criterios de aceptación:** Parent close policy explícita; errores propagados o manejados.
+**Archivos involucrados:** `ApprovalWorkflowImpl.java`, `TechnicalReviewWorkflow.java`, `TechnicalReviewWorkflowImpl.java`, `ApprovalWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testChildWorkflow`
 
-**Asistencia de IA:**
-* *Prompt para Chat:* "Tengo un desafío complejo en Temporal con Java. Necesito modelar un carrito de compras como un Workflow. El problema es que necesito un timer de inactividad de 1 hora que se reinicie cada vez que el usuario agrega o quita un producto mediante una señal. ¿Cuál es el mejor patrón o estructura en Java para reiniciar este timer de inactividad dentro del Workflow usando `Workflow.await`?"
-* *Prompt para Claude Code / Codex:* "Implementa un Workflow de Temporal en Java para un carrito de compras. Usa `@SignalMethod` para agregar/quitar items y `@QueryMethod` para ver el carrito. Implementa un bucle en el `@WorkflowMethod` que espere inactividad usando `Workflow.await` con timeout. Si el timeout ocurre, llama a una Actividad para enviar un recordatorio. Asegúrate de que el timer de inactividad se reinicie correctamente si llegan nuevas señales."
+### C11-E07 — Bandeja de eventos larga
+**Especificación:** Tras N eventos, continuar como nuevo conservando estado compacto.
+**Criterios de aceptación:** History se reinicia; estado esencial preservado.
+**Archivos involucrados:** `LongRunningWorkflow.java`, `LongRunningWorkflowImpl.java`, `LongRunningWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=LongRunningWorkflowTest`
+
+### C11-E08 — Aprobación vs expiración
+**Especificación:** Simular señal cercana al timer y definir política determinista.
+**Criterios de aceptación:** Resultado consistente con regla explícita.
+**Archivos involucrados:** `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testRaceCondition`
+
+## Tareas para el Hogar
+
+### C11-T01 — Aprobación multinivel
+**Especificación:** Workflow con dos niveles, Signals/Updates, Queries y vencimientos por etapa.
+**Entregable:** Módulo y 20 pruebas.
+**Criterios:** Interacciones idempotentes; estados exhaustivos.
+
+### C11-T02 — Cliente operativo
+**Especificación:** CLI o endpoints Spring para iniciar, consultar, actualizar, señalar y cancelar Workflows.
+**Entregable:** Cliente y colección HTTP.
+**Criterios:** Errores de workflow no se traducen a 500 genérico.
+
+### C11-T03 — Continue-As-New controlado
+**Especificación:** Procesar 500 eventos simulados y continuar cada 50; registrar runs.
+**Entregable:** Informe y tests.
+**Criterios:** No acumula estado innecesario; búsquedas siguen siendo posibles.
+
+### C11-T04 — Contrato de mensajes
+**Especificación:** Definir versionado, commandId, validación y compatibilidad de Signals/Updates.
+**Entregable:** `docs/workflow-messages.md`.
+**Criterios:** Incluye estrategia para clientes antiguos.
+
+## Cómo ejecutar
+
+Para ejecutar los tests de los ejercicios:
+```bash
+cd ejercicios
+./mvnw clean test
+```
+
+Para ejecutar el servidor de Temporal localmente (si deseas probar con un cliente real):
+```bash
+temporal server start-dev
+```

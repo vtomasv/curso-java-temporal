@@ -1,0 +1,3 @@
+-- TODO(C06-E08): Agregar campo 'departamento' a la tabla solicitud
+-- Paso 1: Agregar columna permitiendo nulos
+-- Paso 2: Actualizar registros existentes con un valor por defecto

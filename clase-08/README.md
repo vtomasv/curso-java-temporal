@@ -1,56 +1,112 @@
-# Clase 08: Seguridad en Aplicaciones Web
+# Clase 08: Spring Security y JWT
 
-## Objetivos de la sesión
-- Comprender los fundamentos de la seguridad en aplicaciones web y la arquitectura de Spring Security.
-- Implementar autenticación y autorización sin estado utilizando JSON Web Tokens (JWT).
-- Configurar el control de acceso basado en roles (RBAC) para proteger endpoints específicos.
-- Integrar los conocimientos adquiridos para la Evaluación Sumativa 1.
+**Bloque:** Seguridad y Autorización
+**Duración:** 4 horas
 
-## Cronograma propuesto (4 horas)
-- **0:00 - 1:00:** Introducción a Spring Security, conceptos de autenticación vs autorización, y fundamentos de JWT.
-- **1:00 - 2:00:** Ejercicio Guiado: Configuración inicial de Spring Security y generación de tokens JWT.
-- **2:00 - 2:45:** Ejercicio Semi-guiado: Implementación de filtros de seguridad para validación de tokens.
-- **2:45 - 3:15:** Ejercicio Desafío: Implementación de roles y protección de rutas.
-- **3:15 - 4:00:** Evaluación Sumativa 1 (Aplicación práctica integradora).
+## Objetivos de Aprendizaje
+- Comprender el modelo de amenaza de SIGEO y aplicar principios de seguridad.
+- Configurar Spring Security (SecurityFilterChain, PasswordEncoder, gestión de usuarios).
+- Diferenciar entre sesión web/CSRF y API token/JWT.
+- Implementar OAuth2 Resource Server para validación de JWT (issuer, audience, expiración).
+- Aplicar autorización basada en roles y propiedad (ownership) mediante `@PreAuthorize`.
+- Configurar CORS, headers de seguridad y prevenir vulnerabilidades comunes.
+- Gestionar secretos de forma segura y realizar pruebas de seguridad.
 
-## Ejercicios prácticos
+## Cronograma de la Clase
 
-### Ejercicio 1: Guiado - Configuración básica de Spring Security y Login
-**Descripción:** En este ejercicio, configuraremos Spring Security en un proyecto existente y crearemos un endpoint de login que devuelva un token JWT básico tras validar las credenciales.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–10 | Threat modeling rápido | Identificar activos, actores y abusos. |
+| 10–35 | Fundamentos y filtro de seguridad | Dibujar autenticación y autorización. |
+| 35–60 | Demo SecurityFilterChain | Proteger endpoints y generar usuarios de laboratorio. |
+| 60–80 | Ejercicios E01–E03 | 401/403, password y roles. |
+| 80–95 | Receso | Preparar tokens de prueba. |
+| 95–120 | JWT, CSRF, CORS y ownership | Mostrar ataques simples controlados. |
+| 120–160 | Laboratorio E04–E06 | Securizar API y vistas. |
+| 160–185 | Desafíos E07–E08 | Auditoría y secretos. |
+| 185–195 | Cierre y tarea | Entregar threat model actualizado. |
 
-**Pasos a seguir:**
-1. Añadir las dependencias de `spring-boot-starter-security` y la librería `jjwt` en el archivo `pom.xml`.
-2. Crear una clase de configuración `SecurityConfig` anotada con `@Configuration` y `@EnableWebSecurity`.
-3. Configurar el `SecurityFilterChain` para deshabilitar CSRF, establecer la política de creación de sesiones como `STATELESS` y permitir el acceso público al endpoint `/api/auth/login`.
-4. Crear un `AuthController` con un método POST que reciba credenciales, las valide y retorne un token JWT generado.
+## Ejercicios de Clase
 
-**Asistencia de IA:**
-- *Prompt para modo Chat (ChatGPT/Claude):* "Actúa como un profesor de Spring Boot. Explícame paso a paso cómo configurar `SecurityFilterChain` en Spring Boot 3 para una API REST sin estado (stateless) permitiendo acceso público solo a `/api/auth/login`."
-- *Prompt para IDE/Agente (Claude Code/Codex):* "Añade las dependencias necesarias para Spring Security y JWT en el pom.xml. Luego, crea la clase SecurityConfig básica con la configuración stateless."
+### C08-E01 — Denegar por defecto
+**Especificación:** Configurar rutas públicas mínimas y proteger el resto.
+**Criterios de Aceptación:** Cualquier endpoint no declarado explícitamente debe quedar protegido. No usar `permitAll` global.
+**Archivos involucrados:** `SecurityConfig.java`
+**Comando para verificar:** `./mvnw test -Dtest=SecurityConfigTest#testDefaultDeny`
 
-### Ejercicio 2: Semi-guiado - Filtro de validación JWT
-**Descripción:** Implementar un filtro personalizado que intercepte las peticiones HTTP, extraiga el token JWT del header `Authorization` y valide su firma antes de permitir el acceso a los controladores protegidos.
+### C08-E02 — Usuarios de laboratorio
+**Especificación:** Crear usuarios en memoria con BCrypt y roles distintos sin contraseñas en texto plano en el código final.
+**Criterios de Aceptación:** Passwords codificados; secretos externalizados (usar variables de entorno o properties).
+**Archivos involucrados:** `SecurityConfig.java`, `application.yaml`
+**Comando para verificar:** `./mvnw test -Dtest=SecurityConfigTest#testLabUsers`
 
-**Pistas para resolverlo:**
-- Necesitarás crear una clase que extienda de `OncePerRequestFilter`.
-- Sobrescribe el método `doFilterInternal`.
-- Recuerda extraer el token del header leyendo la cabecera `Authorization` y quitando el prefijo "Bearer ".
-- Usa la librería de JWT para validar el token. Si es válido, crea un objeto `UsernamePasswordAuthenticationToken` y establécelo en el `SecurityContextHolder`.
-- No olvides registrar este filtro en tu `SecurityConfig` antes del `UsernamePasswordAuthenticationFilter`.
+### C08-E03 — Roles por operación
+**Especificación:** Configurar autorización: LECTOR consulta, OPERADOR crea y SUPERVISOR aprueba.
+**Criterios de Aceptación:** Matriz de permisos completa y consistente.
+**Archivos involucrados:** `SecurityConfig.java`, `SolicitudController.java`
+**Comando para verificar:** `./mvnw test -Dtest=RoleAuthorizationTest`
 
-**Asistencia de IA:**
-- *Prompt para modo Chat (ChatGPT/Claude):* "Tengo que crear un filtro JWT extendiendo `OncePerRequestFilter` en Spring Boot. ¿Puedes darme la estructura básica del método `doFilterInternal` y explicarme cómo extraer el token del header Authorization correctamente?"
-- *Prompt para IDE/Agente (Claude Code/Codex):* "Genera la clase JwtAuthenticationFilter que valide el token JWT usando la clave secreta definida en application.properties. Asegúrate de actualizar el SecurityContext si el token es válido."
+### C08-E04 — Resource server local
+**Especificación:** Validar JWT de laboratorio, verificando issuer, audience y expiración.
+**Criterios de Aceptación:** Rechaza tokens con firma, audience o expiración inválidos.
+**Archivos involucrados:** `SecurityConfig.java`, `application.yaml`
+**Comando para verificar:** `./mvnw test -Dtest=JwtValidationTest`
 
-### Ejercicio 3: Desafío - Control de acceso basado en roles (RBAC)
-**Descripción:** Modificar la aplicación para soportar múltiples roles (por ejemplo, `ROLE_USER` y `ROLE_ADMIN`). El token JWT debe incluir el rol del usuario, y la aplicación debe restringir el acceso a ciertos endpoints según este rol.
+### C08-E05 — Editar solo lo propio
+**Especificación:** Además del rol, verificar que el solicitante edite su propia solicitud (salvo el supervisor que puede editar cualquiera).
+**Criterios de Aceptación:** No confiar solo en el ID enviado por el cliente. Usar `@PreAuthorize` o lógica en el servicio.
+**Archivos involucrados:** `SolicitudService.java`, `MethodSecurityConfig.java`
+**Comando para verificar:** `./mvnw test -Dtest=OwnershipSecurityTest`
 
-**Requisitos:**
-- Modificar la lógica de generación del JWT para incluir un *claim* personalizado con el rol del usuario.
-- Actualizar el filtro JWT para leer el rol desde el token y asignarlo a la lista de `GrantedAuthority` del usuario autenticado.
-- Habilitar la seguridad a nivel de métodos usando `@EnableMethodSecurity`.
-- Crear dos endpoints de prueba: uno accesible por cualquier usuario autenticado y otro exclusivo para administradores usando `@PreAuthorize("hasRole('ADMIN')")`.
+### C08-E06 — CSRF y formulario
+**Especificación:** Proteger un formulario Thymeleaf con CSRF y demostrar el fallo si no se envía el token.
+**Criterios de Aceptación:** Token CSRF presente en el formulario; sesión y logout correctos.
+**Archivos involucrados:** `SecurityConfig.java`, `templates/formulario.html`, `WebController.java`
+**Comando para verificar:** `./mvnw test -Dtest=CsrfSecurityTest`
 
-**Asistencia de IA:**
-- *Prompt para modo Chat (ChatGPT/Claude):* "Quiero implementar control de acceso basado en roles (RBAC) con JWT en Spring Boot 3. ¿Cómo puedo incluir el rol del usuario como un claim en el token y luego leerlo en mi filtro para asignarlo a las autoridades de Spring Security?"
-- *Prompt para IDE/Agente (Claude Code/Codex):* "Modifica el servicio de generación de JWT para incluir el rol del usuario. Luego, habilita la seguridad por métodos y crea un endpoint `/api/admin/dashboard` protegido para que solo los usuarios con rol ADMIN puedan acceder."
+### C08-E07 — Escáner de secretos
+**Especificación:** Eliminar una clave accidental del repositorio, rotar el valor simulado y agregar prevención.
+**Criterios de Aceptación:** El secreto no permanece en los archivos actuales; el plan considera el historial de Git.
+**Archivos involucrados:** `application.yaml`, `SecretScannerReport.md` (crear)
+**Comando para verificar:** Revisión manual del reporte.
+
+### C08-E08 — Abuse cases
+**Especificación:** Ejecutar un checklist de pruebas: IDOR, mass assignment, errores verbosos, CORS y logs.
+**Criterios de Aceptación:** Cada hallazgo tiene severidad, evidencia y corrección documentada.
+**Archivos involucrados:** `security-review.md` (crear)
+**Comando para verificar:** Revisión manual del documento.
+
+## Tareas para el Hogar
+
+### C08-T01 — SIGEO seguro
+**Especificación:** Aplicar JWT/roles/ownership a toda la API y sesión segura a Thymeleaf.
+**Entregable y Aceptación:** Aplicación y 25 security tests. Matriz de acceso demostrable; secretos fuera del repo.
+
+### C08-T02 — Threat model formal
+**Especificación:** Crear DFD simple, trust boundaries y 10 amenazas STRIDE con mitigaciones.
+**Entregable y Aceptación:** `docs/threat-model.md`. Amenazas vinculadas a componentes reales.
+
+### C08-T03 — Prueba negativa
+**Especificación:** Construir colección de requests maliciosas y resultados esperados.
+**Entregable y Aceptación:** `security-tests.http` o colección Postman. Incluye 401, 403, 404 anti-enumeración, 400 y rate-limit conceptual.
+
+### C08-T04 — Política de datos
+**Especificación:** Clasificar datos del sistema y definir qué puede ir en logs, payloads y backups.
+**Entregable y Aceptación:** `docs/data-classification.md`. Incluye retención y minimización.
+
+## Cómo ejecutar
+
+Para correr los tests de la clase:
+```bash
+./mvnw test
+```
+
+Para levantar la aplicación con perfil H2 (por defecto):
+```bash
+./mvnw spring-boot:run
+```
+
+Para levantar la aplicación con PostgreSQL:
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
+```

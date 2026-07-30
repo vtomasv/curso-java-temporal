@@ -1,3 +1,0 @@
-# Arquitectura
-
-Sistema logístico.

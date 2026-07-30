@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Formulario Seguro</title>
+</head>
+<body>
+    <h1>Formulario de Prueba</h1>
+    
+    <div th:if="${param.success}">
+        <p>¡Formulario enviado con éxito!</p>
+    </div>
+
+    <!-- TODO(C08-E06): Proteger este formulario con CSRF -->
+    <form action="/formulario" method="post">
+        <label for="dato">Dato:</label>
+        <input type="text" id="dato" name="dato" required>
+        <button type="submit">Enviar</button>
+    </form>
+</body>
+</html>

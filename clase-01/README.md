@@ -1,57 +1,111 @@
-# Clase 01: Fundamentos de Java Moderno y Ecosistema
+# Clase 1: Java 25 LTS, ecosistema Java y entorno profesional
 
-## Objetivos de la sesión
-- Configurar el entorno de desarrollo para Java 21.
-- Comprender y aplicar los conceptos fundamentales de la Programación Orientada a Objetos (POO) en Java.
-- Utilizar características modernas de Java: Records y Pattern Matching.
-- Introducir el concepto de Virtual Threads para concurrencia ligera.
-- Integrar y utilizar agentes de Inteligencia Artificial (IA) como asistentes en el desarrollo de software.
+**Bloque:** Bloque 1 — Fundamentos de Java moderno  
+**Duración:** 4 horas
 
-## Cronograma propuesto
-- **Hora 1:** Configuración del entorno (JDK 21, IDE) y primeros pasos con agentes de IA. Repaso de POO.
-- **Hora 2:** Características modernas: Records y Pattern Matching. Ejemplos prácticos.
-- **Hora 3:** Introducción a la concurrencia moderna con Virtual Threads.
-- **Hora 4:** Desarrollo de ejercicios prácticos, resolución de dudas y uso de IA para refactorización y debugging.
+## Objetivos de Aprendizaje
 
-## Ejercicios prácticos
+- Instalar y verificar JDK 25 LTS, Git, Docker, Maven Wrapper y extensiones de Java para VS Code.
+- Explicar bytecode, JVM, JDK, classpath, módulos y empaquetado JAR/WAR a nivel introductorio.
+- Escribir programas con variables, tipos, operadores, control de flujo, métodos y entrada por consola.
+- Comparar el despliegue en servidores Jakarta EE open source (WildFly, Open Liberty, Payara) con aplicaciones Spring Boot autocontenidas.
+- Usar IA como asistente verificable: pedir, revisar, ejecutar pruebas y registrar el prompt utilizado.
 
-### Ejercicio 1: Guiado
-**Modelado de un Sistema de Biblioteca (Records y POO)**
-Vamos a crear un sistema básico para gestionar libros en una biblioteca utilizando `records` para modelar los datos y clases tradicionales para la lógica de negocio.
+## Cronograma de la Clase
 
-**Pasos:**
-1. Crea un `record` llamado `Libro` con los campos: `isbn` (String), `titulo` (String), `autor` (String) y `anioPublicacion` (int).
-2. Crea una clase `Biblioteca` que contenga una lista de libros (`List<Libro>`).
-3. Implementa métodos en `Biblioteca` para agregar un libro y buscar libros por autor.
-4. En el método `main`, instancia la biblioteca, agrega un par de libros y realiza una búsqueda.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–10 | Diagnóstico rápido y presentación del proyecto integrador | Aplicar 8 preguntas; identificar experiencia previa y restricciones de equipos. |
+| 10–35 | Exposición: ecosistema Java y versiones | Dibujar el flujo fuente→bytecode→JVM; comparar SE/Jakarta EE/Spring. |
+| 35–55 | Demostración de instalación y proyecto Maven | Verificar java --version, ./mvnw -v, ejecución y depuración. |
+| 55–80 | Microejercicios E01–E03 | Circular, exigir ejecución desde terminal y explicación del código. |
+| 80–95 | Receso | Resolver incidencias de instalación sin detener al grupo. |
+| 95–120 | Sintaxis y control de flujo | Live coding incremental; introducir switch expression. |
+| 120–160 | Laboratorio E04–E06 | Usar pruebas de aceptación simples y revisión por pares. |
+| 160–185 | Desafíos E07–E08 | Asignar extensiones a quienes terminen antes; no dar la solución completa. |
+| 185–195 | Cierre y tarea | Ticket: explicar JDK/JVM/JAR y mostrar un commit firmado por el alumno. |
 
-**Asistencia de IA:**
-- **Modo Chat (ChatGPT/Claude):** "Actúa como un profesor de Java. Explícame paso a paso cómo crear un `record` en Java 21 para representar un Libro y cómo se diferencia de una clase tradicional (POJO)."
-- **Instrucciones para Claude Code/Codex:** "Genera un record `Libro` con isbn, titulo, autor y anioPublicacion. Luego, crea una clase `Biblioteca` con una lista de libros y métodos para agregar y buscar por autor."
+## Ejercicios de Clase
 
-### Ejercicio 2: Semi-guiado
-**Procesamiento de Formas con Pattern Matching**
-Implementa un sistema que calcule el área de diferentes formas geométricas utilizando *Pattern Matching* para `switch` (característica de Java 21).
+### C01-E01 — Auditoría del entorno
+**Especificación:** Crear un script o documento que capture versiones de Java, Maven Wrapper, Git y Docker, y valide que el proyecto compila.
+**Entregable y aceptación:** `env-report.md` y salida de `./mvnw test`. Todas las herramientas verificadas; sin rutas personales ni secretos.
+**Archivos involucrados:** `env-report.md`
+**Comando para verificar:** `./mvnw test`
 
-**Pistas:**
-- Crea una interfaz sellada (`sealed interface`) llamada `Forma` que permita las implementaciones `Circulo` y `Rectangulo`.
-- `Circulo` y `Rectangulo` pueden ser `records`.
-- Crea un método `calcularArea(Forma forma)` que use un `switch` con *Pattern Matching* para devolver el área correspondiente.
+### C01-E02 — Conversor de unidades
+**Especificación:** Aplicación de consola que convierta temperatura y distancia, con validación de opción y formato de salida estable.
+**Entregable y aceptación:** `ConversorUnidades.java` y tres ejecuciones de ejemplo. Cubre entradas válidas, opción desconocida y redondeo definido.
+**Archivos involucrados:** `ConversorUnidades.java`, `ConversorUnidadesTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ConversorUnidadesTest`
 
-**Asistencia de IA:**
-- **Modo Chat:** "Tengo una interfaz sellada `Forma` en Java 21 con implementaciones `Circulo` y `Rectangulo`. ¿Cómo puedo escribir un método usando 'switch pattern matching' para calcular el área dependiendo del tipo de forma?"
-- **Instrucciones para Claude Code/Codex:** "Completa este método `calcularArea(Forma forma)` usando switch pattern matching de Java 21 para manejar los casos de Circulo y Rectangulo."
+### C01-E03 — Clasificador de prioridad
+**Especificación:** Usar switch expression para convertir un código 1–5 en prioridad y plazo máximo.
+**Entregable y aceptación:** Método `priorityFor(int)` y pruebas parametrizadas mínimas. No usar cadena de if; lanza error controlado fuera de rango.
+**Archivos involucrados:** `ClasificadorPrioridad.java`, `ClasificadorPrioridadTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ClasificadorPrioridadTest`
 
-### Ejercicio 3: Desafío
-**Servidor Concurrente con Virtual Threads**
-Crea un simulador de un servidor web que procese múltiples peticiones de forma concurrente. El objetivo es demostrar la eficiencia de los *Virtual Threads* frente a los hilos tradicionales (Platform Threads).
+### C01-E04 — Solicitud operativa
+**Especificación:** Definir un record `Solicitud` con id, solicitante, descripción, prioridad y fecha; imprimir resumen legible.
+**Entregable y aceptación:** Record, factoría y demo. Inmutabilidad; validación de campos obligatorios.
+**Archivos involucrados:** `Solicitud.java`, `SolicitudTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SolicitudTest`
 
-**Requisitos:**
-- Simula una tarea que tome tiempo (ej. `Thread.sleep(1000)`).
-- Lanza 10,000 tareas concurrentes.
-- Implementa la solución primero usando un `ExecutorService` tradicional (ej. `Executors.newFixedThreadPool`) y mide el tiempo.
-- Luego, implementa la misma solución usando `Executors.newVirtualThreadPerTaskExecutor()` y compara el rendimiento y uso de recursos.
+### C01-E05 — De script a métodos
+**Especificación:** Recibir un programa monolítico y separar lectura, validación, cálculo y presentación.
+**Entregable y aceptación:** Commit antes/después y explicación de responsabilidades. Métodos pequeños; no duplicación; comportamiento preservado.
+**Archivos involucrados:** `ProcesadorMonolitico.java`, `ProcesadorMonoliticoTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ProcesadorMonoliticoTest`
 
-**Asistencia de IA:**
-- **Modo Chat:** "Quiero entender cómo funcionan los Virtual Threads en Java 21. ¿Puedes darme un ejemplo de cómo lanzar 10,000 tareas concurrentes usando `Executors.newVirtualThreadPerTaskExecutor()` y explicar por qué es mejor que usar un ThreadPool tradicional para tareas bloqueantes?"
-- **Instrucciones para Claude Code/Codex:** "Escribe un programa en Java 21 que compare el tiempo de ejecución de 10,000 tareas (cada una con un sleep de 1 segundo) usando un FixedThreadPool de 100 hilos vs un VirtualThreadPerTaskExecutor."
+### C01-E06 — Menú SIGEO v0
+**Especificación:** Construir menú alta/listado/búsqueda/salida usando una lista en memoria y bucle de aplicación.
+**Entregable y aceptación:** Proyecto ejecutable con datos de ejemplo. No termina ante entrada inválida; salida consistente.
+**Archivos involucrados:** `MenuSigeo.java`, `MenuSigeoTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=MenuSigeoTest`
+
+### C01-E07 — Empaquetado reproducible
+**Especificación:** Configurar manifest y generar JAR ejecutable; ejecutar fuera del IDE.
+**Entregable y aceptación:** JAR y comando documentado. Funciona desde terminal limpia usando Maven Wrapper.
+**Archivos involucrados:** `pom.xml`
+**Comando para verificar:** `./mvnw clean package && java -jar target/ejercicios-1.0-SNAPSHOT.jar`
+
+### C01-E08 — Auditor de código generado
+**Especificación:** Pedir a una IA dos soluciones al mismo problema, comparar legibilidad, errores y complejidad, y elegir una con argumentos.
+**Entregable y aceptación:** `ia-review.md` con prompt, diferencias y decisión. Incluye al menos un defecto detectado y una prueba añadida para cubrirlo.
+**Archivos involucrados:** `ia-review.md`
+**Comando para verificar:** Revisión manual del documento.
+
+## Tareas para el Hogar
+
+### C01-T01 — Calculadora de plazos
+**Especificación:** CLI con alta de fecha y prioridad que calcule fecha límite, evitando duplicación de lógica.
+**Entregable y aceptación:** Proyecto Maven y README con casos. Al menos 8 pruebas, incluyendo límites de mes.
+
+### C01-T02 — Mapa del ecosistema
+**Especificación:** Crear diagrama Mermaid que relacione Java SE, Jakarta EE, Spring Boot, servidor de aplicaciones, base de datos, Temporal y broker.
+**Entregable y aceptación:** `docs/ecosistema.md`. Flechas y responsabilidades correctas; máximo una página.
+
+### C01-T03 — Guía de instalación del equipo
+**Especificación:** Documentar instalación limpia en Windows o Linux con comandos de verificación y solución de 3 fallos frecuentes.
+**Entregable y aceptación:** `docs/setup.md`. Reproducible por un compañero.
+
+### C01-T04 — Bitácora de IA
+**Especificación:** Resolver una kata adicional con IA y registrar prompt inicial, correcciones, pruebas y reflexión.
+**Entregable y aceptación:** `docs/ia-log-c01.md`. No se acepta solo código final; debe mostrar validación crítica.
+
+## Cómo Ejecutar
+
+Para compilar y ejecutar las pruebas de los ejercicios:
+```bash
+./mvnw clean test
+```
+
+Para empaquetar la aplicación:
+```bash
+./mvnw clean package
+```
+
+Para ejecutar el JAR generado (asegúrate de configurar la clase principal en el `pom.xml`):
+```bash
+java -jar target/ejercicios-1.0-SNAPSHOT.jar
+```

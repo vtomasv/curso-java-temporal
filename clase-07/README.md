@@ -1,63 +1,110 @@
-# Clase 07: Consultas Avanzadas y Transacciones
+# Clase 07: Transacciones, concurrencia, depuración web, pruebas y documentación viva
 
-## Objetivos de la sesión
-- Comprender y aplicar JPQL para realizar consultas personalizadas en bases de datos relacionales.
-- Utilizar Criteria API y Specifications para construir consultas dinámicas de forma programática y segura (type-safe).
-- Implementar paginación y ordenamiento de resultados para optimizar el rendimiento de las aplicaciones.
-- Dominar el uso de la anotación `@Transactional` para gestionar transacciones y asegurar la integridad de los datos.
-- Entender los conceptos de bloqueo (locking) optimista y pesimista para manejar la concurrencia.
+**Bloque:** Bloque 2 — Aplicaciones web y persistencia
+**Duración:** 4 h
 
-## Cronograma propuesto
-- **0:00 - 0:45**: Introducción a JPQL y consultas personalizadas con `@Query`.
-- **0:45 - 1:30**: Paginación y ordenamiento (`Pageable`, `Sort`).
-- **1:30 - 1:45**: Descanso.
-- **1:45 - 2:30**: Criteria API y Specifications para consultas dinámicas.
-- **2:30 - 3:15**: Gestión de transacciones con `@Transactional` (propagación y aislamiento).
-- **3:15 - 4:00**: Concurrencia y Locking (Optimistic y Pessimistic Lock).
+## Objetivos de aprendizaje
+- Definir límites de transacción en servicios y explicar propagación/rollback.
+- Resolver lost update con bloqueo optimista y conocer casos de bloqueo pesimista.
+- Diseñar pruebas unitarias, de slice e integración sin sobreusar mocks.
+- Depurar una petición completa desde HTTP hasta SQL en VS Code.
+- Mantener OpenAPI, ADR, diagramas y runbooks como documentación viva.
 
-## Ejercicios prácticos
+## Cronograma de la clase
 
-### Ejercicio 1: Guiado
-**Tema:** Consultas con JPQL y Paginación.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–10 | Caso de carrera inicial | Simular dos aprobaciones concurrentes. |
+| 10–35 | Transacciones y propagación | Dibujar límites y mostrar rollback. |
+| 35–60 | Demo optimistic locking | Ejecutar dos requests y analizar excepción. |
+| 60–80 | Ejercicios E01–E03 | Transacciones y conflicto. |
+| 80–95 | Receso | Preparar suite de pruebas. |
+| 95–120 | Estrategia de pruebas | Comparar test unitario, slice e integración. |
+| 120–160 | Laboratorio E04–E06 | Debug y Testcontainers. |
+| 160–185 | Desafíos E07–E08 | OpenAPI, ADR y arquitectura. |
+| 185–195 | Cierre y tarea | Autoevaluación con Definition of Done. |
 
-**Descripción:** Crear un repositorio para una entidad `Producto` que permita buscar productos por nombre (ignorando mayúsculas/minúsculas), filtrar por rango de precios y devolver los resultados paginados.
+## Ejercicios de clase
 
-**Pasos:**
-1. Crear la entidad `Producto` con atributos `id`, `nombre`, `precio`, `categoria`.
-2. Crear el `ProductoRepository` extendiendo `JpaRepository`.
-3. Definir un método con `@Query` usando JPQL para buscar por nombre y rango de precio.
-4. Añadir el parámetro `Pageable` al método para habilitar la paginación.
-5. Crear un controlador REST para probar el endpoint pasando parámetros de página y tamaño.
+### C07-E01 — Rollback total
+**Especificación:** Servicio crea aprobación y actualiza solicitud; inducir fallo y verificar atomicidad.
+**Criterios de aceptación:** Tras fallo, ninguna escritura parcial queda confirmada.
+**Archivos involucrados:** `SolicitudService.java`, `SolicitudServiceIntegrationTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SolicitudServiceIntegrationTest#testRollbackTotal`
 
-**Asistencia de IA:**
-- *Prompt Chat:* "Actúa como un profesor de Spring Boot. Explícame paso a paso cómo crear una consulta JPQL con `@Query` que filtre por nombre y precio, y que además soporte paginación usando `Pageable`."
-- *Prompt Claude Code/Codex:* "Genera la entidad Producto y su repositorio JPA. Incluye un método con @Query en JPQL para buscar productos por nombre (LIKE) y precio entre dos valores, devolviendo un objeto Page<Producto>."
+### C07-E02 — Self-invocation
+**Especificación:** Reproducir método @Transactional llamado internamente que no obtiene semántica esperada.
+**Criterios de aceptación:** Identifica proxy como causa; solución no depende de “magia”.
+**Archivos involucrados:** `SelfInvocationService.java`, `SelfInvocationTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SelfInvocationTest`
 
-### Ejercicio 2: Semi-guiado
-**Tema:** Consultas dinámicas con Criteria API (Specifications).
+### C07-E03 — Conflicto optimista
+**Especificación:** Dos actualizaciones con la misma versión; traducir conflicto a 409.
+**Criterios de aceptación:** Una gana, otra recibe conflicto; no se pierden datos silenciosamente.
+**Archivos involucrados:** `Solicitud.java`, `SolicitudController.java`, `OptimisticLockingTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=OptimisticLockingTest`
 
-**Descripción:** Implementar un buscador avanzado de `Pedidos` donde los filtros (estado, fecha de inicio, fecha de fin, cliente) sean opcionales.
+### C07-E04 — Servicio de aprobación
+**Especificación:** Probar reglas con fake/mock mínimo y test data builder.
+**Criterios de aceptación:** No inicia Spring; casos de borde claros.
+**Archivos involucrados:** `AprobacionService.java`, `AprobacionServiceTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=AprobacionServiceTest`
 
-**Pistas:**
-- Usa la interfaz `JpaSpecificationExecutor` en tu repositorio.
-- Crea una clase `PedidoSpecification` con métodos estáticos que devuelvan `Specification<Pedido>`.
-- Combina las especificaciones usando `Specification.where().and()` dependiendo de qué parámetros no sean nulos.
+### C07-E05 — Controller aislado
+**Especificación:** @WebMvcTest para contrato, validación y Problem Details.
+**Criterios de aceptación:** Servicio simulado; cuerpo y headers verificados.
+**Archivos involucrados:** `SolicitudController.java`, `SolicitudControllerSliceTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SolicitudControllerSliceTest`
 
-**Asistencia de IA:**
-- *Prompt Chat:* "Tengo que implementar filtros dinámicos opcionales para una entidad Pedido en Spring Data JPA. ¿Me puedes dar un ejemplo de cómo usar `Specification` y `CriteriaBuilder` para lograr esto?"
-- *Prompt Claude Code/Codex:* "Crea una clase PedidoSpecification con métodos para filtrar por estado y rango de fechas. Luego actualiza PedidoRepository para que extienda JpaSpecificationExecutor y muestra cómo usarlo en un servicio."
+### C07-E06 — Flujo HTTP→DB
+**Especificación:** @SpringBootTest + Testcontainers para crear, consultar y actualizar.
+**Criterios de aceptación:** DB real; datos aislados; no depende de orden.
+**Archivos involucrados:** `SolicitudIntegrationTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SolicitudIntegrationTest`
 
-### Ejercicio 3: Desafío
-**Tema:** Transacciones y Locking.
+### C07-E07 — Petición lenta
+**Especificación:** Seguir request con correlationId y hallar consulta inesperada.
+**Criterios de aceptación:** Causa demostrada con stack/SQL; corrección medida.
+**Archivos involucrados:** `debug-trace.md`
+**Comando para verificar:** Revisión manual del archivo `debug-trace.md`
 
-**Descripción:** Simular un sistema de compra de entradas (tickets) para un evento. Debes asegurar que no se vendan más entradas de las disponibles cuando múltiples usuarios intentan comprar al mismo tiempo.
+### C07-E08 — OpenAPI + ADR
+**Especificación:** Documentar endpoint de transición y decisión de optimistic locking.
+**Criterios de aceptación:** Ejemplos 200/409; consecuencias y alternativa evaluada.
+**Archivos involucrados:** `openapi.yaml`, `001-optimistic-locking.md`
+**Comando para verificar:** Revisión manual de los archivos generados.
 
-**Requisitos:**
-- Entidad `Evento` con `capacidadMaxima` y `entradasVendidas`.
-- Método de compra que verifique la disponibilidad y actualice el contador.
-- Usar `@Transactional` y configurar un mecanismo de Locking (Optimista con `@Version` o Pesimista con `@Lock`).
-- Escribir un test que simule concurrencia (múltiples hilos) para verificar que no hay sobreventa.
+## Tareas para el hogar
 
-**Asistencia de IA:**
-- *Prompt Chat:* "Estoy diseñando un sistema de venta de entradas en Spring Boot y necesito evitar la sobreventa concurrente. ¿Cuáles son las diferencias entre Optimistic Locking y Pessimistic Locking en JPA, y cuál me recomiendas para este caso?"
-- *Prompt Claude Code/Codex:* "Implementa un servicio de compra de entradas con Spring Boot. Usa @Transactional y Pessimistic Locking en el repositorio para evitar condiciones de carrera. Genera también un test de integración usando ExecutorService para simular 100 peticiones concurrentes comprando la misma entrada."
+### C07-T01 — Suite por capas
+**Esfuerzo:** 60-90 min
+**Especificación:** Construir 12 unit tests, 8 slice tests y 5 integration tests para SIGEO.
+**Criterios de aceptación:** No duplicar el mismo caso en todas las capas sin propósito.
+
+### C07-T02 — Simulador de concurrencia
+**Esfuerzo:** 60-90 min
+**Especificación:** Script que lance 20 actualizaciones concurrentes y reporte éxitos/conflictos.
+**Criterios de aceptación:** No hay lost updates; resultados repetibles.
+
+### C07-T03 — Runbook de fallos
+**Esfuerzo:** 60-90 min
+**Especificación:** Documentar diagnóstico de app caída, DB no disponible, migración fallida y petición lenta.
+**Criterios de aceptación:** Comandos concretos, señales esperadas y escalamiento.
+
+### C07-T04 — Documentación viva
+**Esfuerzo:** 60-90 min
+**Especificación:** Actualizar diagrama C4/mermaid, OpenAPI y ADR con cambios reales.
+**Criterios de aceptación:** Cada artefacto enlaza al código relevante.
+
+## Cómo ejecutar
+1. Compilar y ejecutar pruebas:
+   ```bash
+   cd ejercicios
+   ./mvnw clean test
+   ```
+2. Ejecutar la aplicación (requiere base de datos PostgreSQL):
+   ```bash
+   cd ejercicios
+   docker compose up -d
+   ./mvnw spring-boot:run
+   ```

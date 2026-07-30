@@ -1,54 +1,126 @@
-# Clase 10: Actividades y Manejo de Fallos en Temporal
+# Clase 10: Activities, timeouts, reintentos, heartbeats e idempotencia
 
-## Objetivos de la sesión
-* Comprender el rol de las Actividades (Activities) dentro de los flujos de trabajo (Workflows) en Temporal.
-* Implementar y configurar correctamente las Actividades utilizando Java y Spring Boot.
-* Dominar el manejo de fallos mediante políticas de reintento (Retry Policies) y tiempos de espera (Timeouts).
-* Aprender a capturar y gestionar excepciones específicas de Temporal en Workflows y Actividades para construir sistemas resilientes.
+**Bloque:** Bloque 3 — Workflows resilientes y sistemas distribuidos
+**Duración:** 4 horas
 
-## Cronograma propuesto (4 horas)
-* **Hora 1:** Introducción a las Actividades en Temporal. Diferencias fundamentales entre Workflows (deterministas) y Actividades (no deterministas). Restricciones y buenas prácticas.
-* **Hora 2:** Configuración profunda de Timeouts (`ScheduleToClose`, `StartToClose`, `ScheduleToStart`, `Heartbeat`) y diseño de Retry Policies.
-* **Hora 3:** Manejo de excepciones. Propagación de errores desde Actividades hacia Workflows (`ActivityFailure`, `ApplicationFailure`).
-* **Hora 4:** Desarrollo de ejercicios prácticos, resolución de dudas, revisión de código y patrones de compensación de fallos.
+## Objetivos de Aprendizaje
+- Configurar Start-to-Close, Schedule-to-Close, Schedule-to-Start y Heartbeat timeouts según el caso.
+- Diseñar RetryOptions y clasificar errores no reintentables.
+- Hacer Activities idempotentes usando claves de negocio y registros de deduplicación.
+- Emitir heartbeats y reanudar progreso de actividades largas.
+- Aplicar cancelación y compensación sin reintentos infinitos.
 
-## Ejercicios prácticos
+## Cronograma de la Clase
 
-### Ejercicio 1: Guiado - Implementación de una Actividad Básica con Reintentos
-**Descripción:** En este ejercicio, crearemos un Workflow que invoca una Actividad encargada de simular una llamada a una API externa que falla de manera intermitente. Configuraremos una política de reintentos para que Temporal maneje los fallos automáticamente sin intervención manual.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–10 | Quiz de timeouts | Elegir timeout para 5 Activities. |
+| 10–35 | Semántica y reintentos | Dibujar intentos y backoff. |
+| 35–60 | Demo Activity inestable | Observar intentos en UI. |
+| 60–80 | Ejercicios E01–E03 | Timeouts, retry y error classification. |
+| 80–95 | Receso | Preparar Activity larga. |
+| 95–120 | Idempotencia y heartbeats | Mostrar deduplicación y resume. |
+| 120–160 | Laboratorio E04–E06 | Procesamiento de lote y cancelación. |
+| 160–185 | Desafíos E07–E08 | Métricas y fault matrix. |
+| 185–195 | Cierre y tarea | Revisión de política de fallos. |
 
-**Pasos:**
-1. Define la interfaz de la Actividad anotada con `@ActivityInterface` y un método `llamarApiExterna()`.
-2. Crea la implementación de la interfaz. Dentro del método, genera un número aleatorio y lanza una `RuntimeException` si el número es menor a 0.5 (simulando un fallo del 50%).
-3. En la implementación del Workflow, configura las `ActivityOptions` estableciendo un `StartToCloseTimeout` de 5 segundos y un `RetryOptions` con un máximo de 3 intentos (`setMaximumAttempts(3)`).
-4. Invoca la Actividad desde el Workflow, registra el Worker y observa los logs en la consola para ver cómo Temporal ejecuta los reintentos automáticamente.
+## Ejercicios de Clase
 
-**Asistencia de IA:**
-* *Modo Chat (ChatGPT/Claude):* "Soy principiante en Temporal con Java. ¿Puedes mostrarme paso a paso cómo definir una interfaz de Actividad y configurarle un RetryOptions básico dentro de un Workflow?"
-* *Claude Code / Codex:* "Genera una interfaz de Actividad en Temporal llamada `ExternalApiActivity` y su implementación en Spring Boot que lance una `RuntimeException` el 50% de las veces. Luego, crea un Workflow que la invoque con un máximo de 3 reintentos."
+### C10-E01 — Actividad HTTP acotada
+**Especificación:** Configurar timeouts para llamada externa de 2 s y simular latencias 1/3/10 s.
+**Entregable:** ActivityOptions y tabla de resultados.
+**Criterios de Aceptación:** Falla dentro de tiempo previsto; no depende de timeout infinito.
+**Archivos involucrados:** `HttpActivity.java`, `HttpWorkflow.java`, `HttpWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=HttpWorkflowTest`
 
-### Ejercicio 2: Semi-guiado - Manejo de Timeouts y Excepciones Personalizadas
-**Descripción:** Extiende el ejercicio anterior. Ahora la Actividad simulará un proceso largo (usando `Thread.sleep`). Debes configurar los timeouts adecuadamente y manejar una excepción de negocio específica que no debe ser reintentada.
+### C10-E02 — Servicio 503 temporal
+**Especificación:** Reintentar 503 con backoff y detener ante 400.
+**Entregable:** RetryOptions y tests.
+**Criterios de Aceptación:** 400 clasificado no reintentable; máximo de intentos explícito.
+**Archivos involucrados:** `ServiceActivity.java`, `ServiceWorkflow.java`, `ServiceWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ServiceWorkflowTest`
 
-**Pistas:**
-* Investiga y usa `ScheduleToCloseTimeout` y `StartToCloseTimeout`. ¿Cuál es la diferencia entre el tiempo de ejecución de la actividad y el tiempo total incluyendo encolamiento y reintentos?
-* Crea una excepción personalizada, por ejemplo, `InvalidRequestException`.
-* En `RetryOptions`, utiliza el método `setDoNotRetry` pasándole el tipo de tu excepción personalizada para evitar que Temporal reintente si se lanza este error específico.
-* Captura la excepción en el Workflow usando un bloque `try-catch` atrapando `ActivityFailure` y toma una acción compensatoria (ej. registrar el error o retornar un estado de fallo controlado).
+### C10-E03 — ApplicationFailure tipada
+**Especificación:** Emitir códigos VALIDATION, NOT_FOUND y PROVIDER_UNAVAILABLE.
+**Entregable:** Activity y manejo en Workflow.
+**Criterios de Aceptación:** Workflow decide según tipo, no parsea mensajes.
+**Archivos involucrados:** `TypedFailureActivity.java`, `TypedFailureWorkflow.java`, `TypedFailureWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=TypedFailureWorkflowTest`
 
-**Asistencia de IA:**
-* *Modo Chat:* "En el SDK de Java para Temporal, ¿cómo configuro un `RetryOptions` para que NO reintente si la Actividad lanza una excepción específica llamada `InvalidRequestException`?"
-* *Claude Code / Codex:* "Actualiza la configuración de `ActivityOptions` en mi código para incluir un `StartToCloseTimeout` de 2 segundos y evitar reintentos para la excepción `InvalidRequestException`. Muestra cómo capturar correctamente el `ActivityFailure` en el Workflow."
+### C10-E04 — Reserva única
+**Especificación:** Activity de reserva acepta idempotency key y evita duplicados al repetirse.
+**Entregable:** Repositorio fake y test de doble invocación.
+**Criterios de Aceptación:** Mismo comando retorna mismo resultado sin segunda reserva.
+**Archivos involucrados:** `ReservationActivity.java`, `ReservationWorkflow.java`, `ReservationWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ReservationWorkflowTest`
 
-### Ejercicio 3: Desafío - Sistema de Procesamiento de Pagos con Compensación (Saga Pattern Básico)
-**Descripción:** Diseña e implementa un Workflow de procesamiento de pagos de comercio electrónico que involucre tres Actividades: `reservarInventario`, `procesarPago` y `confirmarOrden`. Si `procesarPago` falla de forma definitiva (después de agotar sus reintentos o por un error fatal), el Workflow debe ejecutar una Actividad de compensación llamada `cancelarReservaInventario`.
+### C10-E05 — Procesamiento por páginas
+**Especificación:** Procesar 1000 registros por páginas, heartbeat de último offset y reanudar.
+**Entregable:** Activity y prueba de interrupción.
+**Criterios de Aceptación:** No reprocesa más de la ventana permitida; progreso visible.
+**Archivos involucrados:** `BatchProcessingActivity.java`, `BatchProcessingWorkflow.java`, `BatchProcessingWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=BatchProcessingWorkflowTest`
 
-**Requisitos:**
-* Cada Actividad debe tener sus propios Timeouts y Retry Policies adaptados a su naturaleza (ej. el pago tiene menos reintentos que la reserva).
-* Simula un fallo persistente en `procesarPago` (ej. "Fondos insuficientes") lanzando una excepción no reintentable mediante `ApplicationFailure.newNonRetryableFailure()`.
-* El Workflow debe capturar el fallo de la actividad de pago y ejecutar la compensación (`cancelarReservaInventario`) de forma segura.
-* Utiliza Spring Boot para inyectar servicios simulados (Beans) en las implementaciones de las Actividades.
+### C10-E06 — Cancelar exportación
+**Especificación:** Detectar cancelación durante Activity larga y cerrar recursos.
+**Entregable:** Workflow/Activity y test.
+**Criterios de Aceptación:** Cancelación cooperativa; cleanup idempotente.
+**Archivos involucrados:** `ExportActivity.java`, `ExportWorkflow.java`, `ExportWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=ExportWorkflowTest`
 
-**Asistencia de IA:**
-* *Modo Chat:* "Quiero implementar un patrón Saga básico en Temporal con Java. Tengo 3 actividades: reservar, pagar y confirmar. Si pagar falla, debo cancelar la reserva. ¿Cómo estructuro el manejo de errores con try-catch en el Workflow para asegurar que la compensación se ejecute correctamente?"
-* *Claude Code / Codex:* "Crea un Workflow de Temporal en Java llamado `OrderWorkflow`. Debe llamar secuencialmente a las actividades `reservarInventario` y `procesarPago`. Si `procesarPago` lanza un error, captura la excepción y ejecuta `cancelarReservaInventario`. Asegúrate de usar las anotaciones correctas de Spring Boot para registrar las actividades en el Worker."
+### C10-E07 — Intento y latencia
+**Especificación:** Agregar logs/metrics con workflowId, activityId e intento sin duplicar datos sensibles.
+**Entregable:** Salida y panel textual.
+**Criterios de Aceptación:** Permite distinguir intento y causa; no imprime payload completo.
+**Archivos involucrados:** `LoggingActivity.java`, `LoggingWorkflow.java`, `LoggingWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=LoggingWorkflowTest`
+
+### C10-E08 — Tabla de resiliencia
+**Especificación:** Ejecutar 8 combinaciones de fallo/timeout/retry y documentar resultado esperado/real.
+**Entregable:** `resilience-matrix.md`.
+**Criterios de Aceptación:** Coincidencia razonada; anomalías investigadas.
+**Archivos involucrados:** `resilience-matrix.md`
+**Comando para verificar:** Revisión manual.
+
+## Tareas para el Hogar
+
+### C10-T01 — Integración inestable
+**Esfuerzo:** 60-90 min
+**Especificación:** Workflow llama a catálogo y notificación simulados con fallos programables, timeouts y retry por tipo.
+**Entregable:** Módulo y 15 pruebas.
+**Criterios de Aceptación:** Sin retry infinito; errores permanentes terminan rápido.
+
+### C10-T02 — Actividad idempotente real
+**Esfuerzo:** 60-90 min
+**Especificación:** Persistir deduplicación en PostgreSQL con clave única y manejar concurrencia.
+**Entregable:** Activity y migración.
+**Criterios de Aceptación:** Dos ejecuciones concurrentes producen un solo efecto.
+
+### C10-T03 — Activity larga reanudable
+**Esfuerzo:** 60-90 min
+**Especificación:** Importar archivo grande con heartbeat de offset y cancelación.
+**Entregable:** Implementación y prueba de reinicio.
+**Criterios de Aceptación:** Reanuda desde progreso; cierre seguro de archivo.
+
+### C10-T04 — Runbook de Activity fallida
+**Esfuerzo:** 60-90 min
+**Especificación:** Procedimiento para inspeccionar, resetear/reintentar o corregir un fallo sin manipular DB a ciegas.
+**Entregable:** `docs/activity-runbook.md`.
+**Criterios de Aceptación:** Incluye criterios para fallo transitorio/permanente.
+
+## Cómo ejecutar
+
+Para ejecutar los tests de la clase:
+```bash
+./mvnw clean test
+```
+
+Para ejecutar un test específico:
+```bash
+./mvnw test -Dtest=NombreDelTest
+```
+
+Para iniciar el servidor de Temporal en modo desarrollo (si se requiere probar manualmente):
+```bash
+temporal server start-dev
+```

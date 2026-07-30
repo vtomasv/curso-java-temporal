@@ -1,0 +1,2 @@
+-- TODO(C06-E08): Hacer obligatorio el campo 'departamento'
+-- Paso 3: Alterar columna para que sea NOT NULL

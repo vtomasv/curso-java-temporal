@@ -1,71 +1,117 @@
-# Clase 15: Tecnologías de Soporte y Mensajería Asíncrona
+# Clase 15: Middleware de mensajes, colas y procesamiento asíncrono
 
-## Objetivos de la sesión
-* Comprender los conceptos fundamentales de la mensajería asíncrona y su aplicación en arquitecturas distribuidas.
-* Implementar productores y consumidores de mensajes utilizando tecnologías como RabbitMQ o Kafka con Spring Boot.
-* Aplicar validaciones robustas en modelos y controladores utilizando Bean Validation (JSR 380).
-* Entender y aplicar la Programación Orientada a Aspectos (AOP) y los interceptores en Spring para separar preocupaciones transversales (cross-cutting concerns) como logging, auditoría o seguridad.
+**Bloque:** Bloque 4 — IA y tecnologías avanzadas  
+**Duración:** 4 horas  
 
-## Cronograma propuesto (4 horas)
-* **Hora 1: Mensajería Asíncrona (Teoría y Configuración)**
-  * Conceptos de mensajería: Colas, Tópicos, Productores, Consumidores.
-  * Introducción a RabbitMQ / Kafka.
-  * Configuración inicial en Spring Boot (Spring AMQP / Spring Kafka).
-* **Hora 2: Implementación de Mensajería y Bean Validation**
-  * Envío y recepción de mensajes asíncronos.
-  * Introducción a Bean Validation (`@Valid`, `@NotNull`, `@Size`, etc.).
-  * Manejo de excepciones de validación (`MethodArgumentNotValidException`).
-* **Hora 3: Programación Orientada a Aspectos (AOP) e Interceptores**
-  * Conceptos de AOP: Aspect, Advice, Pointcut, JoinPoint.
-  * Implementación de Aspectos con `@Aspect` en Spring.
-  * Diferencias entre AOP e Interceptores (`HandlerInterceptor`).
-* **Hora 4: Práctica Integradora y Resolución de Dudas**
-  * Desarrollo de los ejercicios prácticos.
-  * Revisión de código y buenas prácticas.
-  * Cierre de la sesión.
+## Propósito
+Diseñar integración asíncrona mediante broker, comprender sus garantías y combinar mensajería con Temporal sin duplicar responsabilidades.
 
-## Ejercicios prácticos
+## Resultados de aprendizaje
+- Explicar productor, consumidor, exchange/topic, queue, ack, redelivery y dead-letter queue.
+- Implementar publicación/consumo con RabbitMQ y Spring AMQP (o equivalente institucional).
+- Hacer consumidores idempotentes y controlar reintentos/DLQ.
+- Aplicar outbox/inbox para consistencia con base de datos.
+- Distinguir cuándo usar cola, evento, Temporal Workflow o combinación.
 
-### Ejercicio 1: Guiado - Validación de Datos y Logging con Interceptores
-**Descripción:** Crear una API REST simple para registrar usuarios. Se debe validar que los datos de entrada sean correctos usando Bean Validation y registrar cada petición HTTP utilizando un Interceptor de Spring.
+## Cronograma de la clase
 
-**Pasos:**
-1. Crea un proyecto Spring Boot con las dependencias `Spring Web` y `Validation`.
-2. Crea un DTO `UsuarioRegistroDTO` con campos: `nombre` (no nulo, min 2 caracteres), `email` (formato válido) y `password` (min 8 caracteres).
-3. Crea un `UsuarioController` con un endpoint POST `/api/usuarios` que reciba el DTO validado (`@Valid`).
-4. Implementa un manejador global de excepciones (`@ControllerAdvice`) para devolver un 400 Bad Request con los errores de validación.
-5. Crea una clase que implemente `HandlerInterceptor` para hacer un log (System.out o SLF4J) antes y después de cada petición al controlador.
-6. Registra el interceptor en una clase de configuración que implemente `WebMvcConfigurer`.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–15 | Debrief visita profesional | Recoger hallazgos en tablero: arquitectura, seguridad y operación. |
+| 15–40 | Fundamentos de mensajería | Dibujar rutas, garantías y fallos. |
+| 40–65 | Demo broker | Publicar, consumir, fallar y redeliver. |
+| 65–85 | Ejercicios E01–E03 | Publisher, consumer y validación. |
+| 85–100 | Receso | Preparar DLQ/outbox. |
+| 100–125 | Idempotencia, DLQ y outbox | Mostrar duplicado y poison message. |
+| 125–165 | Laboratorio E04–E06 | Flujo robusto e integración Temporal. |
+| 165–185 | Desafíos E07–E08 | Schema evolution y observabilidad. |
+| 185–195 | Cierre y tarea | Matriz de decisión cola/Temporal. |
 
-**Asistencia de IA:**
-* *Modo Chat (ChatGPT/Claude):* "Actúa como un experto en Spring Boot. Explícame paso a paso cómo configurar un `HandlerInterceptor` para registrar el tiempo de ejecución de las peticiones HTTP y cómo registrarlo en `WebMvcConfigurer`."
-* *Claude Code / Cursor:* "Genera un `UsuarioRegistroDTO` con Bean Validation para nombre, email y password. Luego, crea un `@RestControllerAdvice` que capture `MethodArgumentNotValidException` y devuelva un mapa con los campos que fallaron y sus mensajes de error."
+## Ejercicios de Clase
 
-### Ejercicio 2: Semi-guiado - Auditoría con AOP (Programación Orientada a Aspectos)
-**Descripción:** Implementar un sistema de auditoría que registre automáticamente la ejecución de ciertos métodos de servicio utilizando AOP, sin modificar la lógica de negocio.
+### C15-E01 — RabbitMQ local
+**Especificación:** Levantar broker con Docker Compose y verificar management UI/health.  
+**Entregable y aceptación:** Archivo `docker-compose.yml` y comandos. Credenciales de laboratorio externalizadas; volumen/puertos documentados.  
+**Archivos involucrados:** `docker-compose.yml`  
+**Comando para verificar:** `docker compose up -d` y acceder a `http://localhost:15672`
 
-**Pistas:**
-* Necesitarás la dependencia `spring-boot-starter-aop`.
-* Crea una anotación personalizada `@Auditable`.
-* Crea una clase aspecto (`@Aspect` y `@Component`).
-* Define un `@Around` o `@Before` pointcut que intercepte cualquier método anotado con `@Auditable`.
-* En el aspecto, obtén el nombre del método y los argumentos usando el `JoinPoint`.
+### C15-E02 — Notificación asíncrona
+**Especificación:** Publicar `NotificationRequested` y consumirlo con ack manual o configurado.  
+**Entregable y aceptación:** Apps/beans y evidencia. Mensaje tipado; correlationId; no pérdida en caso normal.  
+**Archivos involucrados:** `NotificationRequested.java`, `NotificationPublisher.java`, `NotificationConsumer.java`, `NotificationPublisherTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=NotificationPublisherTest`
 
-**Asistencia de IA:**
-* *Modo Chat (ChatGPT/Claude):* "Tengo problemas entendiendo los Pointcuts en Spring AOP. ¿Puedes darme ejemplos de cómo interceptar métodos basados en una anotación personalizada vs basados en el paquete donde se encuentran?"
-* *Claude Code / Cursor:* "Crea una anotación `@Auditable` y un Aspecto en Spring Boot que intercepte los métodos con esta anotación. El aspecto debe imprimir en consola el nombre del método ejecutado y los valores de sus parámetros."
+### C15-E03 — Mensaje inválido
+**Especificación:** Validar payload y enviar inválidos a ruta definida.  
+**Entregable y aceptación:** Bean Validation y tests. No entra en retry infinito por error de esquema.  
+**Archivos involucrados:** `NotificationRequested.java`, `NotificationConsumer.java`, `NotificationConsumerTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=NotificationConsumerTest`
 
-### Ejercicio 3: Desafío - Sistema de Notificaciones Asíncronas
-**Descripción:** Diseñar e implementar un sistema donde la creación de un pedido (Order) dispare un evento asíncrono para enviar una notificación (simulada) al usuario, utilizando un broker de mensajería (RabbitMQ o Kafka).
+### C15-E04 — Duplicado de notificación
+**Especificación:** Persistir messageId procesado y evitar segunda notificación.  
+**Entregable y aceptación:** Inbox y test duplicado. Mismo mensaje produce un efecto.  
+**Archivos involucrados:** `InboxMessage.java`, `InboxRepository.java`, `IdempotentConsumer.java`, `IdempotentConsumerTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=IdempotentConsumerTest`
 
-**Requisitos:**
-* Configurar un broker de mensajería (puedes usar Docker Compose para levantar RabbitMQ o Kafka localmente).
-* Crear un `PedidoController` que reciba una petición de creación de pedido, lo guarde (simulado) y envíe un mensaje a una cola/tópico.
-* El mensaje debe contener el ID del pedido y el email del cliente.
-* Crear un servicio consumidor (`@RabbitListener` o `@KafkaListener`) que escuche la cola/tópico y simule el envío de un correo electrónico (con un `Thread.sleep` para simular latencia).
-* Validar los datos de entrada del pedido usando Bean Validation.
-* Usar AOP para medir el tiempo que tarda el consumidor en procesar el mensaje.
+### C15-E05 — Poison message
+**Especificación:** Configurar retry limitado y DLQ; reprocess manual controlado.  
+**Entregable y aceptación:** Configuración y runbook. Mensaje problemático no bloquea cola principal.  
+**Archivos involucrados:** `RabbitMQConfig.java`, `PoisonMessageTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=PoisonMessageTest`
 
-**Asistencia de IA:**
-* *Modo Chat (ChatGPT/Claude):* "Quiero implementar RabbitMQ en Spring Boot para un sistema de notificaciones. ¿Me puedes dar un archivo `docker-compose.yml` para levantar RabbitMQ y explicarme cómo configurar el `RabbitTemplate` y las colas en Spring?"
-* *Claude Code / Cursor:* "Implementa un productor y un consumidor de RabbitMQ en Spring Boot. El productor debe enviar un objeto `NotificacionEvento` (serializado en JSON) a un exchange 'notificaciones.exchange'. El consumidor debe leer de la cola 'notificaciones.queue' y procesar el evento. Incluye la configuración necesaria."
+### C15-E06 — Publicación confiable
+**Especificación:** Guardar cambio y evento outbox en una transacción; publicador envía y marca.  
+**Entregable y aceptación:** Tablas, job/activity y tests. No existe ventana commit-sin-evento; publicación idempotente.  
+**Archivos involucrados:** `OutboxEvent.java`, `OutboxRepository.java`, `OutboxPublisher.java`, `OutboxPublisherTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=OutboxPublisherTest`
+
+### C15-E07 — Mensaje inicia o señala Workflow
+**Especificación:** Consumidor usa WorkflowClient para start/update/signal con ID de negocio.  
+**Entregable y aceptación:** Bridge y tests. Redelivery no duplica Workflow ni comando.  
+**Archivos involucrados:** `TemporalBridgeConsumer.java`, `TemporalBridgeConsumerTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=TemporalBridgeConsumerTest`
+
+### C15-E08 — Evento v1→v2
+**Especificación:** Agregar campo compatible y consumidor tolerante a versiones.  
+**Entregable y aceptación:** Contratos y tests. Consumidor antiguo no se rompe; cambios incompatibles versionados.  
+**Archivos involucrados:** `NotificationRequestedV2.java`, `VersionTolerantConsumer.java`, `VersionTolerantConsumerTest.java`  
+**Comando para verificar:** `./mvnw test -Dtest=VersionTolerantConsumerTest`
+
+## Tareas para el Hogar
+
+### C15-T01 — Pipeline de notificaciones
+**Esfuerzo:** 60-90 min  
+**Especificación:** Outbox→RabbitMQ→consumer idempotente→auditoría con DLQ.  
+**Entregable y aceptación:** Sistema y 25 pruebas. Reinicio/redelivery no duplica; métricas básicas.
+
+### C15-T02 — Integración Workflow-broker
+**Esfuerzo:** 60-90 min  
+**Especificación:** Al completar saga, publicar evento; otro consumidor actualiza Workflow relacionado.  
+**Entregable y aceptación:** Implementación y diagrama. Responsabilidades claras; no hay ciclo infinito.
+
+### C15-T03 — Chaos de mensajería
+**Esfuerzo:** 60-90 min  
+**Especificación:** Simular broker caído, consumidor caído, duplicado, poison y mensaje fuera de orden.  
+**Entregable y aceptación:** Informe y pruebas/scripts. Estado recuperable y procedimientos documentados.
+
+### C15-T04 — Informe visita profesional
+**Esfuerzo:** 60-90 min  
+**Especificación:** Relacionar 5 observaciones de la visita con decisiones del proyecto.  
+**Entregable y aceptación:** `docs/visita-reflexion.md`. Distingue observación, interpretación y acción aplicable.
+
+## Cómo ejecutar
+
+Para ejecutar los tests del proyecto:
+```bash
+./mvnw test
+```
+
+Para levantar la infraestructura local (RabbitMQ y PostgreSQL):
+```bash
+docker compose up -d
+```
+
+Para iniciar el servidor de desarrollo de Temporal:
+```bash
+temporal server start-dev
+```

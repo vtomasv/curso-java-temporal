@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: sigeo-clase14
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:dummy-key}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.0
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: sigeo
+    password: sigeo_dev
+
+temporal:
+  target: localhost:7233
+  namespace: default

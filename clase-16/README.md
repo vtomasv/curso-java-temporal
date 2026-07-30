@@ -1,51 +1,119 @@
-# Clase 16: Proyecto Integrador: Diseño y Arquitectura
+# Clase 16: Proyecto integrador: requisitos, arquitectura y plan de construcción
 
-## Objetivos de la sesión
-- Comprender los principios de diseño arquitectónico para aplicaciones distribuidas y escalables.
-- Diseñar flujos de trabajo resilientes utilizando Temporal.io.
-- Utilizar herramientas de Inteligencia Artificial para la planificación, diseño y validación de arquitecturas de software.
-- Estructurar el proyecto integrador final aplicando las mejores prácticas de Spring Boot y microservicios.
+**Bloque:** Bloque 5 — Integración final
+**Duración:** 4 horas
 
-## Cronograma propuesto (4 horas)
-- **Hora 1:** Introducción al diseño arquitectónico y patrones para el proyecto integrador.
-- **Hora 2:** Fundamentos y diseño de flujos de trabajo con Temporal.io.
-- **Hora 3:** Planificación de arquitectura asistida por IA (generación de diagramas, validación de decisiones).
-- **Hora 4:** Taller práctico: Definición de la arquitectura del proyecto integrador y resolución de dudas.
+## Objetivos de Aprendizaje
+- Definir alcance mínimo y extensiones sin convertir el proyecto en una colección de tecnologías.
+- Modelar dominio, API, esquema, Workflow/Saga, mensajes y amenazas.
+- Definir pruebas, SLO, observabilidad y estrategia de despliegue local.
+- Descomponer en issues verticales y asignar responsabilidades.
+- Producir un walking skeleton ejecutable al final de la sesión.
 
-## Ejercicios prácticos
+## Cronograma de la Clase
 
-### Ejercicio 1: Guiado - Diseño de la Arquitectura Base
-**Descripción:** En este ejercicio, diseñaremos paso a paso la arquitectura base del proyecto integrador, definiendo los microservicios necesarios, sus responsabilidades y cómo se comunicarán entre sí.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–15 | Presentación del caso y rúbrica | Aclarar mínimo obligatorio y extensiones. |
+| 15–40 | Taller de requisitos | Equipos escriben historias y criterios. |
+| 40–65 | Diseño C4/dominio | Revisión docente por mesa. |
+| 65–85 | Ejercicios E01–E03 | Arquitectura, datos y Workflow. |
+| 85–100 | Receso | Revisar riesgos de alcance. |
+| 100–125 | Seguridad, pruebas y observabilidad | Completar threat model y test strategy. |
+| 125–165 | Laboratorio E04–E06 | Backlog y walking skeleton. |
+| 165–185 | Desafíos E07–E08 | ADR y demo de inicio end-to-end. |
+| 185–195 | Gate de salida | Aprobar o devolver diseño con acciones concretas. |
 
-**Pasos:**
-1. Identificar los dominios principales del proyecto integrador (ej. Usuarios, Pedidos, Pagos).
-2. Definir los microservicios correspondientes a cada dominio.
-3. Establecer los mecanismos de comunicación (REST, mensajería asíncrona).
-4. Documentar la arquitectura utilizando un diagrama de componentes.
+## Ejercicios de Clase
 
-**Asistencia de IA:**
-- *Modo Chat:* "Actúa como un arquitecto de software. Tengo un proyecto integrador que es un sistema de e-commerce. Ayúdame a identificar los microservicios principales y sus responsabilidades paso a paso."
-- *Claude Code / Codex:* "Genera un diagrama de arquitectura en formato Mermaid para un sistema de e-commerce con microservicios de Usuarios, Catálogo, Pedidos y Pagos, comunicados a través de un API Gateway."
+### C16-E01 — Historias verticales
+**Especificación:** Escribir 8 historias con criterios Given/When/Then y prioridad MoSCoW.
+**Entregable:** Archivo `backlog.md` en la raíz del proyecto.
+**Criterios de Aceptación:** Cada historia produce valor observable y tiene criterio verificable.
+**Comando de verificación:** Revisión manual del archivo `backlog.md`.
 
-### Ejercicio 2: Semi-guiado - Modelado de un Flujo con Temporal
-**Descripción:** Diseña un flujo de trabajo resiliente para el proceso de "Checkout" utilizando los conceptos de Temporal.io (Workflows y Activities).
+### C16-E02 — Diagrama C4
+**Especificación:** Crear contexto/contenedores con Spring, DB, Temporal, broker y proveedor IA.
+**Entregable:** Archivo Mermaid/PlantUML (ej. `arquitectura.mmd`).
+**Criterios de Aceptación:** Responsabilidades y protocolos explícitos; no “caja mágica”.
+**Comando de verificación:** Revisión manual del diagrama.
 
-**Pistas:**
-- Recuerda que los Workflows deben ser deterministas.
-- Las interacciones con sistemas externos (ej. pasarela de pago, envío de emails) deben ser Activities.
-- Define qué sucede si el pago falla (compensación).
+### C16-E03 — Secuencia crítica
+**Especificación:** Definir estados, Activities, mensajes, timeouts, retries y compensaciones.
+**Entregable:** Archivo `workflow-design.md`.
+**Criterios de Aceptación:** Determinismo y idempotencia revisados.
+**Comando de verificación:** Revisión manual del diseño.
 
-**Asistencia de IA:**
-- *Modo Chat:* "Estoy diseñando un Workflow de Temporal en Java para un proceso de checkout. ¿Cuáles deberían ser las Activities si necesito cobrar una tarjeta, actualizar el inventario y enviar un email de confirmación? ¿Cómo manejo las fallas en el cobro?"
-- *Claude Code / Codex:* "Crea la interfaz de un Workflow de Temporal llamado `CheckoutWorkflow` y la interfaz de sus Activities correspondientes (`PaymentActivity`, `InventoryActivity`, `NotificationActivity`) en Java."
+### C16-E04 — Contratos mínimos
+**Especificación:** Diseñar tablas, endpoints, errores y eventos v1.
+**Entregable:** OpenAPI (`openapi.yaml`) + migración inicial (`V1__init.sql`) + schema evento.
+**Criterios de Aceptación:** IDs/correlación coherentes; datos sensibles clasificados.
+**Comando de verificación:** `./mvnw clean compile` (para validar sintaxis si se usa generador OpenAPI) o revisión manual.
 
-### Ejercicio 3: Desafío - Planificación Completa Asistida por IA
-**Descripción:** Utiliza herramientas de IA para generar un documento de diseño técnico (RFC o Architecture Decision Record - ADR) para una nueva funcionalidad compleja del proyecto integrador, por ejemplo, un sistema de recomendaciones en tiempo real. El documento debe incluir contexto, alternativas consideradas, decisión tomada y consecuencias.
+### C16-E05 — Threat model del proyecto
+**Especificación:** DFD, trust boundaries y top 8 riesgos.
+**Entregable:** Archivo `threat-model.md`.
+**Criterios de Aceptación:** Mitigaciones asignadas a historias.
+**Comando de verificación:** Revisión manual.
 
-**Requisitos:**
-- El diseño debe justificar la elección de base de datos, patrones de comunicación y manejo de errores.
-- Debes iterar con la IA para refinar el diseño y descubrir posibles cuellos de botella.
+### C16-E06 — Plan de verificación
+**Especificación:** Matriz requisito→tipo de prueba→fixture→evidencia.
+**Entregable:** Archivo `test-plan.md`.
+**Criterios de Aceptación:** Incluye replay, chaos, security y AI eval si aplica.
+**Comando de verificación:** Revisión manual.
 
-**Asistencia de IA:**
-- *Modo Chat:* "Quiero escribir un Architecture Decision Record (ADR) para implementar un sistema de recomendaciones en tiempo real en mi proyecto de Spring Boot. Propón 3 alternativas de arquitectura (ej. usando Redis, Kafka, o una base de datos de grafos), analiza sus pros y contras, y ayúdame a redactar el documento final."
-- *Claude Code / Codex:* "Genera una plantilla Markdown para un Architecture Decision Record (ADR) y complétala con una propuesta para usar Kafka como bus de eventos en nuestro sistema de recomendaciones."
+### C16-E07 — Issues y Definition of Done
+**Especificación:** Crear issues de 30–90 min con dependencia y dueño.
+**Entregable:** Issue board/export (ej. `issues.csv` o captura).
+**Criterios de Aceptación:** Ningún issue “hacer backend completo”; DoD incluye pruebas/docs.
+**Comando de verificación:** Revisión manual.
+
+### C16-E08 — Camino mínimo (Walking Skeleton)
+**Especificación:** POST inicia Workflow, una Activity guarda/consulta y GET muestra estado.
+**Entregable:** Commit ejecutable con código base en `src/main/java/com/sigeo/clase16/`.
+**Criterios de Aceptación:** Arranca con un comando; health de app/DB/Temporal visible.
+**Comando de verificación:** `./mvnw spring-boot:run` y `curl http://localhost:8080/actuator/health`
+
+## Tareas para el Hogar
+
+### C16-T01 — Sprint 1
+**Esfuerzo:** 60-90 min
+**Especificación:** Implementar dominio, DB, API inicial y seguridad base.
+**Entregable:** Release candidate 0.1.
+**Criterios de Aceptación:** CI local verde; 30 pruebas; demo de 3 min.
+
+### C16-T02 — Sprint 2
+**Esfuerzo:** 60-90 min
+**Especificación:** Implementar Workflow/Saga con Activities idempotentes y consultas.
+**Entregable:** Release candidate 0.2.
+**Criterios de Aceptación:** Fault injection en al menos 3 pasos.
+
+### C16-T03 — Sprint 3
+**Esfuerzo:** 60-90 min
+**Especificación:** Integrar mensajería y, opcionalmente, IA con evaluación/fallback.
+**Entregable:** Release candidate 0.3.
+**Criterios de Aceptación:** DLQ/dedupe o AI guardrails demostrables.
+
+### C16-T04 — Documentación de entrega
+**Esfuerzo:** 60-90 min
+**Especificación:** Completar README, diagramas, ADR, runbook, threat model y matriz de pruebas.
+**Entregable:** docs release.
+**Criterios de Aceptación:** Un tercero puede levantar y probar el sistema.
+
+## Cómo ejecutar
+
+Para levantar la infraestructura local (PostgreSQL, Temporal, RabbitMQ):
+```bash
+docker compose up -d
+```
+*(Nota: Si usas Temporal CLI, puedes ejecutar `temporal server start-dev` en su lugar)*
+
+Para ejecutar las pruebas del Walking Skeleton:
+```bash
+./mvnw test
+```
+
+Para iniciar la aplicación:
+```bash
+./mvnw spring-boot:run
+```

@@ -1,62 +1,117 @@
-# Clase 05: Introducción a Spring Boot e Inyección de Dependencias
+# Clase 05: Spring Boot 4: inyección de dependencias, REST y Thymeleaf
 
-## Objetivos de la sesión
-- Comprender los conceptos de Inversión de Control (IoC) e Inyección de Dependencias (DI).
-- Inicializar y configurar un proyecto con Spring Boot 3.
-- Entender la estructura básica de una aplicación Spring Boot.
-- Crear una API REST básica utilizando controladores, servicios y repositorios simulados.
-- Familiarizarse con las anotaciones principales de Spring (`@Component`, `@Service`, `@RestController`, `@Autowired`).
+**Bloque:** Bloque 2 — Aplicaciones web y persistencia  
+**Duración:** 4 horas  
 
-## Cronograma propuesto (4 horas)
-- **Hora 1:** Teoría de IoC y DI. Introducción a Spring Boot 3 y Spring Initializr.
-- **Hora 2:** Creación del primer proyecto. Exploración de la estructura y configuración (`application.properties`).
-- **Hora 3:** Desarrollo de una API REST básica (Controlador y Servicio). Ejercicio guiado.
-- **Hora 4:** Ejercicios prácticos (Semi-guiado y Desafío), resolución de dudas y cierre.
+## Objetivos de Aprendizaje
+- Crear proyecto Spring Boot 4 con Initializr y dependencias mínimas.
+- Explicar IoC/DI y ciclo de vida de beans; usar inyección por constructor.
+- Diseñar controladores REST, DTOs, servicio y repositorio en memoria.
+- Aplicar validación de entrada y manejo uniforme de errores HTTP.
+- Construir una vista Thymeleaf básica sin mezclar lógica de negocio.
 
-## Ejercicios prácticos
+## Cronograma de la Clase
 
-### Ejercicio 1: Guiado - Mi Primera API REST con Spring Boot
-**Objetivo:** Crear un proyecto Spring Boot desde cero y exponer un endpoint GET simple.
+| Minutos | Actividad | Instrucción docente |
+|---|---|---|
+| 00–10 | Revisión de arquitectura objetivo | Mostrar diagrama de capas del SIGEO. |
+| 10–35 | IoC/DI y Spring Boot | Construir bean graph y detectar dependencias ocultas. |
+| 35–60 | Demo Initializr + primer endpoint | Crear desde cero y ejecutar con perfil dev. |
+| 60–80 | Ejercicios E01–E03 | Endpoints pequeños y DTOs. |
+| 80–95 | Receso | Verificar que todos ejecuten la app. |
+| 95–120 | Validación, errores y Thymeleaf | Mostrar handler global y formulario. |
+| 120–160 | Laboratorio E04–E06 | CRUD en memoria y vista web. |
+| 160–185 | Desafíos E07–E08 | Actuator y pruebas web. |
+| 185–195 | Cierre y tarea | Revisión de contrato API y asignación. |
 
-**Pasos:**
-1. Ve a [Spring Initializr](https://start.spring.io/).
-2. Configura el proyecto: Maven, Java 17+, Spring Boot 3.x.
-3. Añade la dependencia: **Spring Web**.
-4. Genera, descarga y abre el proyecto en tu IDE.
-5. Crea un paquete `controllers` y dentro una clase `HelloController`.
-6. Anota la clase con `@RestController`.
-7. Crea un método que retorne un `String` y anótalo con `@GetMapping("/hello")`.
-8. Ejecuta la aplicación y prueba el endpoint en tu navegador o Postman (`http://localhost:8080/hello`).
+## Ejercicios de Clase
 
-**Asistencia de IA:**
-- *Modo Chat:* "Actúa como un tutor de Spring Boot. Explícame paso a paso cómo crear un controlador REST básico que devuelva un saludo, y qué hace exactamente la anotación @RestController."
-- *Claude Code / Codex:* "Genera una clase `HelloController` en el paquete `com.ejemplo.demo.controllers` con un endpoint GET en la ruta `/api/saludo` que retorne '¡Hola, Spring Boot 3!'."
+### C05-E01 — Health personalizado
+**Especificación:** Crear proyecto y endpoint `/api/health` que reporte versión y estado sin exponer secretos.
+**Criterios de aceptación:** Arranca con `./mvnw spring-boot:run`; respuesta JSON estable.
+**Archivos involucrados:** `HealthController.java`
+**Comando para verificar:** `./mvnw test -Dtest=HealthControllerTest`
 
-### Ejercicio 2: Semi-guiado - Inyección de Dependencias en Acción
-**Objetivo:** Separar la lógica de negocio del controlador utilizando un Servicio e inyectarlo.
+### C05-E02 — Repositorio intercambiable
+**Especificación:** Definir interfaz y repositorio en memoria; inyectarlo por constructor en servicio.
+**Criterios de aceptación:** No usar `new` en el servicio; dependencia visible.
+**Archivos involucrados:** `SolicitudRepository.java`, `InMemorySolicitudRepository.java`, `SolicitudService.java`
+**Comando para verificar:** `./mvnw test -Dtest=SolicitudServiceTest`
 
-**Pistas:**
-- Crea una clase `GreetingService` en un paquete `services`.
-- Anota el servicio con `@Service`.
-- Mueve la lógica del saludo a un método dentro de este servicio.
-- En tu `HelloController`, declara una variable de tipo `GreetingService`.
-- Utiliza inyección por constructor para inyectar el servicio en el controlador (recomendado sobre `@Autowired` en campos).
-- Llama al método del servicio desde tu endpoint.
+### C05-E03 — Crear solicitud
+**Especificación:** POST `/api/solicitudes` con DTO de entrada y 201 + Location.
+**Criterios de aceptación:** Valida obligatorios; no devuelve entidad interna directamente.
+**Archivos involucrados:** `SolicitudController.java`, `CrearSolicitudDto.java`, `SolicitudResponseDto.java`
+**Comando para verificar:** `./mvnw test -Dtest=SolicitudControllerTest#testCrearSolicitud`
 
-**Asistencia de IA:**
-- *Modo Chat:* "Tengo un controlador REST en Spring Boot pero quiero mover la lógica a un servicio. ¿Cómo creo un servicio y lo inyecto en mi controlador usando inyección por constructor?"
-- *Claude Code / Codex:* "Refactoriza el `HelloController` para que utilice un `GreetingService` inyectado por constructor. Crea la clase `GreetingService` con un método `getGreeting()`."
+### C05-E04 — Consulta y filtros
+**Especificación:** GET con filtros opcionales por estado/prioridad y 404 por id inexistente.
+**Criterios de aceptación:** Códigos correctos; filtros componibles.
+**Archivos involucrados:** `SolicitudController.java`, `SolicitudService.java`, `InMemorySolicitudRepository.java`
+**Comando para verificar:** `./mvnw test -Dtest=SolicitudControllerTest#testConsultarFiltros`
 
-### Ejercicio 3: Desafío - API REST de Gestión de Tareas (CRUD Básico en Memoria)
-**Objetivo:** Crear una API REST completa para gestionar una lista de tareas (To-Do) utilizando una lista en memoria.
+### C05-E05 — Problem Details uniforme
+**Especificación:** Implementar handler global para validación, not found y conflicto de estado.
+**Criterios de aceptación:** Incluye type/title/status/detail/instance o estructura equivalente.
+**Archivos involucrados:** `GlobalExceptionHandler.java`, `SolicitudNotFoundException.java`
+**Comando para verificar:** `./mvnw test -Dtest=GlobalExceptionHandlerTest`
 
-**Requisitos:**
-- Crea un modelo `Task` con `id`, `title`, `description` y `completed`.
-- Crea un `TaskService` que maneje una `List<Task>` interna.
-- Implementa métodos en el servicio para: obtener todas las tareas, obtener una por ID, crear una nueva tarea, actualizar una existente y eliminarla.
-- Crea un `TaskController` que exponga los endpoints correspondientes (`GET`, `POST`, `PUT`, `DELETE`).
-- Asegúrate de usar los códigos de estado HTTP correctos (ej. 201 Created, 404 Not Found).
+### C05-E06 — Panel web básico
+**Especificación:** Listado, detalle y formulario de creación usando Thymeleaf.
+**Criterios de aceptación:** Escapa contenido; errores de validación visibles.
+**Archivos involucrados:** `SolicitudWebController.java`, `listado.html`, `formulario.html`
+**Comando para verificar:** `./mvnw test -Dtest=SolicitudWebControllerTest`
 
-**Asistencia de IA:**
-- *Modo Chat:* "Quiero construir un CRUD en memoria para una entidad 'Task' en Spring Boot. ¿Puedes darme la estructura de las clases (Modelo, Servicio, Controlador) y explicarme qué anotaciones HTTP usar para cada operación?"
-- *Claude Code / Codex:* "Implementa un CRUD completo en memoria para la entidad `Task` (id, title, completed). Crea el modelo, el servicio con una lista interna y el controlador REST con los endpoints GET, POST, PUT y DELETE. Maneja el caso de tarea no encontrada devolviendo un 404."
+### C05-E07 — Operabilidad mínima
+**Especificación:** Habilitar health/info y crear info de build sin exponer env completo.
+**Criterios de aceptación:** Solo endpoints necesarios; health responde correctamente.
+**Archivos involucrados:** `application.yaml`
+**Comando para verificar:** `./mvnw test -Dtest=ActuatorTest`
+
+### C05-E08 — Contrato MockMvc
+**Especificación:** Agregar pruebas de 201, 400, 404 y conflicto 409.
+**Criterios de aceptación:** Aserciones sobre status, headers y cuerpo; no solo status.
+**Archivos involucrados:** `SolicitudControllerMockMvcTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=SolicitudControllerMockMvcTest`
+
+## Tareas para el Hogar
+
+### C05-T01 — API SIGEO v1
+**Esfuerzo:** 60-90 min
+**Especificación:** Completar CRUD en memoria con DTOs, validación, errores y OpenAPI opcional.
+**Entregable y aceptación:** Aplicación y colección HTTP. 25 pruebas; cobertura de transición inválida.
+
+### C05-T02 — Portal Thymeleaf
+**Esfuerzo:** 60-90 min
+**Especificación:** Añadir edición, filtros y vista de errores amigable.
+**Entregable y aceptación:** Templates y capturas. Sin lógica de negocio en HTML/controller.
+
+### C05-T03 — Prueba de arquitectura
+**Esfuerzo:** 60-90 min
+**Especificación:** Crear pruebas que impidan que controller acceda directamente al repositorio.
+**Entregable y aceptación:** Test ArchUnit o verificación equivalente. Falla ante dependencia prohibida.
+
+### C05-T04 — ADR de arquitectura
+**Esfuerzo:** 60-90 min
+**Especificación:** Documentar decisión Spring Boot frente a despliegue WAR/Jakarta EE para este curso.
+**Entregable y aceptación:** `docs/adr/0001-framework.md`. Contexto, opciones, decisión y consecuencias.
+
+## Cómo ejecutar
+
+Para ejecutar los tests y verificar tu progreso:
+```bash
+cd ejercicios
+./mvnw test
+```
+
+Para ejecutar la aplicación con el perfil por defecto (H2 en memoria):
+```bash
+cd ejercicios
+./mvnw spring-boot:run
+```
+
+Para ejecutar la aplicación con PostgreSQL (requiere base de datos local):
+```bash
+cd ejercicios
+./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
+```

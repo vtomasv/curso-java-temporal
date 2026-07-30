@@ -1,0 +1,564 @@
+[[1;34mINFO[m] Scanning for projects...
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m-------------------------< [0;36mcom.sigeo:clase-13[0;1m >-------------------------[m
+[[1;34mINFO[m] [1mBuilding clase-13 1.0.0-SNAPSHOT[m
+[[1;34mINFO[m] [1m--------------------------------[ jar ]---------------------------------[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.5.0:resources[m [1m(default-resources)[m @ [36mclase-13[0;1m ---[m
+[[1;34mINFO[m] Copying 1 resource from src/main/resources to target/classes
+[[1;34mINFO[m] Copying 1 resource from src/main/resources to target/classes
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.15.0:compile[m [1m(default-compile)[m @ [36mclase-13[0;1m ---[m
+[[1;34mINFO[m] Nothing to compile - all classes are up to date.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.5.0:testResources[m [1m(default-testResources)[m @ [36mclase-13[0;1m ---[m
+[[1;34mINFO[m] Copying 1 resource from src/test/resources to target/test-classes
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.15.0:testCompile[m [1m(default-testCompile)[m @ [36mclase-13[0;1m ---[m
+[[1;34mINFO[m] Nothing to compile - all classes are up to date.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-surefire-plugin:3.5.6:test[m [1m(default-test)[m @ [36mclase-13[0;1m ---[m
+[[1;34mINFO[m] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[[1;34mINFO[m] 
+[[1;34mINFO[m] -------------------------------------------------------
+[[1;34mINFO[m]  T E S T S
+[[1;34mINFO[m] -------------------------------------------------------
+[[1;34mINFO[m] Running com.sigeo.clase13.[1mCorrelacionWorkflowTest[m
+00:47:53.477 [worker-heartbeat-default] WARN io.temporal.internal.worker.HeartbeatManager -- Server does not support worker heartbeats for namespace default, disabling
+00:47:53.774 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 1] WARN io.temporal.internal.replay.ReplayWorkflowTaskHandler -- Workflow task processing failure. startedEventId=3, WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1. If seen continuously the workflow might be stuck.
+io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 3 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=3, CurrentStartedEventId=3}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:47:53.789 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 2] WARN io.temporal.internal.replay.ReplayWorkflowTaskHandler -- Workflow task processing failure. startedEventId=6, WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1. If seen continuously the workflow might be stuck.
+io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 6 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=6, CurrentStartedEventId=6}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:47:53.790 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 2] ERROR io.temporal.internal.worker.PollerOptions -- uncaught exception
+java.lang.RuntimeException: Failure processing workflow task. WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1, Attempt=2
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:606)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:85)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 6 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=6, CurrentStartedEventId=6}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	... 3 common frames omitted
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:48:03.793 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 3] WARN io.temporal.internal.replay.ReplayWorkflowTaskHandler -- Workflow task processing failure. startedEventId=9, WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1. If seen continuously the workflow might be stuck.
+io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 9 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=9, CurrentStartedEventId=9}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:48:03.794 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 3] ERROR io.temporal.internal.worker.PollerOptions -- uncaught exception
+java.lang.RuntimeException: Failure processing workflow task. WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1, Attempt=3
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:606)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:85)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 9 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=9, CurrentStartedEventId=9}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	... 3 common frames omitted
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:48:13.796 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 3] WARN io.temporal.internal.replay.ReplayWorkflowTaskHandler -- Workflow task processing failure. startedEventId=12, WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1. If seen continuously the workflow might be stuck.
+io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 12 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=12, CurrentStartedEventId=12}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:48:13.797 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 3] ERROR io.temporal.internal.worker.PollerOptions -- uncaught exception
+java.lang.RuntimeException: Failure processing workflow task. WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1, Attempt=4
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:606)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:85)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 12 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=12, CurrentStartedEventId=12}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	... 3 common frames omitted
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:48:23.797 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 3] WARN io.temporal.internal.replay.ReplayWorkflowTaskHandler -- Workflow task processing failure. startedEventId=15, WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1. If seen continuously the workflow might be stuck.
+io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 15 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=15, CurrentStartedEventId=15}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:48:23.798 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 3] ERROR io.temporal.internal.worker.PollerOptions -- uncaught exception
+java.lang.RuntimeException: Failure processing workflow task. WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1, Attempt=5
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:606)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:85)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 15 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=15, CurrentStartedEventId=15}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	... 3 common frames omitted
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:48:33.798 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 3] WARN io.temporal.internal.replay.ReplayWorkflowTaskHandler -- Workflow task processing failure. startedEventId=18, WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1. If seen continuously the workflow might be stuck.
+io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 18 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=18, CurrentStartedEventId=18}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:48:33.799 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 3] ERROR io.temporal.internal.worker.PollerOptions -- uncaught exception
+java.lang.RuntimeException: Failure processing workflow task. WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1, Attempt=6
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:606)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:85)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 18 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=18, CurrentStartedEventId=18}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	... 3 common frames omitted
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:48:43.801 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 3] WARN io.temporal.internal.replay.ReplayWorkflowTaskHandler -- Workflow task processing failure. startedEventId=21, WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1. If seen continuously the workflow might be stuck.
+io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 21 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=21, CurrentStartedEventId=21}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted
+00:48:43.802 [Workflow Executor taskQueue="CORRELACION_TASK_QUEUE", namespace="default": 3] ERROR io.temporal.internal.worker.PollerOptions -- uncaught exception
+java.lang.RuntimeException: Failure processing workflow task. WorkflowId=c0934a6e-89de-4605-ad8a-d36bc71ff5e1, RunId=6337e075-1c66-4c05-a78a-67393399c3d1, Attempt=7
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:606)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.wrapFailure(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:85)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: io.temporal.internal.statemachines.InternalWorkflowTaskException: Failure handling event 21 of type 'EVENT_TYPE_WORKFLOW_TASK_STARTED' during execution. {WorkflowTaskStartedEventId=21, CurrentStartedEventId=21}
+	at io.temporal.internal.statemachines.WorkflowStateMachines.createEventProcessingException(WorkflowStateMachines.java:465)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:366)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEvent(WorkflowStateMachines.java:325)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.applyServerHistory(ReplayWorkflowRunTaskHandler.java:261)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTaskImpl(ReplayWorkflowRunTaskHandler.java:243)
+	at io.temporal.internal.replay.ReplayWorkflowRunTaskHandler.handleWorkflowTask(ReplayWorkflowRunTaskHandler.java:151)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTaskWithQuery(ReplayWorkflowTaskHandler.java:115)
+	at io.temporal.internal.replay.ReplayWorkflowTaskHandler.handleWorkflowTask(ReplayWorkflowTaskHandler.java:80)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handleTask(WorkflowWorker.java:615)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:438)
+	at io.temporal.internal.worker.WorkflowWorker$TaskHandlerImpl.handle(WorkflowWorker.java:376)
+	at io.temporal.internal.worker.PollTaskExecutor.lambda$process$1(PollTaskExecutor.java:80)
+	... 3 common frames omitted
+Caused by: java.lang.RuntimeException: WorkflowTask: failure executing SCHEDULED->WORKFLOW_TASK_STARTED, transition history is [CREATED->WORKFLOW_TASK_SCHEDULED]
+	at io.temporal.internal.statemachines.StateMachine.executeTransition(StateMachine.java:143)
+	at io.temporal.internal.statemachines.StateMachine.handleHistoryEvent(StateMachine.java:83)
+	at io.temporal.internal.statemachines.EntityStateMachineBase.handleEvent(EntityStateMachineBase.java:64)
+	at io.temporal.internal.statemachines.EntityStateMachineInitialCommand.handleEvent(EntityStateMachineInitialCommand.java:50)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleSingleEvent(WorkflowStateMachines.java:516)
+	at io.temporal.internal.statemachines.WorkflowStateMachines.handleEventsBatch(WorkflowStateMachines.java:364)
+	... 13 common frames omitted
+Caused by: java.lang.UnsupportedOperationException: TODO C13-E06
+	at com.sigeo.clase13.CorrelacionWorkflowImpl.procesar(CorrelacionWorkflowImpl.java:14)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation$RootWorkflowInboundCallsInterceptor.execute(POJOWorkflowImplementationFactory.java:406)
+	at io.temporal.internal.sync.POJOWorkflowImplementationFactory$POJOWorkflowImplementation.execute(POJOWorkflowImplementationFactory.java:354)
+	at io.temporal.internal.sync.WorkflowExecutionHandler.runWorkflowMethod(WorkflowExecutionHandler.java:51)
+	at io.temporal.internal.sync.SyncWorkflow.lambda$start$0(SyncWorkflow.java:122)
+	at io.temporal.internal.sync.CancellationScopeImpl.run(CancellationScopeImpl.java:99)
+	at io.temporal.internal.sync.WorkflowThreadImpl$RunnableWrapper.run(WorkflowThreadImpl.java:92)
+	at io.temporal.worker.ActiveThreadReportingExecutor.lambda$submit$0(ActiveThreadReportingExecutor.java:34)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	... 3 common frames omitted

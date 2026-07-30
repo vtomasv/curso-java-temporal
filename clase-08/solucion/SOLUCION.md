@@ -1,42 +1,146 @@
-# Clase 08 — Resolución paso a paso
+# Solución Clase 08: Spring Security y JWT
 
-Esta guía explica una forma correcta y didáctica de resolver la clase centrada en **Seguridad con Spring Security y JWT**. Debe leerse después de intentar los ejercicios de la carpeta `ejercicios/`, idealmente ejecutando pruebas y revisando cada cambio con apoyo de IA.
+Este documento explica paso a paso cómo resolver cada uno de los ejercicios de la clase.
 
-## Paso 0. Preparación
+## C08-E01 — Denegar por defecto
 
-Antes de comenzar, revisa el `README.md` de la clase, ejecuta el proyecto base y verifica que el entorno compile. Si la clase usa Spring Boot, ejecuta `mvn -q test` o `mvn -q compile` para validar dependencias. Si usa Temporal, asegúrate además de poder levantar un entorno local o al menos de contar con `temporal-testing` para pruebas en memoria.
+**Por qué:** En seguridad, el principio de "denegar por defecto" (default deny) asegura que si olvidamos configurar una ruta, esta quedará protegida automáticamente, evitando fugas de información.
 
-## Paso 1. Configurar la cadena de seguridad
+**Solución en `SecurityConfig.java`:**
+```java
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/public/**", "/formulario").permitAll()
+            .anyRequest().authenticated()
+        )
+        // ... otras configuraciones
+    return http.build();
+}
+```
 
-Declara explícitamente qué rutas son públicas y cuáles requieren autenticación.
+## C08-E02 — Usuarios de laboratorio
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+**Por qué:** Necesitamos usuarios para probar la aplicación, pero no debemos guardar contraseñas en texto plano en el código fuente. Usamos `BCryptPasswordEncoder` y leemos las contraseñas de variables de entorno o properties.
 
-## Paso 2. Emitir y validar JWT
+**Solución en `SecurityConfig.java`:**
+```java
+@Bean
+public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
+    UserDetails lector = User.builder()
+        .username("lector")
+        .password(passwordEncoder.encode("password")) // En un caso real, leer de env
+        .roles("LECTOR")
+        .build();
+        
+    UserDetails operador = User.builder()
+        .username("operador")
+        .password(passwordEncoder.encode("password"))
+        .roles("OPERADOR")
+        .build();
+        
+    UserDetails supervisor = User.builder()
+        .username("supervisor")
+        .password(passwordEncoder.encode("password"))
+        .roles("SUPERVISOR")
+        .build();
 
-Encapsula la lógica del token en un servicio dedicado y evita mezclarla con el controlador.
+    return new InMemoryUserDetailsManager(lector, operador, supervisor);
+}
+```
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+## C08-E03 — Roles por operación
 
-## Paso 3. Aplicar autorización por roles
+**Por qué:** Diferentes operaciones requieren diferentes niveles de privilegio. Usamos `@PreAuthorize` para aplicar estas reglas a nivel de método.
 
-Controla operaciones sensibles con reglas declarativas y pruebas de seguridad.
+**Solución en `SolicitudController.java`:**
+```java
+@GetMapping
+@PreAuthorize("hasAnyRole('LECTOR', 'OPERADOR', 'SUPERVISOR')")
+public List<Solicitud> getAll() {
+    return solicitudService.findAll();
+}
 
-La decisión didáctica aquí es mantener la solución incremental: primero se establece el contrato, luego la implementación y finalmente la verificación con pruebas. Esto permite que el estudiante use la IA como asistente de diseño y depuración, no como sustituto de comprensión.
+@PostMapping
+@PreAuthorize("hasRole('OPERADOR')")
+public Solicitud create(@RequestBody Solicitud solicitud) {
+    return solicitudService.create(solicitud);
+}
 
-## Errores frecuentes
+@PostMapping("/{id}/approve")
+@PreAuthorize("hasRole('SUPERVISOR')")
+public ResponseEntity<Void> approve(@PathVariable Long id) {
+    solicitudService.approve(id);
+    return ResponseEntity.ok().build();
+}
+```
 
-| Error | Efecto | Cómo corregirlo |
-|---|---|---|
-| Guardar secretos en el código | Riesgo de seguridad | Mover claves a variables de entorno o configuración externa |
-| No probar rutas protegidas | Falsos positivos | Agregar pruebas con MockMvc y usuarios simulados |
+## C08-E04 — Resource server local
 
-## Cómo usar la IA en este ejercicio
+**Por qué:** Para validar JWTs, configuramos Spring Security como un OAuth2 Resource Server. Esto le dice a Spring que extraiga el token del header `Authorization: Bearer ...` y lo valide.
 
-Un buen uso de la IA en esta clase consiste en pedir **explicaciones justificadas**, revisiones de diseño y ayuda de depuración sobre fragmentos pequeños. Tres prompts útiles son los siguientes:
+**Solución en `SecurityConfig.java`:**
+```java
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        // ... authorizeHttpRequests ...
+        .oauth2ResourceServer(oauth2 -> oauth2
+            .jwt(Customizer.withDefaults())
+        );
+    return http.build();
+}
+```
+*Nota: Se requiere configurar `spring.security.oauth2.resourceserver.jwt.issuer-uri` en `application.yaml`.*
 
-> "Estoy resolviendo la clase y quiero implementar esta parte sin perder la arquitectura. Te comparto mi código actual y el objetivo. Propón el siguiente cambio mínimo y explícame por qué es mejor que dos alternativas."
+## C08-E05 — Editar solo lo propio
 
-> "Este test falla con el siguiente error. Antes de darme un fix, enumera las tres causas más probables y cómo verificar cada una desde Java/Maven."
+**Por qué:** El control de acceso basado en roles (RBAC) no es suficiente cuando los usuarios solo deben acceder a sus propios recursos. Esto se conoce como control de acceso basado en atributos (ABAC) o "ownership".
 
-> "Revisa este código como si fueras un profesor de desarrollo de software: identifica problemas de diseño, de legibilidad y de pruebas, y proponme un plan de mejora en tres pasos."
+**Solución en `SolicitudService.java`:**
+```java
+@PreAuthorize("hasRole('SUPERVISOR') or @securityService.isOwner(authentication, #id)")
+public Solicitud update(Long id, Solicitud solicitud) {
+    // Lógica de actualización
+    return solicitud;
+}
+```
+*Nota: Requiere crear un bean `securityService` que verifique si el usuario actual es el propietario de la solicitud con el ID dado.*
+
+## C08-E06 — CSRF y formulario
+
+**Por qué:** CSRF (Cross-Site Request Forgery) es un ataque donde un sitio malicioso engaña al navegador del usuario para que envíe una petición a nuestro sitio. Spring Security protege contra esto por defecto usando tokens sincronizados.
+
+**Solución en `SecurityConfig.java`:**
+```java
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        // ...
+        .csrf(csrf -> csrf
+            .ignoringRequestMatchers("/api/**") // Deshabilitar CSRF para la API REST (usa JWT)
+        );
+    return http.build();
+}
+```
+*Nota: Thymeleaf incluye automáticamente el token CSRF en los formularios si se usa `th:action`.*
+
+## C08-E07 — Escáner de secretos
+
+**Por qué:** Los secretos (contraseñas, tokens, claves API) nunca deben subirse al repositorio. Si se suben por accidente, deben ser revocados y eliminados del historial.
+
+**Solución:**
+1. Eliminar el secreto del archivo.
+2. Usar herramientas como `git filter-repo` o BFG Repo-Cleaner para eliminarlo del historial.
+3. Configurar herramientas como `trufflehog` o `git-secrets` en un pre-commit hook o en CI/CD para prevenir futuros commits con secretos.
+
+## C08-E08 — Abuse cases
+
+**Por qué:** Las pruebas de seguridad (abuse cases) verifican que el sistema se comporta correctamente ante entradas maliciosas o inesperadas.
+
+**Solución:**
+Documentar en `security-review.md` los hallazgos de las pruebas, por ejemplo:
+- **IDOR:** Intentar acceder a `/api/solicitudes/2` siendo el propietario de la solicitud 1.
+- **Mass Assignment:** Intentar enviar `{"estado": "APROBADO"}` en la creación de una solicitud.
+- **Errores verbosos:** Verificar que las respuestas de error no expongan stack traces.
