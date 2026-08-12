@@ -14,7 +14,23 @@ public class ClasificadorPrioridad {
      * REQUISITO: Usar switch expression (no usar cadena de if-else).
      */
     public static String priorityFor(int codigo) {
-        // TODO(C01-E03): Implementar usando switch expression
-        throw new UnsupportedOperationException("TODO C01-E03");
+        switch (codigo) {
+            case 1 -> {
+                return "Crítica - 1 hora";
+            }
+            case 2 -> {
+                return "Alta - 4 horas";
+            }
+            case 3 -> {
+                return "Media - 24 horas";
+            }
+            case 4 -> {
+                return "Baja - 72 horas";
+            }
+            case 5 -> {
+                return "Planificada - 1 semana";
+            }
+            default -> throw new IllegalArgumentException("Código de prioridad inválido: " + codigo);
+        }
     }
 }

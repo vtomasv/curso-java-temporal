@@ -7,8 +7,7 @@ public class ConversorUnidades {
      * Fórmula: (C * 9/5) + 32
      */
     public static double celsiusAFahrenheit(double celsius) {
-        // TODO(C01-E02): Implementar la conversión de Celsius a Fahrenheit
-        throw new UnsupportedOperationException("TODO C01-E02");
+        return (celsius * 9/5) + 32;
     }
 
     /**
@@ -16,7 +15,6 @@ public class ConversorUnidades {
      * Fórmula: km * 0.621371
      */
     public static double kilometrosAMillas(double kilometros) {
-        // TODO(C01-E02): Implementar la conversión de kilómetros a millas
-        throw new UnsupportedOperationException("TODO C01-E02");
+        return (kilometros * 0.621371);
     }
 }

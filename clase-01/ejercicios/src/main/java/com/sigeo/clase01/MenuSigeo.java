@@ -48,8 +48,44 @@ public class MenuSigeo {
      * - Cualquier otra opción: Mostrar "Opción inválida".
      */
     public void procesarOpcion(String opcion, Scanner scanner) {
-        // TODO(C01-E06): Implementar la lógica del menú
-        throw new UnsupportedOperationException("TODO C01-E06");
+        switch (opcion) {
+            case "1":
+                System.out.print("Ingrese el texto del registro: ");
+                String texto = scanner.nextLine();
+                registros.add(texto);
+                break;
+            case "2":
+                if (registros.isEmpty()) {
+                    System.out.println("No hay registros.");
+                } else {
+                    int i = 0;
+                    for (String registro : registros) {
+                        System.out.println((i + 1) + ". " + registro);
+                        i++;
+                    }
+                }
+                break;
+            case "3":
+                System.out.print("Ingrese el término de búsqueda: ");
+                String termino = scanner.nextLine();
+                boolean encontrado = false;
+                for (String registro : registros) {
+                    if (registro.contains(termino)) {
+                        System.out.println(registro);
+                        encontrado = true;
+                    }
+                }
+                if (!encontrado) {
+                    System.out.println("No se encontraron registros que contengan el término de búsqueda.");
+                }
+                break;
+            case "4":
+                ejecutando = false;
+                break;
+            default:
+                System.out.println("Opción inválida.");
+                break;
+        }
     }
     
     // Métodos para testing

@@ -6,21 +6,34 @@ import java.time.LocalDate;
  * Record que representa una Solicitud Operativa.
  * Debe contener: id (String), solicitante (String), descripcion (String), prioridad (int), fecha (LocalDate).
  */
-// TODO(C01-E04): Convertir esta clase en un record con los campos solicitados
-public class Solicitud {
-    
-    // TODO(C01-E04): Implementar constructor compacto que valide:
-    // - id no nulo ni vacío
-    // - solicitante no nulo ni vacío
-    // - prioridad entre 1 y 5
-    // - fecha no nula
-    
-    /**
-     * Retorna un resumen legible de la solicitud.
-     * Ejemplo: "[ID-123] Solicitud de Juan (Prioridad: 1) - 2026-07-23"
-     */
+
+public record Solicitud(
+        String id,
+        String solicitante,
+        String descripcion,
+        int prioridad,
+        LocalDate fecha
+) {
+    public Solicitud {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("El id no puede ser nulo o vacío");
+        }
+        if (solicitante == null || solicitante.isBlank()) {
+            throw new IllegalArgumentException("El solicitante no puede ser nulo o vacío");
+        }
+        if (descripcion == null || descripcion.isBlank()) {
+            throw new IllegalArgumentException("La descripción no puede ser nula o vacía");
+        }
+        if (prioridad < 1 || prioridad > 5) {
+            throw new IllegalArgumentException("La prioridad debe estar entre 1 y 5");
+        }
+        if (fecha == null) {
+            throw new IllegalArgumentException("La fecha no puede ser nula");
+        }
+    }
+
     public String resumen() {
-        // TODO(C01-E04): Implementar el método resumen
-        throw new UnsupportedOperationException("TODO C01-E04");
+        return "[%s] Solicitud de %s (Prioridad: %d) - %s"
+                .formatted(id, solicitante, prioridad, fecha);
     }
 }

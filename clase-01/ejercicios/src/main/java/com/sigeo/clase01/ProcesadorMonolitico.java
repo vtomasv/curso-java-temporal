@@ -15,38 +15,40 @@ public class ProcesadorMonolitico {
      * El comportamiento final de procesarDatos debe ser exactamente el mismo.
      */
     public List<String> procesarDatos(List<String> datos) {
-        // TODO(C01-E05): Reemplazar el contenido de este método usando los métodos extraídos
-        throw new UnsupportedOperationException("TODO C01-E05");
         
-        /* Código original a refactorizar:
         List<String> resultados = new java.util.ArrayList<>();
         for (String dato : datos) {
             // Validación
-            if (dato == null || dato.trim().isEmpty() || dato.length() < 3) {
+            if (!esValido(dato)) {
                 continue;
             }
-            
             // Cálculo
-            int puntaje = 0;
-            for (char c : dato.toCharArray()) {
-                if (Character.isUpperCase(c)) {
-                    puntaje += 2;
-                } else {
-                    puntaje += 1;
-                }
-            }
-            
+            int puntaje = this.calcularPuntaje(dato);
             // Formateo
-            String resultado = "DATO: " + dato.toUpperCase() + " | PUNTAJE: " + puntaje;
+            String resultado = this.formatearResultado(dato, puntaje);
             resultados.add(resultado);
         }
         return resultados;
-        */
+
     }
     
-    // TODO(C01-E05): Crear método esValido
+    private boolean esValido(String dato) {
+        return dato != null && !dato.trim().isEmpty() && dato.length() >= 3;
+    }
+
+    private int calcularPuntaje(String dato) {
+        int puntaje = 0;
+        for (char c : dato.toCharArray()) {
+            if (Character.isUpperCase(c)) {
+                puntaje += 2;
+            } else {
+                puntaje += 1;
+            }
+        }
+        return puntaje;
+    }
     
-    // TODO(C01-E05): Crear método calcularPuntaje
-    
-    // TODO(C01-E05): Crear método formatearResultado
+    private String formatearResultado(String dato, int puntaje) {
+        return "DATO: " + dato.toUpperCase() + " | PUNTAJE: " + puntaje;
+    }
 }
