@@ -55,10 +55,28 @@ public class GestorDeSolicitudes {
                 this.solicitudSeleccionada = this.seleccionarSolicitud(scanner);
             case "4" ->
                 this.rechazarSolicitud(scanner);
-            case "5", "6" ->
-                System.out.println("Funcionalidad aún no implementada.");
+            case "5" -> 
+                this.enviarARevision(scanner);
+            case "6" ->
+                this.enviarParaModificacion(scanner);
             case "99" -> ejecutando = false;
             default -> System.out.println("Opción no válida. Intente nuevamente.");
+        }
+    }
+
+    private void enviarParaModificacion(Scanner scanner) {
+        try {
+            this.solicitudSeleccionada.enviarModificacion("firma de modificación");
+        } catch (IllegalStateException e) {
+            System.out.println("No se puede enviar la solicitud para modificación en su estado actual: " + this.solicitudSeleccionada.getEstado().getNombre());
+        }
+    }
+
+    private void enviarARevision(Scanner scanner) {
+        try {
+            this.solicitudSeleccionada.enviarRevision("firma de revisión");
+        } catch (IllegalStateException e) {
+            System.out.println("No se puede enviar la solicitud a revisión en su estado actual: " + this.solicitudSeleccionada.getEstado().getNombre());
         }
     }
 

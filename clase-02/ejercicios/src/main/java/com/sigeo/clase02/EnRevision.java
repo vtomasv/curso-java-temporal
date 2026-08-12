@@ -28,7 +28,8 @@ public class EnRevision extends Estado {
 
     @Override
     public void enviarModificacion(Solicitud solicitud, String firma) {
-        throw new IllegalStateException();
+        solicitud.setFirma(firma);
+        solicitud.setEstado(new Modificacion());
     }
 
 }
