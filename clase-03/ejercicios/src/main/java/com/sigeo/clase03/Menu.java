@@ -8,6 +8,16 @@ public abstract class Menu {
     // indicamos el nombre que tendra el menu
     private String nombre;
 
+    private Accion accion = new AccionNula();
+
+    public Accion getAccion() {
+        return accion;
+    }
+
+    public void setAccion(Accion accion) {
+        this.accion = accion;
+    }
+
     public Menu(String nombre) {
         this.nombre = nombre;
     }
@@ -22,6 +32,18 @@ public abstract class Menu {
     }
 
     public abstract void mostrar(PrintStream out, int profundidad, String sangria, int enumeracion); 
+
+    public Menu ejecutarAccion() {
+        this.getAccion().ejecutar();
+        return this;
+    }
+
+    protected abstract Menu getMenu(int opcionInt);
+
+    protected  int getNumeracion(int enumeracion)
+    {
+        return enumeracion + 1;
+    }
 
 
 }

@@ -33,11 +33,19 @@ public class Complejo extends Menu {
         out.println(sangria + prefijo + this.getNombre());
         if (profundidad != 0) {
             for (Menu item : this.getItems()) {
-                enumeracion = enumeracion + 1;
+                enumeracion = item.getNumeracion(enumeracion);
                 item.mostrar(out, profundidad - 1, sangria + "   ", enumeracion);
             }
         }
 
+    }
+
+    @Override
+    protected Menu getMenu(int opcionInt) {
+        if (opcionInt < 1 || opcionInt > this.getItems().size()) {
+            throw new IndexOutOfBoundsException("Opción inválida. Por favor, seleccione una opción válida.");
+        }
+        return this.getItems().get(opcionInt - 1);
     }
 
 
