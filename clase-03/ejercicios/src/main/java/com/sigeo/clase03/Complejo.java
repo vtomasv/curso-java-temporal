@@ -30,7 +30,7 @@ public class Complejo extends Menu {
     @Override
     public void mostrar(PrintStream out, int profundidad, String sangria, int enumeracion) {
         String prefijo = enumeracion != 0 ? enumeracion + ") " : "";
-        out.println(sangria + prefijo + this.getNombre());
+        out.println(sangria + prefijo + this.getNombre() + " >");
         if (profundidad != 0) {
             for (Menu item : this.getItems()) {
                 enumeracion = item.getNumeracion(enumeracion);

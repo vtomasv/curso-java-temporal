@@ -5,16 +5,20 @@ import java.time.LocalDate;
 public class PriorityCalculator {
 
     public int calculatePriority(int basePriority, LocalDate date) {
-        // TODO(C03-E04): Depurar este método.
-        // Hay un bug: si la prioridad base es máxima (10) y es fin de mes (día 31),
-        // el cálculo lanza ArithmeticException por división por cero.
-        // Corregir el código para que devuelva 100 en ese caso específico en lugar de fallar.
-        
+
         int multiplier = 10;
-        if (date.getDayOfMonth() == 31) {
+        try {
+            if (date.getDayOfMonth() == 31) {
             multiplier = 10 - basePriority; // Bug: si basePriority es 10, multiplier es 0
+            return 1000 / multiplier;
         }
-        
-        return 1000 / multiplier;
+        } catch (ArithmeticException e) {
+            // Manejar la excepción de manera adecuada, por ejemplo, registrando un mensaje de error
+            System.err.println("Error al calcular la prioridad: " + e.getMessage());
+            // Devolver un valor predeterminado o lanzar una excepción personalizada si es necesario
+        }
+
+        return 100;
+       
     }
 }

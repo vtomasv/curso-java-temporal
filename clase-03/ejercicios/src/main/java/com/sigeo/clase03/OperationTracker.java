@@ -13,6 +13,18 @@ public class OperationTracker {
         // NUNCA loguear el secretToken.
         // Loguear a nivel DEBUG un mensaje simulando un procesamiento costoso.
         // Asegurarse de limpiar el MDC al finalizar (usar try-finally).
-        throw new UnsupportedOperationException("TODO C03-E03");
+        try {
+            MDC.put("correlationId", correlationId);
+            logger.info("Iniciando operación para el usuario {}", userId);
+            logger.debug("Procesando operación costosa...");
+            // Simulación de procesamiento costoso
+            Thread.sleep(1000);
+            logger.info("Operación completada para el usuario {}", userId);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.error("La operación fue interrumpida para el usuario {}", userId, e);
+        } finally {
+            MDC.remove("correlationId");
+        }
     }
 }

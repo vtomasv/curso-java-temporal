@@ -27,6 +27,9 @@ public class SafeImporter {
         // TODO(C03-E02): Usar try-with-resources para asegurar que resource se cierre.
         // Llamar a resource.doWork() dentro del bloque try.
         // Observar cómo la excepción de close() se agrega como suppressed a la excepción original.
-        throw new UnsupportedOperationException("TODO C03-E02");
+        try (FailingResource r = resource) {
+            r.doWork();
+        }
+       
     }
 }

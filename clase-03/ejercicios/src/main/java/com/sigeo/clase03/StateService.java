@@ -2,20 +2,38 @@ package com.sigeo.clase03;
 
 public class StateService {
 
+    private State currentState = new FinalState();
+
     public void transitionState(String currentState, String newState) {
         try {
-            performLowLevelTransition(currentState, newState);
-        } catch (IllegalArgumentException e) {
-            // TODO(C03-E05): Atrapar la excepción de bajo nivel y lanzar InvalidStateTransitionException.
-            // El mensaje debe ser: "No se puede transicionar de " + currentState + " a " + newState
-            // Se debe preservar la excepción original como causa.
-            throw new UnsupportedOperationException("TODO C03-E05");
+            this.currentState = this.currentState.performLowLevelTransition(newState);
+        } catch (IllegalArgumentException causa) {
+            throw new InvalidStateTransitionException("No se puede transicionar de " + currentState + " a " + newState, causa);
         }
     }
 
-    private void performLowLevelTransition(String current, String next) {
-        if ("FINAL".equals(current)) {
+    private abstract class State
+    { 
+
+        public abstract State performLowLevelTransition(String newState);
+    }
+
+    private class FinalState extends State
+    {
+        @Override
+        public State performLowLevelTransition(String newState) {
             throw new IllegalArgumentException("Estado final inmutable");
         }
     }
+
+    private class ArchivedState extends State
+    {
+        @Override
+        public State performLowLevelTransition(String newState) {
+            System.out.println("Transicionando a " + newState);
+            return new ArchivedState();
+        }
+    }
 }
+
+

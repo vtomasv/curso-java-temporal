@@ -16,6 +16,23 @@ public class CsvParser {
         // crear un ParseError con el número de línea (1-based), el campo problemático (o "formato")
         // y el mensaje de la excepción, y agregarlo a errors.
         // El proceso NO debe detenerse si hay un error.
-        throw new UnsupportedOperationException("TODO C03-E01");
+        ParseResult result = new ParseResult(new ArrayList<>(), new ArrayList<>());
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            try {
+                String[] fields = line.split(",");
+                if (fields.length != 3) {
+                    result.errors().add(new ParseError(i + 1, "formato", "La línea debe tener exactamente 3 campos."));
+                } else {
+                result.validLines().add(line);
+                }
+            } catch (Exception e) {
+                // Crear un ParseError y agregarlo a la lista de errores.
+                ParseError error = new ParseError(i + 1, "formato", e.getMessage());
+                // Agregar el error a la lista de errores.
+                result.errors().add(error);
+            }
+        }
+        return result;
     }
 }

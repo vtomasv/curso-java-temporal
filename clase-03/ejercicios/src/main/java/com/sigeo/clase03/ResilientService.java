@@ -12,10 +12,21 @@ public class ResilientService {
     }
 
     public String getReliableData() {
-        // TODO(C03-E06): Implementar lógica de reintento.
-        // Intentar llamar a repository.fetchData() hasta 2 veces.
-        // Si falla, loguear el intento (ej. "Intento 1 falló: ...").
-        // Si falla en todos los intentos permitidos, relanzar la última excepción.
-        throw new UnsupportedOperationException("TODO C03-E06");
+        
+        int maxRetries = 2;
+        int attempt = 0;
+        
+        while (true) {
+            try {
+                attempt++;
+                return repository.fetchData();
+            } catch (RuntimeException e) {
+                if (attempt > maxRetries) {
+                    logger.error("Todos los intentos fallaron. Último error: {}", e.getMessage());
+                    throw e;
+                }
+                logger.warn("Intento {} falló: {}. Reintentando...", attempt, e.getMessage());
+            }
+        }
     }
 }
