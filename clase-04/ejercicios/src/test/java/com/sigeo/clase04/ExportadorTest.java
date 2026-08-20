@@ -16,7 +16,10 @@ class ExportadorTest {
         List<String> lineas = List.of("Línea 1", "Línea 2");
         
         exportador.exportarAtomicamente(lineas, destino);
-        
+    
+        List<String> lineas2 = List.of("ls -ltr", "echo 'Hola mundo'", "rm -Rf archivo_01.txt");
+        exportador.exportarAtomicamente(lineas2, Path.of("./archivo_01.sh"));
+
         assertThat(Files.exists(destino)).isTrue();
         assertThat(Files.readAllLines(destino)).containsExactlyElementsOf(lineas);
     }

@@ -13,8 +13,23 @@ public class TableroMetricas {
      * @return Mapa con el estado como clave y las métricas como valor
      */
     public Map<String, MetricasDTO> calcularMetricasPorEstado(List<Solicitud> solicitudes) {
-        // TODO(C04-E03): Implementar usando Streams sin efectos secundarios
-        // Pista: filter, collect, groupingBy, teeing (o collect y luego transformar)
-        throw new UnsupportedOperationException("TODO C04-E03");
+
+        return solicitudes.stream()
+                .filter(s -> s.prioridad() == 1 || s.prioridad() == 2)
+                .collect(java.util.stream.Collectors.groupingBy(
+                        Solicitud::estado,
+                        java.util.stream.Collectors.collectingAndThen(
+                                java.util.stream.Collectors.toList(),
+                                list -> {
+                                    int cantidad = list.size();
+                                    double promedioHoras = list.stream()
+                                            .mapToInt(Solicitud::horasEstimadas)
+                                            .average()
+                                            .orElse(0.0);
+                                    return new MetricasDTO(cantidad, promedioHoras);
+                                }
+                        )
+                ));
+
     }
 }

@@ -1,6 +1,7 @@
 package com.sigeo.clase04;
 
 import java.net.URI;
+import java.net.http.*;
 
 public class ClienteCatalogo {
 
@@ -20,8 +21,25 @@ public class ClienteCatalogo {
      * @return Cuerpo de la respuesta
      */
     public String consultar(String id) {
-        // TODO(C04-E05): Implementar llamada HTTP con HttpClient
-        // Pista: HttpClient.newBuilder().connectTimeout(...).build(), HttpRequest.newBuilder().timeout(...).build()
-        throw new UnsupportedOperationException("TODO C04-E05");
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(2))
+                .build();
+
+        HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + "/" + id))
+                .timeout(java.time.Duration.ofSeconds(2))
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                return response.body();
+            } else {
+                throw new RuntimeException("Error en la respuesta: " + response.statusCode());   
+            }
+        } catch (java.io.IOException | java.lang.InterruptedException e) {
+            throw new RuntimeException("Error en la solicitud HTTP", e);            
+        }   
+                
     }
 }

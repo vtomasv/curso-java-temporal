@@ -10,16 +10,19 @@ public record Solicitud(String id, String descripcion, String estado, int priori
         Objects.requireNonNull(estado, "El estado no puede ser nulo");
     }
     
-    // TODO(C04-E01): Implementar equals y hashCode basados únicamente en el 'id'
-    // para asegurar la deduplicación correcta.
     
     @Override
     public boolean equals(Object o) {
-        throw new UnsupportedOperationException("TODO C04-E01");
+       
+        if (o.getClass() != Solicitud.class) {
+            return false;
+        }
+        Solicitud other = (Solicitud) o;
+        return this.id.equals(other.id);
     }
 
     @Override
     public int hashCode() {
-        throw new UnsupportedOperationException("TODO C04-E01");
+        return Objects.hash(id);
     }
 }

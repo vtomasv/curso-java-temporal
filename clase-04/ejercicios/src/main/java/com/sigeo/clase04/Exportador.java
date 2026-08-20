@@ -1,10 +1,10 @@
 package com.sigeo.clase04;
 
-import java.nio.file.Path;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
 import java.util.List;
-
 public class Exportador {
-
     /**
      * Escribe una lista de líneas en un archivo de destino de forma atómica.
      * Para evitar archivos parciales si ocurre un error durante la escritura,
@@ -14,8 +14,12 @@ public class Exportador {
      * @param destino Ruta del archivo final
      */
     public void exportarAtomicamente(List<String> lineas, Path destino) {
-        // TODO(C04-E04): Implementar escritura en archivo temporal y movimiento atómico
-        // Pista: Files.createTempFile, Files.write (con StandardCharsets.UTF_8), Files.move (con StandardCopyOption.ATOMIC_MOVE)
-        throw new UnsupportedOperationException("TODO C04-E04");
+        try {
+            Path archivoTemporal = Files.createTempFile(destino.getParent(), "temp", ".tmp");
+            Files.write(archivoTemporal, lineas, StandardCharsets.UTF_8);
+            Files.move(archivoTemporal, destino, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException e) { 
+            e.printStackTrace();
+        }   
     }
 }

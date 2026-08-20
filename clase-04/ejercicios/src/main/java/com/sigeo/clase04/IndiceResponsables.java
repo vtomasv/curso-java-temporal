@@ -8,9 +8,7 @@ public class IndiceResponsables {
     private final Map<Responsable, List<Solicitud>> indice;
 
     public IndiceResponsables(Map<Responsable, List<Solicitud>> asignaciones) {
-        // TODO(C04-E02): Inicializar el índice asegurando que no se pueda modificar externamente
-        // Pista: Map.copyOf o Collections.unmodifiableMap
-        throw new UnsupportedOperationException("TODO C04-E02");
+        this.indice = Map.copyOf(asignaciones);
     }
 
     /**
@@ -21,8 +19,6 @@ public class IndiceResponsables {
      * @return Lista inmodificable de solicitudes
      */
     public List<Solicitud> obtenerSolicitudes(Responsable responsable) {
-        // TODO(C04-E02): Implementar la consulta segura
-        // Pista: getOrDefault
-        throw new UnsupportedOperationException("TODO C04-E02");
+        return indice.getOrDefault(responsable, List.of());
     }
 }

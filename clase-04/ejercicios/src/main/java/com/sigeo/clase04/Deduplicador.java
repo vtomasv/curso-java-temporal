@@ -12,8 +12,8 @@ public class Deduplicador {
      * @return Lista sin duplicados, manteniendo el orden original
      */
     public List<Solicitud> deduplicar(List<Solicitud> solicitudes) {
-        // TODO(C04-E01): Implementar la deduplicación usando la colección adecuada
-        // Pista: Considerar LinkedHashSet para mantener el orden de inserción
-        throw new UnsupportedOperationException("TODO C04-E01");
+        java.util.Set<Solicitud> uniqueSolicitudes = new java.util.LinkedHashSet<>(solicitudes);
+        return new java.util.ArrayList<>(uniqueSolicitudes);
+
     }
 }
