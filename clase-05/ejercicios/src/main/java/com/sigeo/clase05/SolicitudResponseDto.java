@@ -1,12 +1,7 @@
 package com.sigeo.clase05;
 
 // TODO(C05-E03): Convertir a record
-public class SolicitudResponseDto {
-    private Long id;
-    private String titulo;
-    private String descripcion;
-    private String estado;
-    private String prioridad;
+public record SolicitudResponseDto(Long id, String titulo, String descripcion, String estado, String prioridad) {
     
     public SolicitudResponseDto(Long id, String titulo, String descripcion, String estado, String prioridad) {
         this.id = id;

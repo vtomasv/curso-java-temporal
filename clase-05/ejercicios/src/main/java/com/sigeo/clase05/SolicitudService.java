@@ -7,7 +7,6 @@ import java.util.List;
 @Service
 public class SolicitudService {
 
-    // TODO(C05-E02): Inyectar SolicitudRepository por constructor
     private final SolicitudRepository repository;
 
     public SolicitudService(SolicitudRepository repository) {
@@ -26,6 +25,6 @@ public class SolicitudService {
 
     public List<Solicitud> buscarSolicitudes(String estado, String prioridad) {
         // TODO(C05-E04): Usar el repositorio para buscar por estado y prioridad
-        throw new UnsupportedOperationException("TODO C05-E04");
+        return this.repository.findByEstadoAndPrioridad(estado, prioridad);
     }
 }

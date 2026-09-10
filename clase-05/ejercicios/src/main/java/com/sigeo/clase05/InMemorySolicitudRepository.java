@@ -34,7 +34,11 @@ public class InMemorySolicitudRepository implements SolicitudRepository {
 
     @Override
     public List<Solicitud> findByEstadoAndPrioridad(String estado, String prioridad) {
-        // TODO(C05-E04): Implementar filtrado por estado y/o prioridad (si son null, no filtrar por ese campo)
-        throw new UnsupportedOperationException("TODO C05-E04");
+        // TODO(C05-E04): Implementar filtrado por estado y/o prioridad (si son null, no filtrar por ese field)
+        return this.solicitudes.stream()
+                .filter(s -> estado == null || s.getEstado().equals(estado))
+                .filter(s -> prioridad == null || s.getPrioridad().equals(prioridad))
+                .collect(Collectors.toList());  
+
     }
 }

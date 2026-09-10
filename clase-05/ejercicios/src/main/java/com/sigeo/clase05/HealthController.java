@@ -1,6 +1,8 @@
 package com.sigeo.clase05;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,5 +27,14 @@ public class HealthController {
         autor.put("Nombre", "Tomás");
         autor.put("Apellido", "Vera");
         return autor;
+    }
+
+    //Retorna un metodo al azar dada una solicitud get
+    @PostMapping("/random")
+    public Map<String, String> random() {
+        HashMap<String, String> random = new HashMap<String, String>();
+        int numero = (int) (Math.random() * 100);
+        random.put("numero", String.valueOf(numero));
+        return random   ;
     }
 }

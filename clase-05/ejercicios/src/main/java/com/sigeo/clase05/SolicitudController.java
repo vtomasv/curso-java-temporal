@@ -4,13 +4,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/solicitudes")
 public class SolicitudController {
 
-    // TODO(C05-E03): Inyectar SolicitudService por constructor
+    
+    private SolicitudService solicitudService;
+
+
+    public SolicitudController(SolicitudService solicitudService) {
+        this.solicitudService = solicitudService;   
+    }
 
     @PostMapping
     public ResponseEntity<SolicitudResponseDto> crearSolicitud(@Valid @RequestBody CrearSolicitudDto dto) {
@@ -27,12 +37,24 @@ public class SolicitudController {
         throw new UnsupportedOperationException("TODO C05-E04");
     }
 
-    @GetMapping
+    @GetMapping("/listarSolicitudes")
     public ResponseEntity<List<SolicitudResponseDto>> listarSolicitudes(
-            @RequestParam(required = false) String estado,
-            @RequestParam(required = false) String prioridad) {
-        // TODO(C05-E04): Llamar al servicio para buscar solicitudes con los filtros
-        // TODO(C05-E04): Mapear la lista de entidades a lista de DTOs y retornar 200 OK
-        throw new UnsupportedOperationException("TODO C05-E04");
+            @RequestParam(required = true) String estado,
+            @RequestParam(required = false) String prioridad) 
+    {
+        List<Solicitud> solicitudes = solicitudService.buscarSolicitudes(estado, prioridad);
+        List<SolicitudResponseDto> responseDtos = new ArrayList<>();
+        for (Solicitud solicitud : solicitudes) {
+            SolicitudResponseDto dto = new SolicitudResponseDto(
+                solicitud.getId(),
+                solicitud.getTitulo(),
+                solicitud.getDescripcion(),
+                solicitud.getEstado(),
+                solicitud.getPrioridad()
+            );
+            responseDtos.add(dto);
+        }
+
+        return ResponseEntity.ok(responseDtos);
     }
 }
