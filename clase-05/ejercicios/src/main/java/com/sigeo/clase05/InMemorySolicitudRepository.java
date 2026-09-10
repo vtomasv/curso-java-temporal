@@ -16,25 +16,31 @@ public class InMemorySolicitudRepository implements SolicitudRepository {
 
     @Override
     public Solicitud save(Solicitud solicitud) {
-        // TODO(C05-E02): Implementar guardado en memoria. Si el id es null, asignar uno nuevo usando idGenerator.
-        throw new UnsupportedOperationException("TODO C05-E02");
+
+        if (solicitud.getId() == null) {
+            solicitud.setId(idGenerator.getAndIncrement());
+        }
+        solicitudes.add(solicitud);
+        return solicitud;
     }
 
     @Override
     public Optional<Solicitud> findById(Long id) {
-        // TODO(C05-E02): Implementar búsqueda por ID
-        throw new UnsupportedOperationException("TODO C05-E02");
+        
+        return this.solicitudes.stream()
+                .filter(s -> s.getId().equals(id))
+                .findFirst();
     }
 
     @Override
     public List<Solicitud> findAll() {
-        // TODO(C05-E02): Retornar todas las solicitudes
-        throw new UnsupportedOperationException("TODO C05-E02");
+
+        return this.solicitudes.stream().collect(Collectors.toList());
+        
     }
 
     @Override
     public List<Solicitud> findByEstadoAndPrioridad(String estado, String prioridad) {
-        // TODO(C05-E04): Implementar filtrado por estado y/o prioridad (si son null, no filtrar por ese field)
         return this.solicitudes.stream()
                 .filter(s -> estado == null || s.getEstado().equals(estado))
                 .filter(s -> prioridad == null || s.getPrioridad().equals(prioridad))
