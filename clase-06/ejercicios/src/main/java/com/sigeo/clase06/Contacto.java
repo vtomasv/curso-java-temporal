@@ -3,7 +3,7 @@ package com.sigeo.clase06;
 import jakarta.persistence.Embeddable;
 import java.util.Objects;
 
-// TODO(C06-E02): Mapear como @Embeddable
+@Embeddable
 public class Contacto {
 
     private String email;
@@ -21,14 +21,16 @@ public class Contacto {
     public String getEmail() { return email; }
     public String getTelefono() { return telefono; }
 
-    // TODO(C06-E02): Implementar equals y hashCode basados en los valores (Value Object)
     @Override
     public boolean equals(Object o) {
-        throw new UnsupportedOperationException("TODO C06-E02");
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Contacto contacto = (Contacto) o;
+        return Objects.equals(email, contacto.email) && Objects.equals(telefono, contacto.telefono);
     }
 
     @Override
     public int hashCode() {
-        throw new UnsupportedOperationException("TODO C06-E02");
+        return Objects.hash(email, telefono);
     }
 }

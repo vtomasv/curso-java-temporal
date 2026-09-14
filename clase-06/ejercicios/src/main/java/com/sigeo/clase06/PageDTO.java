@@ -13,6 +13,13 @@ public record PageDTO<T>(
     boolean isLast
 ) {
     public static <T> PageDTO<T> from(Page<T> page) {
-        throw new UnsupportedOperationException("TODO C06-E05");
+        return new PageDTO<>(
+            page.getContent(),
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages(),
+            page.isLast()
+        );
     }
 }

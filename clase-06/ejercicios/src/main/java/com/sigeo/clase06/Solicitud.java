@@ -6,40 +6,52 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-// TODO(C06-E01): Mapear entidad Solicitud con @Entity, @Table, @Id (UUID), @Version, y timestamps
+@Entity
+@Table(name = "solicitud")
 public class Solicitud {
 
-    // TODO(C06-E01): Configurar ID como UUID generado automáticamente
+    @Id
+    @GeneratedValue
+    @Column(updatable = false, nullable = false)
     private UUID id;
 
     private String descripcion;
     private String estado;
     private Integer prioridad;
 
-    // TODO(C06-E02): Mapear Contacto como @Embedded
+    @Embedded
     private Contacto contacto;
 
-    // TODO(C06-E04): Mapear relación 1:N con Aprobacion (dueño de relación: Aprobacion), usar cascade y orphanRemoval
+    @OneToMany(mappedBy = "solicitud", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Aprobacion> aprobaciones = new ArrayList<>();
 
-    // TODO(C06-E01): Mapear timestamps
+    @org.hibernate.annotations.CreationTimestamp
+    @Column(updatable = false, nullable = false)
     private LocalDateTime fechaCreacion;
+
+    @org.hibernate.annotations.UpdateTimestamp
+    @Column(nullable = false)
     private LocalDateTime fechaActualizacion;
 
-    // TODO(C06-E01): Mapear @Version para optimistic locking
+    @Version
     private Long version;
 
-    // TODO(C06-E08): Agregar nuevo campo obligatorio 'departamento' (String)
-    // private String departamento;
+    @Column(nullable = false)
+    private String departamento;
 
     protected Solicitud() {
         // JPA requiere constructor sin argumentos
     }
 
     public Solicitud(String descripcion, String estado, Integer prioridad) {
+        this(descripcion, estado, prioridad, "General");
+    }
+
+    public Solicitud(String descripcion, String estado, Integer prioridad, String departamento) {
         this.descripcion = descripcion;
         this.estado = estado;
         this.prioridad = prioridad;
+        this.departamento = departamento;
     }
 
     // Getters y Setters
@@ -57,8 +69,13 @@ public class Solicitud {
     public LocalDateTime getFechaActualizacion() { return fechaActualizacion; }
     public Long getVersion() { return version; }
 
+    public String getDepartamento() { return departamento; }
+    public void setDepartamento(String departamento) { this.departamento = departamento; }
+
     // TODO(C06-E04): Implementar método utilitario para agregar aprobación (sincronizar ambos lados de la relación)
     public void addAprobacion(Aprobacion aprobacion) {
-        throw new UnsupportedOperationException("TODO C06-E04");
+        if (aprobacion == null) return;
+        this.aprobaciones.add(aprobacion);
+        aprobacion.setSolicitud(this);
     }
 }

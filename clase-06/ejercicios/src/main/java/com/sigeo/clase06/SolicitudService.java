@@ -18,8 +18,8 @@ public class SolicitudService {
     }
 
     @Transactional
-    public Solicitud crearSolicitud(String descripcion, String estado, Integer prioridad, Contacto contacto) {
-        Solicitud solicitud = new Solicitud(descripcion, estado, prioridad);
+    public Solicitud crearSolicitud(String descripcion, String estado, Integer prioridad, Contacto contacto, String departamento) {
+        Solicitud solicitud = new Solicitud(descripcion, estado, prioridad, departamento);
         solicitud.setContacto(contacto);
         return solicitudRepository.save(solicitud);
     }

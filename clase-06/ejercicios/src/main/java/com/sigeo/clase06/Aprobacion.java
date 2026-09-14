@@ -4,17 +4,21 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-// TODO(C06-E04): Mapear entidad Aprobacion
+@Entity
+@Table(name = "aprobacion")
 public class Aprobacion {
 
-    // TODO(C06-E04): Configurar ID como UUID
+    @Id
+    @GeneratedValue
+    @Column(updatable = false, nullable = false)
     private UUID id;
 
     private String responsable;
     private String comentario;
     private LocalDateTime fecha;
 
-    // TODO(C06-E04): Mapear relación N:1 con Solicitud (dueño de la relación)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "solicitud_id", nullable = false)
     private Solicitud solicitud;
 
     protected Aprobacion() {}
