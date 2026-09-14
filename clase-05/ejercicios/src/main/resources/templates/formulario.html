@@ -3,15 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title>Nueva Solicitud</title>
+    <style>
+        .error { color: red; font-size: 0.8em; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+    </style>
 </head>
 <body>
     <h1>Crear Nueva Solicitud</h1>
-    
-    <!-- TODO(C05-E06): Crear formulario enlazado al objeto "solicitud" (th:object) -->
-    <!-- TODO(C05-E06): Enviar por POST a @{/web/solicitudes/nueva} -->
-    <!-- TODO(C05-E06): Agregar campos para titulo, descripcion y prioridad con th:field -->
-    <!-- TODO(C05-E06): Mostrar errores de validación con th:errors -->
-    
+
+    <form th:action="@{/web/solicitudes/nueva}" th:object="${solicitud}" method="post">
+        <div class="form-group">
+            <label for="titulo">Título:</label>
+            <input type="text" th:field="*{titulo}" id="titulo" />
+            <span class="error" th:if="${#fields.hasErrors('titulo')}" th:errors="*{titulo}">Error</span>
+        </div>
+
+        <div class="form-group">
+            <label for="descripcion">Descripción:</label>
+            <textarea th:field="*{descripcion}" id="descripcion"></textarea>
+            <span class="error" th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}">Error</span>
+        </div>
+
+        <div class="form-group">
+            <label for="prioridad">Prioridad:</label>
+            <select th:field="*{prioridad}" id="prioridad">
+                <option value="BAJA">Baja</option>
+                <option value="MEDIA">Media</option>
+                <option value="ALTA">Alta</option>
+            </select>
+            <span class="error" th:if="${#fields.hasErrors('prioridad')}" th:errors="*{prioridad}">Error</span>
+        </div>
+
+        <button type="submit">Guardar Solicitud</button>
+    </form>
+
+    <br>
     <a th:href="@{/web/solicitudes}">Volver</a>
 </body>
 </html>

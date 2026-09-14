@@ -24,23 +24,34 @@ public class SolicitudController {
 
     @PostMapping
     public ResponseEntity<SolicitudResponseDto> crearSolicitud(@Valid @RequestBody CrearSolicitudDto dto) {
-        // TODO(C05-E03): Llamar al servicio para crear la solicitud
-        // TODO(C05-E03): Mapear la entidad Solicitud a SolicitudResponseDto
-        // TODO(C05-E03): Retornar 201 Created con el header Location apuntando a /api/solicitudes/{id}
-        throw new UnsupportedOperationException("TODO C05-E03");
+        Solicitud solicitud = solicitudService.crearSolicitud(dto.titulo(), dto.descripcion(), dto.prioridad());
+        SolicitudResponseDto responseDto = new SolicitudResponseDto(
+                solicitud.getId(),
+                solicitud.getTitulo(),
+                solicitud.getDescripcion(),
+                solicitud.getEstado(),
+                solicitud.getPrioridad()
+        );
+        return ResponseEntity.created(java.net.URI.create("/api/solicitudes/" + solicitud.getId())).body(responseDto);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<SolicitudResponseDto> obtenerSolicitud(@PathVariable Long id) {
-        // TODO(C05-E04): Llamar al servicio para obtener la solicitud por ID
-        // TODO(C05-E04): Mapear a DTO y retornar 200 OK
-        throw new UnsupportedOperationException("TODO C05-E04");
+        Solicitud solicitud = solicitudService.obtenerPorId(id);
+        SolicitudResponseDto responseDto = new SolicitudResponseDto(
+                solicitud.getId(),
+                solicitud.getTitulo(),
+                solicitud.getDescripcion(),
+                solicitud.getEstado(),
+                solicitud.getPrioridad()
+        );
+        return ResponseEntity.ok(responseDto);
     }
 
-    @GetMapping("/listarSolicitudes")
+    @GetMapping
     public ResponseEntity<List<SolicitudResponseDto>> listarSolicitudes(
             @RequestParam(required = true) String estado,
-            @RequestParam(required = false) String prioridad) 
+            @RequestParam(required = false) String prioridad)
     {
         List<Solicitud> solicitudes = solicitudService.buscarSolicitudes(estado, prioridad);
         List<SolicitudResponseDto> responseDtos = new ArrayList<>();

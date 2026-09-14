@@ -14,17 +14,20 @@ public class SolicitudService {
     }
     
     public Solicitud crearSolicitud(String titulo, String descripcion, String prioridad) {
-        // TODO(C05-E02): Crear una nueva solicitud con estado "CREADA" y guardarla en el repositorio
-        throw new UnsupportedOperationException("TODO C05-E02");
+        Solicitud solicitud = new Solicitud(null, titulo, descripcion, "CREADA", prioridad);
+        return repository.save(solicitud);
     }
 
     public Solicitud obtenerPorId(Long id) {
-        // TODO(C05-E04): Buscar por ID, lanzar SolicitudNotFoundException si no existe
-        throw new UnsupportedOperationException("TODO C05-E04");
+        return repository.findById(id)
+                .orElseThrow(() -> new SolicitudNotFoundException(id));
     }
 
     public List<Solicitud> buscarSolicitudes(String estado, String prioridad) {
-        // TODO(C05-E04): Usar el repositorio para buscar por estado y prioridad
         return this.repository.findByEstadoAndPrioridad(estado, prioridad);
+    }
+
+    public List<Solicitud> listarTodas() {
+        return repository.findAll();
     }
 }
