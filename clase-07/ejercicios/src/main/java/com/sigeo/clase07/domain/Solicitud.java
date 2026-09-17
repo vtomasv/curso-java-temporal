@@ -16,8 +16,8 @@ public class Solicitud {
     private String descripcion;
     private String estado;
 
-    // TODO(C07-E03): Agregar campo para Optimistic Locking
-    // Pista: Usa la anotación @Version
+    @Version
+    private Long version;
     
     public Solicitud() {
     }
@@ -51,5 +51,11 @@ public class Solicitud {
         this.estado = estado;
     }
 
-    // TODO(C07-E03): Agregar getter y setter para el campo de versión
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
 }

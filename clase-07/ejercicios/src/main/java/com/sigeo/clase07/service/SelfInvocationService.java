@@ -14,13 +14,12 @@ public class SelfInvocationService {
         this.solicitudRepository = solicitudRepository;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void procesarSolicitud(Long id, boolean simularFallo) {
-        // TODO(C07-E02): Arreglar el problema de self-invocation
-        // Actualmente, llamar a este método no inicia una transacción para actualizarEstado
         actualizarEstado(id, simularFallo);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void actualizarEstado(Long id, boolean simularFallo) {
         Solicitud solicitud = solicitudRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));

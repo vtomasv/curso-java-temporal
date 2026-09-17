@@ -4,6 +4,7 @@ import com.sigeo.clase07.domain.Solicitud;
 import com.sigeo.clase07.service.SolicitudService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,8 +25,12 @@ public class SolicitudController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Solicitud> actualizar(@PathVariable Long id, @RequestBody Solicitud request) {
-        // TODO(C07-E05): Implementar endpoint y manejar excepciones de concurrencia
-        // Pista: Capturar ObjectOptimisticLockingFailureException y devolver 409 Conflict
-        throw new UnsupportedOperationException("TODO C07-E05");
+        Solicitud updated = solicitudService.actualizarSolicitud(id, request.getDescripcion());
+        return ResponseEntity.ok(updated);
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Void> handleConflict() {
+        return ResponseEntity.status(HttpStatus.CONFLICT).build();
     }
 }

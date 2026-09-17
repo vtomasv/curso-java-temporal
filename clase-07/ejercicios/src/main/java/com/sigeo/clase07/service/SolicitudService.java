@@ -18,7 +18,7 @@ public class SolicitudService {
         this.aprobacionRepository = aprobacionRepository;
     }
 
-    // TODO(C07-E01): Configurar la transacción para que haga rollback ante cualquier excepción
+    @Transactional(rollbackFor = Exception.class)
     public void aprobarSolicitud(Long solicitudId, String aprobador, boolean simularFallo) {
         Solicitud solicitud = solicitudRepository.findById(solicitudId)
                 .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));
@@ -34,8 +34,12 @@ public class SolicitudService {
         }
     }
     
+    @Transactional
     public Solicitud actualizarSolicitud(Long id, String nuevaDescripcion) {
-        // TODO(C07-E03): Implementar actualización de solicitud para probar Optimistic Locking
-        throw new UnsupportedOperationException("TODO C07-E03");
+        Solicitud solicitud = solicitudRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));
+
+        solicitud.setDescripcion(nuevaDescripcion);
+        return solicitudRepository.save(solicitud);
     }
 }

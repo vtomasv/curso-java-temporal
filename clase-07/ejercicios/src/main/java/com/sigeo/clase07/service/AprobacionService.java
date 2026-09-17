@@ -5,6 +5,7 @@ import com.sigeo.clase07.domain.Solicitud;
 import com.sigeo.clase07.repository.AprobacionRepository;
 import com.sigeo.clase07.repository.SolicitudRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AprobacionService {
@@ -17,12 +18,21 @@ public class AprobacionService {
         this.aprobacionRepository = aprobacionRepository;
     }
 
+    @Transactional
     public Aprobacion registrarAprobacion(Long solicitudId, String aprobador, String comentarios) {
-        // TODO(C07-E04): Implementar lógica de registro de aprobación
-        // 1. Buscar solicitud
-        // 2. Validar que no esté ya aprobada
-        // 3. Crear y guardar aprobación
-        // 4. Actualizar estado de solicitud
-        throw new UnsupportedOperationException("TODO C07-E04");
+        Solicitud solicitud = solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));
+
+        if ("APROBADA".equals(solicitud.getEstado())) {
+            throw new IllegalStateException("La solicitud " + solicitudId + " ya está aprobada");
+        }
+
+        Aprobacion aprobacion = new Aprobacion(solicitudId, aprobador, comentarios);
+        Aprobacion aprobacionGuardada = aprobacionRepository.save(aprobacion);
+
+        solicitud.setEstado("APROBADA");
+        solicitudRepository.save(solicitud);
+
+        return aprobacionGuardada;
     }
 }

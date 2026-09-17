@@ -1,15 +1,14 @@
 package com.sigeo.clase07;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sigeo.clase07.controller.SolicitudController;
 import com.sigeo.clase07.domain.Solicitud;
 import com.sigeo.clase07.service.SolicitudService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -24,11 +23,9 @@ class SolicitudControllerSliceTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private SolicitudService solicitudService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Test
     void actualizar_ConflictoOptimista_Retorna409() throws Exception {
@@ -39,10 +36,9 @@ class SolicitudControllerSliceTest {
             .thenThrow(new ObjectOptimisticLockingFailureException(Solicitud.class, 1L));
 
         // Act & Assert
-        // TODO(C07-E05): El test fallará hasta que se maneje la excepción en el controller
         mockMvc.perform(put("/api/solicitudes/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content("{\"descripcion\":\"Test\", \"estado\":\"PENDIENTE\"}"))
                 .andExpect(status().isConflict());
     }
 }
