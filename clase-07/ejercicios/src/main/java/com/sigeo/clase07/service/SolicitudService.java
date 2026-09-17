@@ -18,6 +18,10 @@ public class SolicitudService {
         this.aprobacionRepository = aprobacionRepository;
     }
 
+    public Solicitud crearSolicitud(Solicitud solicitud) {
+        return solicitudRepository.save(solicitud);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void aprobarSolicitud(Long solicitudId, String aprobador, boolean simularFallo) {
         Solicitud solicitud = solicitudRepository.findById(solicitudId)

@@ -45,8 +45,7 @@ class SolicitudServiceIntegrationTest {
 
         // Assert
         assertThat(thrown).isNotNull();
-        
-        // TODO(C07-E01): El test fallará hasta que se configure correctamente @Transactional
+
         // La solicitud debe seguir en estado PENDIENTE
         Solicitud solicitud = solicitudRepository.findById(solicitudId).orElseThrow();
         assertThat(solicitud.getEstado()).isEqualTo("PENDIENTE");

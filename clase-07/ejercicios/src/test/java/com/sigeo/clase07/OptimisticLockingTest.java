@@ -41,7 +41,7 @@ class OptimisticLockingTest {
         cliente1.setDescripcion("Actualización 1");
         solicitudRepository.save(cliente1);
 
-        // TODO(C07-E03): El test fallará hasta que se implemente @Version en Solicitud
+        // Act
         Throwable thrown = catchThrowable(() -> {
             cliente2.setDescripcion("Actualización 2");
             solicitudRepository.save(cliente2);

@@ -39,8 +39,7 @@ class SelfInvocationTest {
 
         // Assert
         assertThat(thrown).isNotNull();
-        
-        // TODO(C07-E02): El test fallará porque la llamada interna no pasa por el proxy transaccional
+
         // La solicitud debe seguir en estado PENDIENTE
         Solicitud solicitud = solicitudRepository.findById(solicitudId).orElseThrow();
         assertThat(solicitud.getEstado()).isEqualTo("PENDIENTE");

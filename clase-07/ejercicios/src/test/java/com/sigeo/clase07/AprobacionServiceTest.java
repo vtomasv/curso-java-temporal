@@ -41,7 +41,6 @@ class AprobacionServiceTest {
         when(aprobacionRepository.save(any(Aprobacion.class))).thenReturn(aprobacionGuardada);
 
         // Act
-        // TODO(C07-E04): El test fallará hasta que se implemente registrarAprobacion
         Aprobacion resultado = aprobacionService.registrarAprobacion(1L, "Admin", "OK");
 
         // Assert

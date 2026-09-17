@@ -59,7 +59,6 @@ class SolicitudIntegrationTest {
         Solicitud updateRequest = new Solicitud("Test Actualizado", "PENDIENTE");
 
         // Act
-        // TODO(C07-E06): El test fallará hasta que se implemente el endpoint PUT
         ResponseEntity<Solicitud> response = restTemplate.exchange(
                 "/api/solicitudes/" + solicitud.getId(),
                 HttpMethod.PUT,

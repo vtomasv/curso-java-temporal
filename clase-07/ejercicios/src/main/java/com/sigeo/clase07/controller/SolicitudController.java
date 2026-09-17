@@ -17,6 +17,12 @@ public class SolicitudController {
         this.solicitudService = solicitudService;
     }
 
+    @PostMapping
+    public ResponseEntity<Solicitud> crear(@RequestBody Solicitud solicitud) {
+        Solicitud creada = solicitudService.crearSolicitud(solicitud);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creada);
+    }
+
     @PostMapping("/{id}/aprobar")
     public ResponseEntity<Void> aprobar(@PathVariable Long id, @RequestParam String aprobador) {
         solicitudService.aprobarSolicitud(id, aprobador, false);
