@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Respuesta de seguridad</title>
+<link rel="stylesheet" href="/css/lab.css">
+</head>
+<body>
+<main>
+<section>
+<p class="eyebrow">SIGEO / Respuesta HTTP</p>
+<h1>Petición rechazada</h1>
+<p>Estado: <strong th:text="${status}">
+</strong>
+</p>
+<p>En el ejercicio CSRF, un 403 indica que falta el token o es inválido. Otros rechazos pueden indicar permisos insuficientes.</p>
+<a href="/formulario">Volver al formulario</a> · <a href="/laboratorio">Laboratorio JWT</a>
+</section>
+</main>
+</body>
+</html>

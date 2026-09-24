@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" th:content="${_csrf.token}">
+<meta name="csrf-header" th:content="${_csrf.headerName}">
+<title>JWT y permisos · SIGEO</title>
+<link rel="stylesheet" href="/css/lab.css">
+<script src="/js/lab.js" defer>
+</script>
+</head>
+<body>
+<header>
+<strong>SIGEO · CLASE 08</strong>
+<nav>
+<a href="/laboratorio">JWT y permisos</a>
+<a href="/formulario">Formulario CSRF</a>
+</nav>
+<form th:action="@{/logout}" method="post">
+<span th:text="${username}">
+</span> <button type="submit">Cerrar sesión</button>
+</form>
+</header>
+<main>
+<p class="eyebrow">Autenticación / autorización</p>
+<h1>Comprueba la seguridad, petición a petición</h1>
+<p>La sesión abre esta página. La API requiere un JWT firmado en <code>Authorization: Bearer</code>. Cada resultado procede de una petición al servidor.</p>
+<div class="grid">
+<section>
+<h2>1. Emitir un token</h2>
+<p>El emisor didáctico toma tu identidad y tus roles de la sesión.</p>
+<label for="scenario">Escenario</label>
+<select id="scenario">
+<option value="valid">Válido · dura 5 minutos</option>
+<option th:if="${lab}" value="expired">Expirado · debe devolver 401</option>
+<option th:if="${lab}" value="issuer">Emisor incorrecto · 401</option>
+<option th:if="${lab}" value="audience">Audiencia incorrecta · 401</option>
+<option th:if="${lab}" value="future">Todavía no válido (nbf) · 401</option>
+</select>
+<button id="issue" type="button">Emitir JWT</button>
+<label for="token">Token que se enviará a la API</label>
+<textarea id="token" spellcheck="false" placeholder="Emite un JWT o pega uno del laboratorio">
+</textarea>
+<button id="tamper" class="danger" type="button">Alterar firma</button>
+<button id="clear" class="secondary" type="button">Quitar token</button>
+<p>
+<small>El token se conserva sólo en memoria de esta página. Recargar lo elimina. El logout de sesión no revoca un JWT.</small>
+</p>
+</section>
+<section>
+<h2>2. Validar en el servidor</h2>
+<p>
+<code>GET /api/jwt/validar</code> verifica firma RS256, emisor, audiencia, expiración y <code>nbf</code>.</p>
+<button id="validate" type="button">Validar JWT</button>
+<p id="validation-status" class="result" role="status" aria-live="polite">Aún no se ha validado ningún token.</p>
+<pre id="validation-output">Aquí aparecerá la respuesta HTTP real.</pre>
+<details>
+<summary>Ver claims decodificados en el navegador</summary>
+<p>Decodificar permite leer. La prueba de validez es la respuesta del servidor.</p>
+<pre id="decoded">Sin token.</pre>
+</details>
+</section>
+<section class="wide">
+<h2>3. Probar RBAC y propiedad</h2>
+<div class="table-wrap">
+<table>
+<caption>Permisos implementados</caption>
+<thead>
+<tr>
+<th>Rol</th>
+<th>Consultar</th>
+<th>Crear</th>
+<th>Editar</th>
+<th>Aprobar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LECTOR</td>
+<td>Sí</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>OPERADOR</td>
+<td>Sí</td>
+<td>Sí</td>
+<td>Sólo propias</td>
+<td>No</td>
+</tr>
+<tr>
+<td>SUPERVISOR</td>
+<td>Sí</td>
+<td>No</td>
+<td>Todas</td>
+<td>Sí</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Al iniciar: solicitud 1 pertenece a <code>user1</code> y solicitud 2 a <code>user2</code>. La lista muestra el estado persistido.</p>
+<label for="description">Descripción para crear o editar</label>
+<input id="description" value="Solicitud de práctica" maxlength="200">
+<label for="request-id">ID de solicitud</label>
+<input id="request-id" type="number" min="1" value="1">
+<button data-api="list" type="button">Consultar solicitudes</button>
+<button data-api="create" type="button">Crear solicitud</button>
+<button data-api="edit" type="button">Editar solicitud</button>
+<button data-api="approve" type="button">Aprobar solicitud</button>
+<button data-api="mass" type="button" class="danger">Intentar cambiar propietario y estado</button>
+<button data-api="public" type="button" class="secondary">Probar ruta pública sin JWT</button>
+<button data-api="anonymous" type="button" class="secondary">Probar API sin JWT</button>
+<p id="api-status" class="result" role="status" aria-live="polite">Elige una operación.</p>
+<pre id="api-output">Las respuestas 401 y 403 son rechazos esperados de los ejercicios.</pre>
+</section>
+<section class="wide">
+<h2>Guía de ejercicios E01–E08</h2>
+<details open>
+<summary>E01 y E02 · Identidad y acceso</summary>
+<p>Prueba la ruta pública (200) y la API sin JWT (401), aunque tengas sesión. Cierra sesión e intenta una clave incorrecta. Revisa BCrypt en SecurityConfig y cómo LAB_PASSWORD reemplaza la clave de práctica.</p>
+</details>
+<details>
+<summary>E03 · Permisos por rol</summary>
+<p>Entra como lector, emite un JWT y consulta (200). Crear debe dar 403. Repite como user1 para crear (200), y como supervisor para aprobar (200). Renueva el token al cambiar de usuario.</p>
+</details>
+<details>
+<summary>E04 · Validación JWT</summary>
+<p>Valida un JWT correcto (200). Prueba cada escenario negativo (401). Altera la firma de uno válido y vuelve a validar. Explica por qué leer los claims no prueba su autenticidad.</p>
+</details>
+<details>
+<summary>E05 · Propiedad</summary>
+<p>Como user1, edita la solicitud 1 (200) y la 2 (403). Como supervisor, ambas deben funcionar. El servidor consulta al propietario guardado.</p>
+</details>
+<details>
+<summary>E06 · CSRF</summary>
+<p>Abre el formulario CSRF. Envía con token (éxito) y sin token (403). La protección permanece activa en login, logout y emisión de JWT.</p>
+</details>
+<details>
+<summary>E07 · Secretos</summary>
+<p>Configura LAB_PASSWORD antes de iniciar. La clave RSA se genera al arrancar. Reinicia y verifica que un JWT anterior se rechaza. Documenta revocación y rotación simuladas en SecretScannerReport.md, sin usar secretos reales.</p>
+</details>
+<details>
+<summary>E08 · Casos de abuso</summary>
+<p>Como user1, intenta cambiar propietario y estado: los campos protegidos nunca deben cambiar. Prueba descripción vacía (400), permisos insuficientes (403) y registra evidencia en security-review.md. Ejecuta ./mvnw verify.</p>
+</details>
+</section>
+</div>
+</main>
+<footer>Laboratorio local con H2 en memoria. Al reiniciar se regeneran claves y datos. No es un servidor OAuth2 de producción.</footer>
+</body>
+</html>
