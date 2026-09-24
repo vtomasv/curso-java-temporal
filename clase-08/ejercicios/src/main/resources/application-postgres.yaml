@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sigeo}
+    username: ${DB_USER:sigeo}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+# Perfil de práctica. Para producción, usar migraciones y un proveedor de identidad.

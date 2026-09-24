@@ -1,43 +1,29 @@
 spring:
-  profiles:
-    active: h2
   application:
     name: sigeo-clase08
-
----
-spring:
-  config:
-    activate:
-      on-profile: h2
+  profiles:
+    default: lab
   datasource:
     url: jdbc:h2:mem:sigeodb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driverClassName: org.h2.Driver
     username: sa
-    password:
+    password: ${DB_PASSWORD:}
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
     hibernate:
-      ddl-auto: update
-    show-sql: true
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-
----
-spring:
-  config:
-    activate:
-      on-profile: postgres
-  datasource:
-    url: jdbc:postgresql://localhost:5432/sigeo
-    username: sigeo
-    password: sigeo_dev
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
+      ddl-auto: create-drop
+server:
+  address: 127.0.0.1
+  error:
+    include-message: never
+    include-stacktrace: never
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
+lab:
+  password: ${LAB_PASSWORD}
+  jwt:
+    issuer: https://sigeo.local/clase08
+    audience: sigeo-api
+    ttl-seconds: 300

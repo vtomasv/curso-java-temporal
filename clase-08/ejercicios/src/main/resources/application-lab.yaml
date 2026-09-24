@@ -1,0 +1,3 @@
+# Credencial pública y exclusiva de este laboratorio local. No usar en producción.
+lab:
+  password: ${LAB_PASSWORD:clase08-demo}

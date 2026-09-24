@@ -1,20 +1,43 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Formulario Seguro</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSRF · SIGEO</title>
+<link rel="stylesheet" href="/css/lab.css">
 </head>
 <body>
-    <h1>Formulario de Prueba</h1>
-    
-    <div th:if="${param.success}">
-        <p>¡Formulario enviado con éxito!</p>
-    </div>
-
-    <!-- TODO(C08-E06): Proteger este formulario con CSRF -->
-    <form action="/formulario" method="post">
-        <label for="dato">Dato:</label>
-        <input type="text" id="dato" name="dato" required>
-        <button type="submit">Enviar</button>
-    </form>
+<header>
+<strong>SIGEO · E06</strong>
+<a href="/laboratorio">Volver al laboratorio JWT</a>
+<form th:action="@{/logout}" method="post">
+<button type="submit">Cerrar sesión</button>
+</form>
+</header>
+<main>
+<h1>La sesión necesita protección CSRF</h1>
+<p>Compara dos POST autenticados al mismo endpoint. Thymeleaf agrega el token oculto al formulario con <code>th:action</code>.</p>
+<p class="notice" th:if="${param.success}" role="status">Formulario aceptado: sesión y token CSRF correctos.</p>
+<div class="grid">
+<section>
+<h2>Con token CSRF</h2>
+<form th:action="@{/formulario}" method="post">
+<label for="dato">Dato de práctica</label>
+<input id="dato" name="dato" value="Ejemplo seguro" required>
+<button type="submit">Enviar con token</button>
+</form>
+<p>Esperado: redirección y mensaje de éxito.</p>
+</section>
+<section>
+<h2>Sin token CSRF</h2>
+<form action="/formulario" method="post">
+<label for="sin-token">Dato de práctica</label>
+<input id="sin-token" name="dato" value="Ejemplo rechazado" required>
+<button class="danger" type="submit">Enviar sin token</button>
+</form>
+<p>Esperado: HTTP 403. Usa Atrás para volver a comparar.</p>
+</section>
+</div>
+</main>
 </body>
 </html>

@@ -1,0 +1,48 @@
+@base = http://localhost:8080
+# Copiar un JWT recién emitido desde la web. No guardar el token en Git.
+@token = PEGAR_JWT_LOCAL
+
+### Público: 200
+GET {{base}}/api/public/info
+
+### Sin JWT, incluso con sesión web: 401
+GET {{base}}/api/solicitudes
+
+### Firma y claims válidos: 200. Repetir con cada token inválido: 401
+GET {{base}}/api/jwt/validar
+Authorization: Bearer {{token}}
+
+### LECTOR/OPERADOR/SUPERVISOR: 200
+GET {{base}}/api/solicitudes
+Authorization: Bearer {{token}}
+
+### OPERADOR: 200, propietario del token y estado PENDIENTE
+POST {{base}}/api/solicitudes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"descripcion":"Práctica", "propietario":"supervisor", "estado":"APROBADO"}
+
+### user1: 200, user2: 403, supervisor: 200
+PUT {{base}}/api/solicitudes/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"descripcion":"Actualizada"}
+
+### Sólo SUPERVISOR: 200
+POST {{base}}/api/solicitudes/1/approve
+Authorization: Bearer {{token}}
+
+### OPERADOR con descripción vacía: 400
+POST {{base}}/api/solicitudes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"descripcion":""}
+
+### Origen no permitido: 403 (la comprobación CORS real corresponde al navegador)
+OPTIONS {{base}}/api/solicitudes
+Origin: https://otro.local
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: Authorization,Content-Type

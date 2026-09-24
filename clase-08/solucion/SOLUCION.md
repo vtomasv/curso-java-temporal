@@ -1,146 +1,39 @@
-# Solución Clase 08: Spring Security y JWT
+# Guía docente de la clase 08
 
-Este documento explica paso a paso cómo resolver cada uno de los ejercicios de la clase.
+La implementación funcional está en `../ejercicios/`. Los ejercicios E01–E08 se realizan sobre el mismo módulo y tienen instrucciones y resultados esperados en [README](../README.md).
 
-## C08-E01 — Denegar por defecto
+## E01 y E02: acceso e identidad
 
-**Por qué:** En seguridad, el principio de "denegar por defecto" (default deny) asegura que si olvidamos configurar una ruta, esta quedará protegida automáticamente, evitando fugas de información.
+`SecurityConfig` define dos cadenas ordenadas. `/api/**` es stateless y acepta JWT Bearer. Las vistas usan login por formulario, sesión y CSRF. Las rutas no declaradas se deniegan. `UserDetailsService` crea cuatro usuarios con hashes BCrypt. El perfil `lab` usa una clave pública de práctica y permite reemplazarla con `LAB_PASSWORD`.
 
-**Solución en `SecurityConfig.java`:**
-```java
-@Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/public/**", "/formulario").permitAll()
-            .anyRequest().authenticated()
-        )
-        // ... otras configuraciones
-    return http.build();
-}
-```
+## E03: roles
 
-## C08-E02 — Usuarios de laboratorio
+Los métodos de `SolicitudService` usan `@PreAuthorize`. LECTOR consulta; OPERADOR crea; SUPERVISOR aprueba. El convertidor de JWT transforma el claim `roles` en autoridades `ROLE_...`. Supervisor no hereda automáticamente los permisos de operador: la matriz lo indica explícitamente.
 
-**Por qué:** Necesitamos usuarios para probar la aplicación, pero no debemos guardar contraseñas en texto plano en el código fuente. Usamos `BCryptPasswordEncoder` y leemos las contraseñas de variables de entorno o properties.
+## E04: JWT
 
-**Solución en `SecurityConfig.java`:**
-```java
-@Bean
-public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
-    UserDetails lector = User.builder()
-        .username("lector")
-        .password(passwordEncoder.encode("password")) // En un caso real, leer de env
-        .roles("LECTOR")
-        .build();
-        
-    UserDetails operador = User.builder()
-        .username("operador")
-        .password(passwordEncoder.encode("password"))
-        .roles("OPERADOR")
-        .build();
-        
-    UserDetails supervisor = User.builder()
-        .username("supervisor")
-        .password(passwordEncoder.encode("password"))
-        .roles("SUPERVISOR")
-        .build();
+`JwtConfig` genera una clave RSA efímera y configura `NimbusJwtDecoder`. Además de firma RS256, comprueba emisor, audiencia, expiración, nbf y presencia de claims obligatorios. `LabTokenService` firma tokens para la identidad de la sesión. Los escenarios negativos de `/lab/token` sólo están disponibles en perfil lab. Este emisor es didáctico, no es un Authorization Server OAuth2.
 
-    return new InMemoryUserDetailsManager(lector, operador, supervisor);
-}
-```
+`GET /api/jwt/validar` sólo se ejecuta después de que el filtro acepta el JWT. La página muestra su respuesta HTTP, separada de la decodificación local de claims. Un token leído en el navegador todavía puede tener una firma inválida.
 
-## C08-E03 — Roles por operación
+## E05: propiedad y persistencia
 
-**Por qué:** Diferentes operaciones requieren diferentes niveles de privilegio. Usamos `@PreAuthorize` para aplicar estas reglas a nivel de método.
+`SolicitudRepository` guarda los recursos en H2. `isOwner` consulta el propietario persistido. Editar requiere OPERADOR propietario o SUPERVISOR. El DTO sólo recibe descripción, de modo que propietario y estado enviados por el cliente no se asignan. La creación fija el propietario autenticado y PENDIENTE; aprobar es una operación separada.
 
-**Solución en `SolicitudController.java`:**
-```java
-@GetMapping
-@PreAuthorize("hasAnyRole('LECTOR', 'OPERADOR', 'SUPERVISOR')")
-public List<Solicitud> getAll() {
-    return solicitudService.findAll();
-}
+## E06: CSRF
 
-@PostMapping
-@PreAuthorize("hasRole('OPERADOR')")
-public Solicitud create(@RequestBody Solicitud solicitud) {
-    return solicitudService.create(solicitud);
-}
+La cadena web mantiene CSRF en login, logout, formulario y emisión de JWT. La plantilla muestra un formulario con `th:action` (token automático) y otro con `action` (sin token, rechazo 403). La cadena API puede omitir CSRF porque no acepta la cookie de sesión como autenticación.
 
-@PostMapping("/{id}/approve")
-@PreAuthorize("hasRole('SUPERVISOR')")
-public ResponseEntity<Void> approve(@PathVariable Long id) {
-    solicitudService.approve(id);
-    return ResponseEntity.ok().build();
-}
-```
+## E07 y E08: revisión guiada
 
-## C08-E04 — Resource server local
+El escáner `scripts/check-secrets.sh` es una demostración limitada. La clave RSA no se almacena y cambia al reiniciar. Los reportes `SecretScannerReport.md` y `security-review.md` contienen campos para la evidencia del alumno. No se debe reescribir el historial compartido ni introducir secretos reales durante la práctica.
 
-**Por qué:** Para validar JWTs, configuramos Spring Security como un OAuth2 Resource Server. Esto le dice a Spring que extraiga el token del header `Authorization: Bearer ...` y lo valide.
+`LaboratorioIntegrationTest` verifica JWT firmados reales, login, roles, propiedad, CSRF, CORS, validación de entrada y persistencia. `security-tests.http` permite repetir los casos manualmente. La guía distingue rechazos esperados (400/401/403/404) de errores de la aplicación.
 
-**Solución en `SecurityConfig.java`:**
-```java
-@Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-        // ... authorizeHttpRequests ...
-        .oauth2ResourceServer(oauth2 -> oauth2
-            .jwt(Customizer.withDefaults())
-        );
-    return http.build();
-}
-```
-*Nota: Se requiere configurar `spring.security.oauth2.resourceserver.jwt.issuer-uri` en `application.yaml`.*
+## Retos E09–E12
 
-## C08-E05 — Editar solo lo propio
+Acortar expiración, comparar sesión frente a token, alterar la firma sin cambiar claims y proponer otra matriz de mínimo privilegio. Cambiar una regla cada vez y ejecutar `./mvnw test` para discutir el resultado.
 
-**Por qué:** El control de acceso basado en roles (RBAC) no es suficiente cuando los usuarios solo deben acceder a sus propios recursos. Esto se conoce como control de acceso basado en atributos (ABAC) o "ownership".
+## Límites del laboratorio
 
-**Solución en `SolicitudService.java`:**
-```java
-@PreAuthorize("hasRole('SUPERVISOR') or @securityService.isOwner(authentication, #id)")
-public Solicitud update(Long id, Solicitud solicitud) {
-    // Lógica de actualización
-    return solicitud;
-}
-```
-*Nota: Requiere crear un bean `securityService` que verifique si el usuario actual es el propietario de la solicitud con el ID dado.*
-
-## C08-E06 — CSRF y formulario
-
-**Por qué:** CSRF (Cross-Site Request Forgery) es un ataque donde un sitio malicioso engaña al navegador del usuario para que envíe una petición a nuestro sitio. Spring Security protege contra esto por defecto usando tokens sincronizados.
-
-**Solución en `SecurityConfig.java`:**
-```java
-@Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-        // ...
-        .csrf(csrf -> csrf
-            .ignoringRequestMatchers("/api/**") // Deshabilitar CSRF para la API REST (usa JWT)
-        );
-    return http.build();
-}
-```
-*Nota: Thymeleaf incluye automáticamente el token CSRF en los formularios si se usa `th:action`.*
-
-## C08-E07 — Escáner de secretos
-
-**Por qué:** Los secretos (contraseñas, tokens, claves API) nunca deben subirse al repositorio. Si se suben por accidente, deben ser revocados y eliminados del historial.
-
-**Solución:**
-1. Eliminar el secreto del archivo.
-2. Usar herramientas como `git filter-repo` o BFG Repo-Cleaner para eliminarlo del historial.
-3. Configurar herramientas como `trufflehog` o `git-secrets` en un pre-commit hook o en CI/CD para prevenir futuros commits con secretos.
-
-## C08-E08 — Abuse cases
-
-**Por qué:** Las pruebas de seguridad (abuse cases) verifican que el sistema se comporta correctamente ante entradas maliciosas o inesperadas.
-
-**Solución:**
-Documentar en `security-review.md` los hallazgos de las pruebas, por ejemplo:
-- **IDOR:** Intentar acceder a `/api/solicitudes/2` siendo el propietario de la solicitud 1.
-- **Mass Assignment:** Intentar enviar `{"estado": "APROBADO"}` en la creación de una solicitud.
-- **Errores verbosos:** Verificar que las respuestas de error no expongan stack traces.
+H2 y la clave RSA se regeneran al iniciar. Logout no revoca tokens. No hay MFA, refresh tokens, revocación individual ni rate limiting. PostgreSQL es opcional y no forma parte de la batería automatizada. Para producción se necesitan un proveedor de identidad, HTTPS, gestión de claves, migraciones y controles operativos.
