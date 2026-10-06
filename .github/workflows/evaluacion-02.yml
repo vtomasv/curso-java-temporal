@@ -20,12 +20,11 @@ jobs:
       run:
         working-directory: evaluaciones/evaluacion-02/ejercicios
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "25"
           cache: maven
       - name: Compilar código y pruebas públicas sin ejecutarlas
         run: ./mvnw -q -DskipTests test
-
