@@ -1,0 +1,31 @@
+name: Evaluación 02 - compilación del starter
+
+on:
+  push:
+    paths:
+      - "evaluaciones/evaluacion-02/**"
+      - ".github/workflows/evaluacion-02.yml"
+  pull_request:
+    paths:
+      - "evaluaciones/evaluacion-02/**"
+      - ".github/workflows/evaluacion-02.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test-compile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: evaluaciones/evaluacion-02/ejercicios
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Compilar código y pruebas públicas sin ejecutarlas
+        run: ./mvnw -q -DskipTests test
+
