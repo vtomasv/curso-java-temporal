@@ -2,23 +2,25 @@ package com.sigeo.clase10.e04;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ReservationActivityImpl implements ReservationActivity {
     
     // Simula una base de datos de reservas
     private final Map<String, String> reservations = new ConcurrentHashMap<>();
-    private int callCount = 0;
+    private final AtomicInteger callCount = new AtomicInteger();
 
     @Override
     public String makeReservation(String itemId, String idempotencyKey) {
-        callCount++;
-        // TODO(C10-E04): Implementar lógica de idempotencia.
-        // Si la idempotencyKey ya existe en el mapa 'reservations', retorna el valor guardado.
-        // Si no, crea una nueva reserva (ej. "RES-" + itemId), guárdala en el mapa y retórnala.
-        throw new UnsupportedOperationException("TODO C10-E04");
+        callCount.incrementAndGet();
+        return reservations.computeIfAbsent(idempotencyKey, ignored -> "RES-" + itemId);
     }
 
     public int getCallCount() {
-        return callCount;
+        return callCount.get();
+    }
+
+    public int getReservationCount() {
+        return reservations.size();
     }
 }

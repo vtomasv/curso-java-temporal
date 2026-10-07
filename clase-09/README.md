@@ -3,6 +3,8 @@
 **Bloque:** Bloque 3 — Workflows resilientes y sistemas distribuidos  
 **Duración:** 4 horas  
 
+La carpeta `ejercicios/` es un laboratorio funcional: desde un clon limpio, `./mvnw clean verify` debe terminar correctamente sin instalar Maven, levantar Docker ni ejecutar un servidor Temporal externo. Las pruebas usan `TestWorkflowEnvironment`. Durante la clase se inspecciona la implementación, se predicen eventos y se modifican parámetros de forma controlada, igual que en el laboratorio de la clase 08.
+
 ## Objetivos de aprendizaje
 - Explicar por qué cron, colas y estados manuales no bastan para procesos largos.
 - Identificar Temporal Service, Namespace, Task Queue, Worker, Workflow, Activity, Client y Event History.
@@ -33,8 +35,12 @@ temporal server start-dev
 
 Para ejecutar los tests de los ejercicios:
 ```bash
-./mvnw test
+cd clase-09/ejercicios
+java -version                 # Debe indicar Java 25
+./mvnw clean verify
 ```
+
+En Windows use `mvnw.cmd clean verify`.
 
 ## Ejercicios de clase
 
@@ -45,19 +51,19 @@ Para ejecutar los tests de los ejercicios:
 **Comando para verificar:** `temporal server start-dev` y acceder a http://localhost:8233
 
 ### C09-E02 — Saludo duradero
-**Especificación:** Implementar interfaz `@WorkflowInterface` y método `@WorkflowMethod`.
+**Especificación:** Inspeccionar la interfaz `@WorkflowInterface`, ejecutar el saludo y modificar el texto manteniendo el contrato probado.
 **Criterios de aceptación:** Workflow ID explícito; resultado visible en UI.
 **Archivos involucrados:** `SaludoWorkflow.java`, `SaludoWorkflowImpl.java`, `SaludoWorker.java`, `SaludoWorkflowTest.java`
 **Comando para verificar:** `./mvnw test -Dtest=SaludoWorkflowTest`
 
 ### C09-E03 — Registrar auditoría
-**Especificación:** Mover escritura simulada de auditoría a `@ActivityInterface`.
+**Especificación:** Observar la auditoría aislada en `@ActivityInterface` y comprobar qué falla si la Activity no se registra en el Worker.
 **Criterios de aceptación:** No hace I/O desde Workflow; Activity registrada en Worker.
 **Archivos involucrados:** `AuditoriaActivity.java`, `AuditoriaActivityImpl.java`, `SaludoWorkflowImpl.java`, `SaludoWorkflowTest.java`
 **Comando para verificar:** `./mvnw test -Dtest=SaludoWorkflowTest`
 
 ### C09-E04 — Espera de revisión
-**Especificación:** Usar `Workflow.sleep` para simular plazo y observar Timer events.
+**Especificación:** Variar el plazo implementado con `Workflow.sleep` y observar el salto de tiempo de las pruebas y los Timer events.
 **Criterios de aceptación:** No `Thread.sleep`; replay correcto.
 **Archivos involucrados:** `RevisionWorkflow.java`, `RevisionWorkflowImpl.java`, `RevisionWorkflowTest.java`
 **Comando para verificar:** `./mvnw test -Dtest=RevisionWorkflowTest`
@@ -69,16 +75,16 @@ Para ejecutar los tests de los ejercicios:
 **Comando para verificar:** Ejecutar `ReinicioWorker` manualmente, detenerlo, y volver a ejecutarlo.
 
 ### C09-E06 — Aprobación v0
-**Especificación:** Workflow que registra solicitud, espera plazo y marca vencida si no hay decisión simulada.
+**Especificación:** Ejecutar el Workflow que espera una señal y comparar aprobación, rechazo y vencimiento.
 **Criterios de aceptación:** Estado solo en Workflow; Activity para persistencia/notificación.
 **Archivos involucrados:** `AprobacionWorkflow.java`, `AprobacionWorkflowImpl.java`, `AprobacionActivity.java`, `AprobacionWorkflowTest.java`
 **Comando para verificar:** `./mvnw test -Dtest=AprobacionWorkflowTest`
 
 ### C09-E07 — Detectar no determinismo
-**Especificación:** Encontrar 10 usos prohibidos en un Workflow: UUID, Instant.now, HTTP, DB, Thread, etc.
-**Criterios de aceptación:** Cada corrección usa API Temporal o Activity adecuada.
-**Archivos involucrados:** `NoDeterministaWorkflowImpl.java`
-**Comando para verificar:** Revisión manual y corrección del código.
+**Especificación:** Revisar las sustituciones deterministas para UUID, reloj, espera, aleatoriedad y logging; luego explicar dónde deben vivir HTTP y persistencia.
+**Criterios de aceptación:** Cada operación usa una API de Temporal o se deriva a una Activity; el Workflow se ejecuta en `TestWorkflowEnvironment`.
+**Archivos involucrados:** `ProcesoDeterministaWorkflow.java`, `NoDeterministaWorkflowImpl.java`, `DeterminismoWorkflowTest.java`
+**Comando para verificar:** `./mvnw test -Dtest=DeterminismoWorkflowTest`
 
 ### C09-E08 — Leer la historia
 **Especificación:** Etiquetar eventos de un run y relacionarlos con líneas del código.

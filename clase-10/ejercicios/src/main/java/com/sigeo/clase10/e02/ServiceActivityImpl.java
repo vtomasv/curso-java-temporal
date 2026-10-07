@@ -1,13 +1,13 @@
 package com.sigeo.clase10.e02;
 
+import io.temporal.activity.Activity;
 import io.temporal.failure.ApplicationFailure;
 
 public class ServiceActivityImpl implements ServiceActivity {
-    private int attempt = 0;
 
     @Override
     public String processRequest(String input) {
-        attempt++;
+        int attempt = Activity.getExecutionContext().getInfo().getAttempt();
         if ("503".equals(input) && attempt < 3) {
             throw ApplicationFailure.newFailure("Service Unavailable", "503");
         }

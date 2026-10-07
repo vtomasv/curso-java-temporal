@@ -10,10 +10,8 @@ public class BatchProcessingActivityImpl implements BatchProcessingActivity {
     @Override
     public int processBatch(int totalRecords) {
         ActivityExecutionContext context = Activity.getExecutionContext();
-        
-        // TODO(C10-E05): Recuperar el último offset desde el heartbeat (si existe).
-        // Si no hay heartbeat previo, empezar desde 0.
-        int startOffset = 0; // Cambiar esto
+
+        int startOffset = context.getHeartbeatDetails(Integer.class).orElse(0);
         
         int processed = startOffset;
         
@@ -28,8 +26,9 @@ public class BatchProcessingActivityImpl implements BatchProcessingActivity {
             
             processed++;
             
-            // TODO(C10-E05): Emitir un heartbeat cada 100 registros procesados.
-            // Pasar 'processed' como detalle del heartbeat.
+            if (processed % 100 == 0) {
+                context.heartbeat(processed);
+            }
             
             // Simulamos un crash a la mitad del procesamiento en el primer intento
             if (simulateCrash && processed == 500) {

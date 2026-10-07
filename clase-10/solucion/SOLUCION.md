@@ -49,6 +49,9 @@ public class ServiceWorkflowImpl implements ServiceWorkflow {
             ActivityOptions.newBuilder()
                     .setStartToCloseTimeout(Duration.ofSeconds(5))
                     .setRetryOptions(RetryOptions.newBuilder()
+                            .setInitialInterval(Duration.ofMillis(100))
+                            .setBackoffCoefficient(2.0)
+                            .setMaximumInterval(Duration.ofSeconds(1))
                             .setMaximumAttempts(5)
                             .setDoNotRetry("400")
                             .build())
@@ -60,6 +63,8 @@ public class ServiceWorkflowImpl implements ServiceWorkflow {
     }
 }
 ```
+
+La Activity consulta `Activity.getExecutionContext().getInfo().getAttempt()` en lugar de mantener un contador local. Así el tercer intento sigue siendo reconocible aunque el Worker cambie entre reintentos.
 
 ## C10-E03 — ApplicationFailure tipada
 
@@ -75,11 +80,11 @@ public class TypedFailureActivityImpl implements TypedFailureActivity {
     @Override
     public void validateData(String data) {
         if ("invalid".equals(data)) {
-            throw ApplicationFailure.newFailure("Validation failed", "VALIDATION");
+            throw ApplicationFailure.newNonRetryableFailure("Validation failed", "VALIDATION");
         } else if ("missing".equals(data)) {
-            throw ApplicationFailure.newFailure("Data not found", "NOT_FOUND");
+            throw ApplicationFailure.newNonRetryableFailure("Data not found", "NOT_FOUND");
         } else if ("down".equals(data)) {
-            throw ApplicationFailure.newFailure("Provider is down", "PROVIDER_UNAVAILABLE");
+            throw ApplicationFailure.newNonRetryableFailure("Provider is down", "PROVIDER_UNAVAILABLE");
         }
     }
 }
@@ -106,16 +111,13 @@ public class TypedFailureWorkflowImpl implements TypedFailureWorkflow {
             activity.validateData(data);
             return "Success";
         } catch (ActivityFailure e) {
-            if (e.getCause() instanceof ApplicationFailure) {
-                ApplicationFailure appFailure = (ApplicationFailure) e.getCause();
-                switch (appFailure.getType()) {
-                    case "VALIDATION":
-                        return "Validation Error";
-                    case "NOT_FOUND":
-                        return "Not Found Error";
-                    case "PROVIDER_UNAVAILABLE":
-                        return "Provider Error";
-                }
+            if (e.getCause() instanceof ApplicationFailure failure) {
+                return switch (failure.getType()) {
+                    case "VALIDATION" -> "Validation Error";
+                    case "NOT_FOUND" -> "Not Found Error";
+                    case "PROVIDER_UNAVAILABLE" -> "Provider Error";
+                    default -> throw e;
+                };
             }
             throw e;
         }
@@ -143,13 +145,7 @@ public class ReservationActivityImpl implements ReservationActivity {
     public String makeReservation(String itemId, String idempotencyKey) {
         callCount++;
         
-        if (reservations.containsKey(idempotencyKey)) {
-            return reservations.get(idempotencyKey);
-        }
-        
-        String reservationId = "RES-" + itemId;
-        reservations.put(idempotencyKey, reservationId);
-        return reservationId;
+        return reservations.computeIfAbsent(idempotencyKey, ignored -> "RES-" + itemId);
     }
 
     public int getCallCount() {
@@ -178,10 +174,7 @@ public class BatchProcessingActivityImpl implements BatchProcessingActivity {
     public int processBatch(int totalRecords) {
         ActivityExecutionContext context = Activity.getExecutionContext();
         
-        int startOffset = 0;
-        if (context.getInfo().getHeartbeatDetails(Integer.class).isPresent()) {
-            startOffset = context.getInfo().getHeartbeatDetails(Integer.class).get();
-        }
+        int startOffset = context.getHeartbeatDetails(Integer.class).orElse(0);
         
         int processed = startOffset;
         
@@ -267,17 +260,13 @@ import org.slf4j.LoggerFactory;
 public class LoggingActivityImpl implements LoggingActivity {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingActivityImpl.class);
-    private int attempt = 0;
-
     @Override
     public void doWork(String sensitiveData) {
-        attempt++;
-        
         ActivityInfo info = Activity.getExecutionContext().getInfo();
         log.info("Executing activity. WorkflowId: {}, ActivityId: {}, Attempt: {}", 
                 info.getWorkflowId(), info.getActivityId(), info.getAttempt());
         
-        if (attempt < 2) {
+        if (info.getAttempt() < 2) {
             throw new RuntimeException("Simulated transient error");
         }
     }
