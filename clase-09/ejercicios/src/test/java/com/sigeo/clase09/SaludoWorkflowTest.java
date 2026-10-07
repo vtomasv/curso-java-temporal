@@ -8,16 +8,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 class SaludoWorkflowTest {
 
     private TestWorkflowEnvironment testEnv;
     private Worker worker;
     private SaludoWorkflow workflow;
-    private AuditoriaActivity auditoriaActivityMock;
+    private RecordingAuditoriaActivity auditoriaActivity;
 
     @BeforeEach
     void setUp() {
@@ -25,8 +22,8 @@ class SaludoWorkflowTest {
         worker = testEnv.newWorker("SALUDO_TASK_QUEUE");
         worker.registerWorkflowImplementationTypes(SaludoWorkflowImpl.class);
 
-        auditoriaActivityMock = mock(AuditoriaActivity.class);
-        worker.registerActivitiesImplementations(auditoriaActivityMock);
+        auditoriaActivity = new RecordingAuditoriaActivity();
+        worker.registerActivitiesImplementations(auditoriaActivity);
 
         testEnv.start();
 
@@ -48,6 +45,16 @@ class SaludoWorkflowTest {
         String resultado = workflow.saludar("Mundo");
 
         assertThat(resultado).isEqualTo("Hola, Mundo");
-        verify(auditoriaActivityMock).registrarAuditoria("Se saludó a: Mundo");
+        assertThat(auditoriaActivity.mensaje).isEqualTo("Se saludó a: Mundo");
+    }
+
+    private static final class RecordingAuditoriaActivity implements AuditoriaActivity {
+
+        private String mensaje;
+
+        @Override
+        public void registrarAuditoria(String mensaje) {
+            this.mensaje = mensaje;
+        }
     }
 }
