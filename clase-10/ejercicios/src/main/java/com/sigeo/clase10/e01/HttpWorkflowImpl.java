@@ -1,17 +1,18 @@
 package com.sigeo.clase10.e01;
 
 import io.temporal.activity.ActivityOptions;
+import io.temporal.common.RetryOptions;
 import io.temporal.workflow.Workflow;
 import java.time.Duration;
 
 public class HttpWorkflowImpl implements HttpWorkflow {
 
-    // TODO(C10-E01): Configurar ActivityOptions con un StartToCloseTimeout de 2 segundos.
-    // Asegúrate de que no haya reintentos infinitos (configura un RetryOptions con maxAttempts = 1 para este ejercicio).
     private final HttpActivity activity = Workflow.newActivityStub(HttpActivity.class,
             ActivityOptions.newBuilder()
-                    // .setStartToCloseTimeout(...)
-                    // .setRetryOptions(...)
+                    .setStartToCloseTimeout(Duration.ofSeconds(2))
+                    .setRetryOptions(RetryOptions.newBuilder()
+                            .setMaximumAttempts(1)
+                            .build())
                     .build());
 
     @Override

@@ -19,13 +19,15 @@ public class TypedFailureWorkflowImpl implements TypedFailureWorkflow {
             activity.validateData(data);
             return "Success";
         } catch (ActivityFailure e) {
-            // TODO(C10-E03): Captura el ActivityFailure, extrae el ApplicationFailure (e.getCause())
-            // y retorna un string diferente según el tipo de error:
-            // "VALIDATION" -> "Validation Error"
-            // "NOT_FOUND" -> "Not Found Error"
-            // "PROVIDER_UNAVAILABLE" -> "Provider Error"
-            // Si es otro tipo, relanza la excepción.
-            throw new UnsupportedOperationException("TODO C10-E03");
+            if (e.getCause() instanceof ApplicationFailure failure) {
+                return switch (failure.getType()) {
+                    case "VALIDATION" -> "Validation Error";
+                    case "NOT_FOUND" -> "Not Found Error";
+                    case "PROVIDER_UNAVAILABLE" -> "Provider Error";
+                    default -> throw e;
+                };
+            }
+            throw e;
         }
     }
 }

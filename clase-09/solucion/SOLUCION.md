@@ -58,6 +58,7 @@ public class SaludoWorker {
         
         Worker worker = factory.newWorker("SALUDO_TASK_QUEUE");
         worker.registerWorkflowImplementationTypes(SaludoWorkflowImpl.class);
+        worker.registerActivitiesImplementations(new AuditoriaActivityImpl());
         
         factory.start();
     }
@@ -252,32 +253,37 @@ public class AprobacionWorkflowImpl implements AprobacionWorkflow {
 
 **Por qué:** Los Workflows deben ser deterministas para que el replay funcione correctamente. Si el código produce resultados diferentes en cada ejecución, Temporal lanzará un `NonDeterministicWorkflowError`.
 
+**Interfaz ejecutable:**
+```java
+@WorkflowInterface
+public interface ProcesoDeterministaWorkflow {
+    @WorkflowMethod
+    String ejecutarProceso();
+}
+```
+
 **Correcciones en NoDeterministaWorkflowImpl.java:**
 ```java
 package com.sigeo.clase09;
 
 import io.temporal.workflow.Workflow;
-import java.time.Instant;
-import java.util.UUID;
 
-public class DeterministaWorkflowImpl {
+public class NoDeterministaWorkflowImpl implements ProcesoDeterministaWorkflow {
 
+    @Override
     public String ejecutarProceso() {
-        // CORRECCIÓN 1: Usar Workflow.randomUUID()
         String id = Workflow.randomUUID().toString();
-        
-        // CORRECCIÓN 2: Usar Workflow.currentTimeMillis()
         long inicio = Workflow.currentTimeMillis();
-        
-        // CORRECCIÓN 3: Usar Workflow.sleep()
         Workflow.sleep(1000);
-        
-        // CORRECCIÓN 4: Usar Workflow.newRandom()
-        double random = Workflow.newRandom().nextDouble();
-        
-        // CORRECCIÓN 5: Usar el logger de Temporal
-        Workflow.getLogger(DeterministaWorkflowImpl.class).info("Proceso ejecutado: " + id);
-        
+        double aleatorio = Workflow.newRandom().nextDouble();
+
+        Workflow.getLogger(NoDeterministaWorkflowImpl.class).info(
+                "Proceso ejecutado: id={}, inicio={}, aleatorio={}",
+                id,
+                inicio,
+                aleatorio
+        );
+
         return "Completado";
     }
 }

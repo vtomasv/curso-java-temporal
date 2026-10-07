@@ -4,8 +4,8 @@ import io.temporal.workflow.WorkflowInterface;
 import io.temporal.workflow.WorkflowMethod;
 
 @WorkflowInterface
-public interface SaludoWorkflow {
+public interface ProcesoDeterministaWorkflow {
 
     @WorkflowMethod
-    String saludar(String nombre);
+    String ejecutarProceso();
 }

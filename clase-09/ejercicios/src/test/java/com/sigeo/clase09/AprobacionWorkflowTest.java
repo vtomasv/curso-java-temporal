@@ -12,15 +12,13 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 class AprobacionWorkflowTest {
 
     private TestWorkflowEnvironment testEnv;
     private Worker worker;
     private AprobacionWorkflow workflow;
-    private AprobacionActivity activityMock;
+    private RecordingAprobacionActivity activity;
 
     @BeforeEach
     void setUp() {
@@ -28,8 +26,8 @@ class AprobacionWorkflowTest {
         worker = testEnv.newWorker("APROBACION_TASK_QUEUE");
         worker.registerWorkflowImplementationTypes(AprobacionWorkflowImpl.class);
 
-        activityMock = mock(AprobacionActivity.class);
-        worker.registerActivitiesImplementations(activityMock);
+        activity = new RecordingAprobacionActivity();
+        worker.registerActivitiesImplementations(activity);
 
         testEnv.start();
 
@@ -56,7 +54,8 @@ class AprobacionWorkflowTest {
         
         // Verificar resultado
         assertThat(result.join()).isEqualTo("APROBADA");
-        verify(activityMock).notificarResultado("REQ-123", "APROBADA");
+        assertThat(activity.idSolicitud).isEqualTo("REQ-123");
+        assertThat(activity.resultado).isEqualTo("APROBADA");
     }
 
     @Test
@@ -66,7 +65,8 @@ class AprobacionWorkflowTest {
         workflow.recibirDecision(false);
         
         assertThat(result.join()).isEqualTo("RECHAZADA");
-        verify(activityMock).notificarResultado("REQ-124", "RECHAZADA");
+        assertThat(activity.idSolicitud).isEqualTo("REQ-124");
+        assertThat(activity.resultado).isEqualTo("RECHAZADA");
     }
 
     @Test
@@ -77,6 +77,19 @@ class AprobacionWorkflowTest {
         testEnv.sleep(Duration.ofDays(8));
         
         assertThat(result.join()).isEqualTo("VENCIDA");
-        verify(activityMock).notificarResultado("REQ-125", "VENCIDA");
+        assertThat(activity.idSolicitud).isEqualTo("REQ-125");
+        assertThat(activity.resultado).isEqualTo("VENCIDA");
+    }
+
+    private static final class RecordingAprobacionActivity implements AprobacionActivity {
+
+        private String idSolicitud;
+        private String resultado;
+
+        @Override
+        public void notificarResultado(String idSolicitud, String resultado) {
+            this.idSolicitud = idSolicitud;
+            this.resultado = resultado;
+        }
     }
 }

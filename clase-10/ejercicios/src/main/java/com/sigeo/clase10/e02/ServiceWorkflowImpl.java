@@ -7,13 +7,16 @@ import java.time.Duration;
 
 public class ServiceWorkflowImpl implements ServiceWorkflow {
 
-    // TODO(C10-E02): Configurar RetryOptions para reintentar errores 503 con backoff.
-    // El error "400" debe ser clasificado como no reintentable (setDoNotRetry).
-    // Configura un máximo de 5 intentos.
     private final ServiceActivity activity = Workflow.newActivityStub(ServiceActivity.class,
             ActivityOptions.newBuilder()
                     .setStartToCloseTimeout(Duration.ofSeconds(5))
-                    // .setRetryOptions(...)
+                    .setRetryOptions(RetryOptions.newBuilder()
+                            .setInitialInterval(Duration.ofMillis(100))
+                            .setBackoffCoefficient(2.0)
+                            .setMaximumInterval(Duration.ofSeconds(1))
+                            .setMaximumAttempts(5)
+                            .setDoNotRetry("400")
+                            .build())
                     .build());
 
     @Override

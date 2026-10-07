@@ -6,26 +6,29 @@ import java.time.Duration;
 
 public class AprobacionWorkflowImpl implements AprobacionWorkflow {
 
-    private final AprobacionActivity activity = null; // TODO(C09-E06): Inicializar stub
+    private final AprobacionActivity activity = Workflow.newActivityStub(
+            AprobacionActivity.class,
+            ActivityOptions.newBuilder()
+                    .setStartToCloseTimeout(Duration.ofSeconds(10))
+                    .build()
+    );
     
     private Boolean decision = null;
 
     @Override
     public String solicitarAprobacion(String idSolicitud) {
-        // TODO(C09-E06): Implementar la lógica de aprobación
-        // 1. Esperar hasta 7 días por una decisión usando Workflow.await
-        // 2. Si decision es null después de 7 días, el resultado es "VENCIDA"
-        // 3. Si decision es true, el resultado es "APROBADA"
-        // 4. Si decision es false, el resultado es "RECHAZADA"
-        // 5. Llamar a activity.notificarResultado(idSolicitud, resultado)
-        // 6. Retornar el resultado
-        
-        throw new UnsupportedOperationException("TODO C09-E06");
+        Workflow.await(Duration.ofDays(7), () -> decision != null);
+
+        String resultado = decision == null
+                ? "VENCIDA"
+                : decision ? "APROBADA" : "RECHAZADA";
+
+        activity.notificarResultado(idSolicitud, resultado);
+        return resultado;
     }
 
     @Override
     public void recibirDecision(boolean aprobado) {
-        // TODO(C09-E06): Guardar la decisión en la variable de estado
-        throw new UnsupportedOperationException("TODO C09-E06");
+        this.decision = aprobado;
     }
 }

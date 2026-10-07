@@ -6,7 +6,6 @@ import io.temporal.activity.ActivityMethod;
 @ActivityInterface
 public interface AuditoriaActivity {
 
-    // TODO(C09-E03): Definir el método de la activity con @ActivityMethod
-    // El método debe llamarse 'registrarAuditoria' y recibir un String 'mensaje'.
+    @ActivityMethod
     void registrarAuditoria(String mensaje);
 }

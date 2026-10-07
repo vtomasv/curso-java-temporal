@@ -5,7 +5,7 @@ import io.temporal.activity.ActivityExecutionContext;
 
 public class ExportActivityImpl implements ExportActivity {
 
-    private boolean cleanupCalled = false;
+    private volatile boolean cleanupCalled = false;
 
     @Override
     public void exportData() {
@@ -13,8 +13,7 @@ public class ExportActivityImpl implements ExportActivity {
         
         try {
             for (int i = 0; i < 100; i++) {
-                // TODO(C10-E06): Emitir heartbeat para permitir la cancelación cooperativa.
-                // Si no se emite heartbeat, la actividad no sabrá que fue cancelada.
+                context.heartbeat(i);
                 
                 try {
                     Thread.sleep(100);
@@ -26,9 +25,6 @@ public class ExportActivityImpl implements ExportActivity {
                 }
             }
         } finally {
-            // TODO(C10-E06): Ejecutar lógica de limpieza (cleanup) si la actividad fue cancelada.
-            // Puedes verificar si fue cancelada capturando la excepción o verificando el contexto.
-            // Para este ejercicio, simplemente marca cleanupCalled = true en el bloque finally.
             cleanupCalled = true;
         }
     }

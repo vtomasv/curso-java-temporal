@@ -8,14 +8,14 @@ import io.temporal.worker.WorkerFactory;
 public class SaludoWorker {
 
     public static void main(String[] args) {
-        // TODO(C09-E02): Configurar y arrancar el Worker
-        // 1. Crear WorkflowServiceStubs
-        // 2. Crear WorkflowClient
-        // 3. Crear WorkerFactory
-        // 4. Crear Worker para la task queue "SALUDO_TASK_QUEUE"
-        // 5. Registrar SaludoWorkflowImpl
-        // 6. Iniciar la factory
-        
-        throw new UnsupportedOperationException("TODO C09-E02");
+        WorkflowServiceStubs service = WorkflowServiceStubs.newLocalServiceStubs();
+        WorkflowClient client = WorkflowClient.newInstance(service);
+        WorkerFactory factory = WorkerFactory.newInstance(client);
+
+        Worker worker = factory.newWorker("SALUDO_TASK_QUEUE");
+        worker.registerWorkflowImplementationTypes(SaludoWorkflowImpl.class);
+        worker.registerActivitiesImplementations(new AuditoriaActivityImpl());
+
+        factory.start();
     }
 }

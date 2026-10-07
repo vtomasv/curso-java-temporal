@@ -3,6 +3,8 @@
 **Bloque:** Bloque 3 — Workflows resilientes y sistemas distribuidos
 **Duración:** 4 horas
 
+La carpeta `ejercicios/` contiene una línea base funcional. `./mvnw clean verify` debe pasar desde un clon limpio con Java 25, sin Maven instalado y sin un servidor Temporal externo: las pruebas levantan `TestWorkflowEnvironment`. Los ejercicios parten observando una política correcta y luego cambian timeouts, tipos de fallo o puntos de heartbeat para comparar resultados.
+
 ## Objetivos de Aprendizaje
 - Configurar Start-to-Close, Schedule-to-Close, Schedule-to-Start y Heartbeat timeouts según el caso.
 - Diseñar RetryOptions y clasificar errores no reintentables.
@@ -27,42 +29,42 @@
 ## Ejercicios de Clase
 
 ### C10-E01 — Actividad HTTP acotada
-**Especificación:** Configurar timeouts para llamada externa de 2 s y simular latencias 1/3/10 s.
+**Especificación:** Inspeccionar el timeout de 2 s y simular latencias 1/3/10 s; después variar el límite y predecir el resultado.
 **Entregable:** ActivityOptions y tabla de resultados.
 **Criterios de Aceptación:** Falla dentro de tiempo previsto; no depende de timeout infinito.
 **Archivos involucrados:** `HttpActivity.java`, `HttpWorkflow.java`, `HttpWorkflowTest.java`
 **Comando para verificar:** `./mvnw test -Dtest=HttpWorkflowTest`
 
 ### C10-E02 — Servicio 503 temporal
-**Especificación:** Reintentar 503 con backoff y detener ante 400.
+**Especificación:** Observar los reintentos de 503 con backoff y comprobar que 400 se detiene inmediatamente.
 **Entregable:** RetryOptions y tests.
 **Criterios de Aceptación:** 400 clasificado no reintentable; máximo de intentos explícito.
 **Archivos involucrados:** `ServiceActivity.java`, `ServiceWorkflow.java`, `ServiceWorkflowTest.java`
 **Comando para verificar:** `./mvnw test -Dtest=ServiceWorkflowTest`
 
 ### C10-E03 — ApplicationFailure tipada
-**Especificación:** Emitir códigos VALIDATION, NOT_FOUND y PROVIDER_UNAVAILABLE.
+**Especificación:** Ejecutar fallos tipados VALIDATION, NOT_FOUND y PROVIDER_UNAVAILABLE y ampliar la tabla con un tipo nuevo.
 **Entregable:** Activity y manejo en Workflow.
 **Criterios de Aceptación:** Workflow decide según tipo, no parsea mensajes.
 **Archivos involucrados:** `TypedFailureActivity.java`, `TypedFailureWorkflow.java`, `TypedFailureWorkflowTest.java`
 **Comando para verificar:** `./mvnw test -Dtest=TypedFailureWorkflowTest`
 
 ### C10-E04 — Reserva única
-**Especificación:** Activity de reserva acepta idempotency key y evita duplicados al repetirse.
+**Especificación:** Ejecutar dos llamadas con la misma idempotency key y comprobar que existe una sola reserva.
 **Entregable:** Repositorio fake y test de doble invocación.
 **Criterios de Aceptación:** Mismo comando retorna mismo resultado sin segunda reserva.
 **Archivos involucrados:** `ReservationActivity.java`, `ReservationWorkflow.java`, `ReservationWorkflowTest.java`
 **Comando para verificar:** `./mvnw test -Dtest=ReservationWorkflowTest`
 
 ### C10-E05 — Procesamiento por páginas
-**Especificación:** Procesar 1000 registros por páginas, heartbeat de último offset y reanudar.
+**Especificación:** Observar el fallo simulado, el heartbeat del último offset y la reanudación hasta 1000 registros.
 **Entregable:** Activity y prueba de interrupción.
 **Criterios de Aceptación:** No reprocesa más de la ventana permitida; progreso visible.
 **Archivos involucrados:** `BatchProcessingActivity.java`, `BatchProcessingWorkflow.java`, `BatchProcessingWorkflowTest.java`
 **Comando para verificar:** `./mvnw test -Dtest=BatchProcessingWorkflowTest`
 
 ### C10-E06 — Cancelar exportación
-**Especificación:** Detectar cancelación durante Activity larga y cerrar recursos.
+**Especificación:** Cancelar la Activity larga y comprobar que el heartbeat propaga la cancelación y siempre se limpian los recursos.
 **Entregable:** Workflow/Activity y test.
 **Criterios de Aceptación:** Cancelación cooperativa; cleanup idempotente.
 **Archivos involucrados:** `ExportActivity.java`, `ExportWorkflow.java`, `ExportWorkflowTest.java`
@@ -112,8 +114,12 @@
 
 Para ejecutar los tests de la clase:
 ```bash
+cd clase-10/ejercicios
+java -version                 # Debe indicar Java 25
 ./mvnw clean test
 ```
+
+En Windows use `mvnw.cmd clean test`.
 
 Para ejecutar un test específico:
 ```bash

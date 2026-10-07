@@ -47,5 +47,6 @@ class ReservationWorkflowTest {
         // La actividad fue llamada dos veces, pero solo debió procesar la reserva una vez
         // (la segunda vez retornó el valor cacheado)
         assertThat(activityImpl.getCallCount()).isEqualTo(2);
+        assertThat(activityImpl.getReservationCount()).isEqualTo(1);
     }
 }
