@@ -36,3 +36,18 @@ jobs:
           cache: maven
           cache-dependency-path: ${{ matrix.clase }}/ejercicios/pom.xml
       - run: ./mvnw --batch-mode clean verify
+
+  solucion-clase-10:
+    name: Clase 10 / solución y laboratorios
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+          cache-dependency-path: clase-10/ejercicios/pom.xml
+      - run: python3 clase-10/solucion/preparar.py "$RUNNER_TEMP/bancared-resuelta"
+      - run: ./mvnw --batch-mode -Plaboratorios clean verify
+        working-directory: ${{ runner.temp }}/bancared-resuelta

@@ -39,7 +39,11 @@ curso-java-temporal/
 
 Cada carpeta `ejercicios/` compila antes de comenzar; los `TODO(Cxx-Eyy)` están numerados y no incluyen la solución. Las pruebas públicas en `src/test/java` definen el contrato que el alumno debe satisfacer.
 
-## Mapa del curso (19 clases)
+## Reforma de las clases 10–15
+
+La [clase 10](clase-10/README.md) ya usa BancoRed, un simulador bancario con pantallas preparadas, laboratorios con IA y una base docente completa. La reforma prevista termina en la clase 15; los contenidos de las clases 11–19 permanecen como referencia hasta implementar las siguientes entregas. Las clases 1–9 conservan su código.
+
+## Mapa anterior del curso (19 clases)
 
 | Clase | Bloque | Tema |
 |---|---|---|
@@ -52,7 +56,7 @@ Cada carpeta `ejercicios/` compila antes de comenzar; los `TODO(Cxx-Eyy)` están
 | 07 | B2 Web y persistencia | Transacciones, concurrencia, pruebas por capas |
 | 08 | B2 Web y persistencia | Seguridad web con Spring Security y JWT |
 | 09 | B3 Workflows resilientes | Temporal.io: arquitectura y ejecución duradera |
-| 10 | B3 Workflows resilientes | Activities: timeouts, retries, heartbeats, idempotencia |
+| 10 | B3 Banca asistida con IA | Transferencias, timeouts, retries, idempotencia y reversa |
 | 11 | B3 Workflows resilientes | Signals, Queries, Updates, timers y Continue-As-New |
 | 12 | B3 Workflows resilientes | Microservicios, transacciones distribuidas y Saga |
 | 13 | B3 Workflows resilientes | Pruebas Temporal, replay, versionado y observabilidad |
