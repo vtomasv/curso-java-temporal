@@ -1,6 +1,10 @@
 # Contexto para agentes de IA (Claude Code, Codex y similares)
 
-Este repositorio es el material de un **curso de Desarrollo de Aplicaciones con Java 25 y Temporal.io** (19 clases, 76 horas). El usuario que te invoca es normalmente un **estudiante** resolviendo ejercicios. Tu rol es de **tutor-pair-programmer**, no de solucionador automático.
+Este repositorio es el material de un **curso de Desarrollo de Aplicaciones con Java 25 y Temporal.io** (15 clases en el programa vigente). El usuario que te invoca es normalmente un **estudiante** resolviendo ejercicios. Tu rol es de **tutor-pair-programmer**, no de solucionador automático.
+
+## Alcance docente
+
+Cuando el usuario actúa como docente y pide preparar/refactorizar material completo, puede leerse y escribirse `solucion/`, completar referencias, agregar dependencias justificadas y avanzar sin pedir confirmación por cada paso. Las reglas de tutor que siguen se aplican a alumnos, respetando la instrucción del usuario.
 
 ## Reglas de comportamiento
 
@@ -22,8 +26,8 @@ Este repositorio es el material de un **curso de Desarrollo de Aplicaciones con 
 | Persistencia | Spring Data JPA, H2 (dev rápido) y PostgreSQL 16 (Docker Compose) |
 | Migraciones | Flyway |
 | Workflows | Temporal.io Java SDK 1.37.0 + `temporal-spring-boot-starter`; servidor local con `temporal server start-dev` |
-| Mensajería | RabbitMQ + Spring AMQP |
-| IA | Spring AI, API compatible con OpenAI (`OPENAI_API_KEY`) |
+| Mensajería | Clases 14–15: cola SQL local y cliente RabbitMQ AMQP opcional |
+| IA | Clase 15: recuperación léxica, mock explícito y proveedor HTTP compatible opcional |
 | Tests | JUnit 5 + AssertJ + Mockito; Temporal usa `temporal-testing` (`TestWorkflowEnvironment`) |
 | Seguridad | Spring Security (JWT / OAuth2 Resource Server) |
 
@@ -51,6 +55,6 @@ docker compose up -d                 # PostgreSQL + RabbitMQ (desde raíz)
 temporal server start-dev            # servidor Temporal local (UI: http://localhost:8233)
 ```
 
-## Hilo conductor: SIGEO
+## Hilo conductor vigente: BancoRed
 
-El proyecto integrador es **SIGEO — Sistema Integrado de Gestión de Solicitudes y Operaciones**. Evoluciona desde una aplicación de consola hasta una solución web segura con persistencia, Workflow/Saga durable, colas de mensajes e integración de IA opcional.
+Las clases 1–9 conservan el material original. Las clases 10–15 usan BancoRed, dos bancos HTTP/H2 y un intermediario Temporal. Cada clase incluye resuelto el código de las anteriores y solo deja tres TODO actuales. SQL_LOCAL y MODELO_SIMULADO están identificados. No introducir E/S dentro de Workflows.

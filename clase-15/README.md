@@ -1,117 +1,101 @@
-# Clase 15: Middleware de mensajes, colas y procesamiento asíncrono
+# Clase 15 · Asistente bancario, replay y cierre del proyecto
 
-**Bloque:** Bloque 4 — IA y tecnologías avanzadas  
-**Duración:** 4 horas  
+Agregar consultas con fuentes, evolucionar el Workflow y verificar el proyecto completo.
 
-## Propósito
-Diseñar integración asíncrona mediante broker, comprender sus garantías y combinar mensajería con Temporal sin duplicar responsabilidades.
+Duración: **4 horas**. BancoRed es un simulador educativo; no reproduce protocolos ni reglas reales de Redbanc. Dos bancos HTTP/H2 independientes y un portal/Worker. Todos los datos y credenciales son ficticios. Montos enteros CLP.
 
-## Resultados de aprendizaje
-- Explicar productor, consumidor, exchange/topic, queue, ack, redelivery y dead-letter queue.
-- Implementar publicación/consumo con RabbitMQ y Spring AMQP (o equivalente institucional).
-- Hacer consumidores idempotentes y controlar reintentos/DLQ.
-- Aplicar outbox/inbox para consistencia con base de datos.
-- Distinguir cuándo usar cola, evento, Temporal Workflow o combinación.
+## Base oficial independiente
 
-## Cronograma de la clase
+Incluye resueltas las funcionalidades de las clases 10–14. No requiere copiar la entrega del alumno. Solo tres TODO nuevos de esta clase. El paquete heredado `com.bancared.clase10` mantiene los contratos de la aplicación; el JAR y Task Queue distinguen la clase. Puertos: 8080 portal, 8081 Cordillera, 8082 Pacífico. Ejecutar una clase a la vez.
 
-| Minutos | Actividad | Instrucción docente |
+## Teoría aplicada
+
+* RAG léxico, salida estructurada y fallback.
+* Modelo simulado y proveedor remoto opcional en Activity.
+* Workflow.getVersion y replay de una historia real.
+* Métricas agregadas, seguridad, rendimiento y defensa final.
+
+## Agenda · 240 minutos
+
+| Minutos | Trabajo | Evidencia |
 |---|---|---|
-| 00–15 | Debrief visita profesional | Recoger hallazgos en tablero: arquitectura, seguridad y operación. |
-| 15–40 | Fundamentos de mensajería | Dibujar rutas, garantías y fallos. |
-| 40–65 | Demo broker | Publicar, consumir, fallar y redeliver. |
-| 65–85 | Ejercicios E01–E03 | Publisher, consumer y validación. |
-| 85–100 | Receso | Preparar DLQ/outbox. |
-| 100–125 | Idempotencia, DLQ y outbox | Mostrar duplicado y poison message. |
-| 125–165 | Laboratorio E04–E06 | Flujo robusto e integración Temporal. |
-| 165–185 | Desafíos E07–E08 | Schema evolution y observabilidad. |
-| 185–195 | Cierre y tarea | Matriz de decisión cola/Temporal. |
+| 0–15 | Base y pantallas | Tests base verdes |
+| 15–40 | Teoría y demo | Flujo visible |
+| 40–80 | E01 con IA | Primer incremento comprobado |
+| 80–95 | Pausa | Diff explicado |
+| 95–145 | Teoría y E02 | Segundo incremento |
+| 145–195 | Teoría y E03 | Tercer incremento |
+| 195–220 | Variante propia | TODO y prueba antes de editar |
+| 220–240 | Verificación, defensa y continuidad | Bitácora y base docente |
 
-## Ejercicios de Clase
+## Terminales y reinicio del JAR
 
-### C15-E01 — RabbitMQ local
-**Especificación:** Levantar broker con Docker Compose y verificar management UI/health.  
-**Entregable y aceptación:** Archivo `docker-compose.yml` y comandos. Credenciales de laboratorio externalizadas; volumen/puertos documentados.  
-**Archivos involucrados:** `docker-compose.yml`  
-**Comando para verificar:** `docker compose up -d` y acceder a `http://localhost:15672`
+Preparar JDK 25, Python 3 y el CLI de IA autenticado antes de la clase. Desde la raíz del repositorio, en terminal A:
 
-### C15-E02 — Notificación asíncrona
-**Especificación:** Publicar `NotificationRequested` y consumirlo con ack manual o configurado.  
-**Entregable y aceptación:** Apps/beans y evidencia. Mensaje tipado; correlationId; no pérdida en caso normal.  
-**Archivos involucrados:** `NotificationRequested.java`, `NotificationPublisher.java`, `NotificationConsumer.java`, `NotificationPublisherTest.java`  
-**Comando para verificar:** `./mvnw test -Dtest=NotificationPublisherTest`
-
-### C15-E03 — Mensaje inválido
-**Especificación:** Validar payload y enviar inválidos a ruta definida.  
-**Entregable y aceptación:** Bean Validation y tests. No entra en retry infinito por error de esquema.  
-**Archivos involucrados:** `NotificationRequested.java`, `NotificationConsumer.java`, `NotificationConsumerTest.java`  
-**Comando para verificar:** `./mvnw test -Dtest=NotificationConsumerTest`
-
-### C15-E04 — Duplicado de notificación
-**Especificación:** Persistir messageId procesado y evitar segunda notificación.  
-**Entregable y aceptación:** Inbox y test duplicado. Mismo mensaje produce un efecto.  
-**Archivos involucrados:** `InboxMessage.java`, `InboxRepository.java`, `IdempotentConsumer.java`, `IdempotentConsumerTest.java`  
-**Comando para verificar:** `./mvnw test -Dtest=IdempotentConsumerTest`
-
-### C15-E05 — Poison message
-**Especificación:** Configurar retry limitado y DLQ; reprocess manual controlado.  
-**Entregable y aceptación:** Configuración y runbook. Mensaje problemático no bloquea cola principal.  
-**Archivos involucrados:** `RabbitMQConfig.java`, `PoisonMessageTest.java`  
-**Comando para verificar:** `./mvnw test -Dtest=PoisonMessageTest`
-
-### C15-E06 — Publicación confiable
-**Especificación:** Guardar cambio y evento outbox en una transacción; publicador envía y marca.  
-**Entregable y aceptación:** Tablas, job/activity y tests. No existe ventana commit-sin-evento; publicación idempotente.  
-**Archivos involucrados:** `OutboxEvent.java`, `OutboxRepository.java`, `OutboxPublisher.java`, `OutboxPublisherTest.java`  
-**Comando para verificar:** `./mvnw test -Dtest=OutboxPublisherTest`
-
-### C15-E07 — Mensaje inicia o señala Workflow
-**Especificación:** Consumidor usa WorkflowClient para start/update/signal con ID de negocio.  
-**Entregable y aceptación:** Bridge y tests. Redelivery no duplica Workflow ni comando.  
-**Archivos involucrados:** `TemporalBridgeConsumer.java`, `TemporalBridgeConsumerTest.java`  
-**Comando para verificar:** `./mvnw test -Dtest=TemporalBridgeConsumerTest`
-
-### C15-E08 — Evento v1→v2
-**Especificación:** Agregar campo compatible y consumidor tolerante a versiones.  
-**Entregable y aceptación:** Contratos y tests. Consumidor antiguo no se rompe; cambios incompatibles versionados.  
-**Archivos involucrados:** `NotificationRequestedV2.java`, `VersionTolerantConsumer.java`, `VersionTolerantConsumerTest.java`  
-**Comando para verificar:** `./mvnw test -Dtest=VersionTolerantConsumerTest`
-
-## Tareas para el Hogar
-
-### C15-T01 — Pipeline de notificaciones
-**Esfuerzo:** 60-90 min  
-**Especificación:** Outbox→RabbitMQ→consumer idempotente→auditoría con DLQ.  
-**Entregable y aceptación:** Sistema y 25 pruebas. Reinicio/redelivery no duplica; métricas básicas.
-
-### C15-T02 — Integración Workflow-broker
-**Esfuerzo:** 60-90 min  
-**Especificación:** Al completar saga, publicar evento; otro consumidor actualiza Workflow relacionado.  
-**Entregable y aceptación:** Implementación y diagrama. Responsabilidades claras; no hay ciclo infinito.
-
-### C15-T03 — Chaos de mensajería
-**Esfuerzo:** 60-90 min  
-**Especificación:** Simular broker caído, consumidor caído, duplicado, poison y mensaje fuera de orden.  
-**Entregable y aceptación:** Informe y pruebas/scripts. Estado recuperable y procedimientos documentados.
-
-### C15-T04 — Informe visita profesional
-**Esfuerzo:** 60-90 min  
-**Especificación:** Relacionar 5 observaciones de la visita con decisiones del proyecto.  
-**Entregable y aceptación:** `docs/visita-reflexion.md`. Distingue observación, interpretación y acción aplicable.
-
-## Cómo ejecutar
-
-Para ejecutar los tests del proyecto:
 ```bash
-./mvnw test
+cd clase-15/ejercicios
+./mvnw clean verify
 ```
 
-Para levantar la infraestructura local (RabbitMQ y PostgreSQL):
+En terminal B iniciar Temporal **antes** del launcher y mantenerlo abierto:
+
+```bash
+temporal server start-dev --ip 127.0.0.1 --ui-port 8233
+```
+
+En terminal A:
+
+```bash
+python3 scripts/laboratorio.py --reset
+```
+
+En terminal C, también dentro de `clase-15/ejercicios`, ejecutar tests y `codex`. Portal http://localhost:8080, docente / laboratorio. Consola http://localhost:8233. Windows: `mvnw.cmd` y `python` según instalación.
+
+Después de cada cambio Java: salir del CLI, pulsar Ctrl+C **en A**, ejecutar perfil del lab, revisar diff y construir. Esperar BUILD SUCCESS y relanzar el launcher en A. `--reset` restablece únicamente los datos ficticios de H2; **no compila y no borra History ni Schedules de Temporal externo**. Cada operación manual usa una clave nueva. Los fallos bancarios se configuran después del reinicio. No resetear con Workflows ejecutándose.
+
+Alternativa sin consola:
+
+```bash
+python3 scripts/laboratorio.py --temporal embedded --reset
+```
+
+Mantener `--temporal embedded` al relanzar si se eligió ese modo. Usa el servidor real de pruebas del SDK; no ofrece consola ni Schedule externo. El Schedule de cumpleaños usa la fecha real de Chile. La simulación de fechas se ejecuta mediante los botones de noche/ciclo. La marca del saludo es una fecha de negocio simulada, no un reloj de producción.
+
+## Material
+
+* [Laboratorios](ejercicios/LABORATORIOS.md): comandos completos, controles y resultados.
+* [Prompts](ejercicios/PROMPTS.md): plan, implementación acotada y diagnóstico.
+* [Bitácora](ejercicios/BITACORA.md): evidencias y explicación del alumno.
+* [Solución docente](solucion/SOLUCION.md): generador por incremento y solución completa.
+
+La base compila antes de empezar. Los perfiles del incremento son deliberadamente rojos hasta completar su TODO. E02 requiere E01; E03 requiere E01 y E02.
+
+## Transporte local y RabbitMQ opcional
+
+Por defecto `SQL_LOCAL` permite ejecutar todos los laboratorios sin Docker. Es una cola SQL persistente identificada en pantalla; no se presenta como RabbitMQ. El adaptador AMQP usa confirmación de publicación, colas durables y ack posterior al inbox. Para el broker real, desde ejercicios:
+
 ```bash
 docker compose up -d
+# Esperar estado healthy; luego, tras detener launcher:
+python3 scripts/laboratorio.py --broker rabbit --reset
 ```
 
-Para iniciar el servidor de desarrollo de Temporal:
+RabbitMQ: http://localhost:15672, curso / laboratorio, vhost bancared. Al recompilar mantener `--broker rabbit`. Las colas del broker persisten independientemente del reset de H2: usar eventos y claves nuevos; no mezclar escenarios con datos previos. Para repetición limpia del broker ficticio del curso: `docker compose down -v` y `docker compose up -d` (elimina sus mensajes). Mantener la consola de Temporal en su terminal.
+
+## Proveedor de IA opcional
+
+Por defecto se usa `MODELO_SIMULADO`: una fixture reproducible, no una llamada a un LLM. Recuperación léxica sobre tres documentos ficticios, sin embeddings ni vector store. Fallback citado ante indisponibilidad o salida inválida. La validación de fuentes no garantiza verdad semántica; el asistente no tiene herramientas para mover dinero.
+
+Para un servicio HTTP compatible con Chat Completions, configurar en la shell `LAB_AI_URL` (URL completa del endpoint), `LAB_AI_MODEL` y `LAB_AI_KEY`; no pegarlos en prompts, bitácoras, capturas ni git. Después de detener launcher:
+
 ```bash
-temporal server start-dev
+python3 scripts/laboratorio.py --ai remote --reset
 ```
+
+El modo remoto requiere una configuración del docente y conectividad. Los escenarios de fallo seleccionados en pantalla pertenecen al proveedor simulado. Las pruebas y la demo local no requieren credenciales ni realizan llamadas facturables.
+
+## Defensa final
+
+Demo de 8 minutos: camino normal, fallo recuperable/compensado y nueva variante. Defensa individual: localizar código y prueba, explicar efecto incierto, idempotencia, diferencia entre reversa/compensación/liquidación y límites del asistente.
+
+Rúbrica: funcionalidad 30%, invariantes/resiliencia 25%, pruebas/replay 20%, explicación individual 15%, documentación 10%. Recuperación: corregir una brecha con variante equivalente sin borrar la evidencia inicial. El curso termina aquí; no hay clases lectivas 16–19 en el programa reformado.

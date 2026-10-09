@@ -1,110 +1,71 @@
-# Clase 11: Interacción con Workflows: Signals, Queries, Updates, timers y Continue-As-New
+# Clase 11 · Cumpleaños y procesos nocturnos
 
-**Bloque:** Bloque 3 — Workflows resilientes y sistemas distribuidos  
-**Duración:** 4 horas
+Configurar fechas, marcas diarias, timers y Schedule sin tocar las pantallas.
 
-## Objetivos de Aprendizaje
-- Usar Signals para eventos asíncronos, Queries para lectura y Updates para operaciones confirmadas.
-- Validar mensajes y evitar condiciones de carrera lógicas en el Workflow.
-- Esperar condiciones con `Workflow.await` y usar timers durables.
-- Orquestar Child Workflows y manejar su política de cierre.
-- Aplicar Continue-As-New para limitar Event History y preservar estado esencial.
+Duración: **4 horas**. BancoRed es un simulador educativo; no reproduce protocolos ni reglas reales de Redbanc. Dos bancos HTTP/H2 independientes y un portal/Worker. Todos los datos y credenciales son ficticios. Montos enteros CLP.
 
-## Cronograma de la Clase
+## Base oficial independiente
 
-| Minutos | Actividad | Instrucción docente |
+Incluye resueltas las funcionalidades de las clases 10–10. No requiere copiar la entrega del alumno. Solo tres TODO nuevos de esta clase. El paquete heredado `com.bancared.clase10` mantiene los contratos de la aplicación; el JAR y Task Queue distinguen la clase. Puertos: 8080 portal, 8081 Cordillera, 8082 Pacífico. Ejecutar una clase a la vez.
+
+## Teoría aplicada
+
+* Fecha de negocio y zona America/Santiago.
+* E/S en Activity y reemplazo transaccional de marcas.
+* Schedule diario, overlap SKIP y disparo manual.
+* Child Workflows, timer durable y Continue-As-New.
+
+## Agenda · 240 minutos
+
+| Minutos | Trabajo | Evidencia |
 |---|---|---|
-| 00–10 | Clasificación de comandos | Elegir Signal/Query/Update para 8 casos. |
-| 10–35 | Message passing | Explicar garantías y restricciones. |
-| 35–60 | Demo aprobación con Signal/Query | Interactuar desde CLI/cliente. |
-| 60–80 | Ejercicios E01–E03 | Signals, queries y await. |
-| 80–95 | Receso | Preparar Updates y child workflow. |
-| 95–120 | Updates, hijos y CAN | Mostrar validación y continuidad. |
-| 120–160 | Laboratorio E04–E06 | Proceso interactivo completo. |
-| 160–185 | Desafíos E07–E08 | Deduplicación e history. |
-| 185–195 | Cierre y tarea | Ticket: justificar Signal vs Update. |
+| 0–15 | Base y pantallas | Tests base verdes |
+| 15–40 | Teoría y demo | Flujo visible |
+| 40–80 | E01 con IA | Primer incremento comprobado |
+| 80–95 | Pausa | Diff explicado |
+| 95–145 | Teoría y E02 | Segundo incremento |
+| 145–195 | Teoría y E03 | Tercer incremento |
+| 195–220 | Variante propia | TODO y prueba antes de editar |
+| 220–240 | Verificación, defensa y continuidad | Bitácora y base docente |
 
-## Ejercicios de Clase
+## Terminales y reinicio del JAR
 
-### C11-E01 — Aprobar o rechazar
-**Especificación:** Agregar señales `approve` y `reject` a un Workflow en espera.
-**Criterios de aceptación:** Ignora transición inválida de forma definida; resultado durable.
-**Archivos involucrados:** `ApprovalWorkflow.java`, `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testApproveSignal`
+Preparar JDK 25, Python 3 y el CLI de IA autenticado antes de la clase. Desde la raíz del repositorio, en terminal A:
 
-### C11-E02 — Estado consultable
-**Especificación:** Exponer estado, historial resumido y deadline sin modificar Workflow.
-**Criterios de aceptación:** Query no hace I/O ni muta estado.
-**Archivos involucrados:** `ApprovalWorkflow.java`, `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testQueryState`
-
-### C11-E03 — Vencimiento automático
-**Especificación:** Esperar decisión o timeout, lo que ocurra primero.
-**Criterios de aceptación:** No usar `Thread.sleep`; resultado correcto en ambos caminos.
-**Archivos involucrados:** `ApprovalWorkflow.java`, `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testTimeout`
-
-### C11-E04 — Cambiar prioridad confirmado
-**Especificación:** Update valida estado y retorna nueva prioridad.
-**Criterios de aceptación:** Entrada inválida rechazada antes de handler; respuesta confirmada.
-**Archivos involucrados:** `ApprovalWorkflow.java`, `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testUpdatePriority`
-
-### C11-E05 — Comando repetido
-**Especificación:** Incluir `commandId` y evitar procesar dos veces misma aprobación.
-**Criterios de aceptación:** Reintento del cliente no duplica transición.
-**Archivos involucrados:** `ApprovalWorkflow.java`, `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testDeduplication`
-
-### C11-E06 — Revisión especializada
-**Especificación:** Delegar evaluación técnica a child workflow con timeout/cancelación.
-**Criterios de aceptación:** Parent close policy explícita; errores propagados o manejados.
-**Archivos involucrados:** `ApprovalWorkflowImpl.java`, `TechnicalReviewWorkflow.java`, `TechnicalReviewWorkflowImpl.java`, `ApprovalWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testChildWorkflow`
-
-### C11-E07 — Bandeja de eventos larga
-**Especificación:** Tras N eventos, continuar como nuevo conservando estado compacto.
-**Criterios de aceptación:** History se reinicia; estado esencial preservado.
-**Archivos involucrados:** `LongRunningWorkflow.java`, `LongRunningWorkflowImpl.java`, `LongRunningWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=LongRunningWorkflowTest`
-
-### C11-E08 — Aprobación vs expiración
-**Especificación:** Simular señal cercana al timer y definir política determinista.
-**Criterios de aceptación:** Resultado consistente con regla explícita.
-**Archivos involucrados:** `ApprovalWorkflowImpl.java`, `ApprovalWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ApprovalWorkflowTest#testRaceCondition`
-
-## Tareas para el Hogar
-
-### C11-T01 — Aprobación multinivel
-**Especificación:** Workflow con dos niveles, Signals/Updates, Queries y vencimientos por etapa.
-**Entregable:** Módulo y 20 pruebas.
-**Criterios:** Interacciones idempotentes; estados exhaustivos.
-
-### C11-T02 — Cliente operativo
-**Especificación:** CLI o endpoints Spring para iniciar, consultar, actualizar, señalar y cancelar Workflows.
-**Entregable:** Cliente y colección HTTP.
-**Criterios:** Errores de workflow no se traducen a 500 genérico.
-
-### C11-T03 — Continue-As-New controlado
-**Especificación:** Procesar 500 eventos simulados y continuar cada 50; registrar runs.
-**Entregable:** Informe y tests.
-**Criterios:** No acumula estado innecesario; búsquedas siguen siendo posibles.
-
-### C11-T04 — Contrato de mensajes
-**Especificación:** Definir versionado, commandId, validación y compatibilidad de Signals/Updates.
-**Entregable:** `docs/workflow-messages.md`.
-**Criterios:** Incluye estrategia para clientes antiguos.
-
-## Cómo ejecutar
-
-Para ejecutar los tests de los ejercicios:
 ```bash
-cd ejercicios
-./mvnw clean test
+cd clase-11/ejercicios
+./mvnw clean verify
 ```
 
-Para ejecutar el servidor de Temporal localmente (si deseas probar con un cliente real):
+En terminal B iniciar Temporal **antes** del launcher y mantenerlo abierto:
+
 ```bash
-temporal server start-dev
+temporal server start-dev --ip 127.0.0.1 --ui-port 8233
 ```
+
+En terminal A:
+
+```bash
+python3 scripts/laboratorio.py --reset
+```
+
+En terminal C, también dentro de `clase-11/ejercicios`, ejecutar tests y `codex`. Portal http://localhost:8080, docente / laboratorio. Consola http://localhost:8233. Windows: `mvnw.cmd` y `python` según instalación.
+
+Después de cada cambio Java: salir del CLI, pulsar Ctrl+C **en A**, ejecutar perfil del lab, revisar diff y construir. Esperar BUILD SUCCESS y relanzar el launcher en A. `--reset` restablece únicamente los datos ficticios de H2; **no compila y no borra History ni Schedules de Temporal externo**. Cada operación manual usa una clave nueva. Los fallos bancarios se configuran después del reinicio. No resetear con Workflows ejecutándose.
+
+Alternativa sin consola:
+
+```bash
+python3 scripts/laboratorio.py --temporal embedded --reset
+```
+
+Mantener `--temporal embedded` al relanzar si se eligió ese modo. Usa el servidor real de pruebas del SDK; no ofrece consola ni Schedule externo. El Schedule de cumpleaños usa la fecha real de Chile. La simulación de fechas se ejecuta mediante los botones de noche/ciclo. La marca del saludo es una fecha de negocio simulada, no un reloj de producción.
+
+## Material
+
+* [Laboratorios](ejercicios/LABORATORIOS.md): comandos completos, controles y resultados.
+* [Prompts](ejercicios/PROMPTS.md): plan, implementación acotada y diagnóstico.
+* [Bitácora](ejercicios/BITACORA.md): evidencias y explicación del alumno.
+* [Solución docente](solucion/SOLUCION.md): generador por incremento y solución completa.
+
+La base compila antes de empezar. Los perfiles del incremento son deliberadamente rojos hasta completar su TODO. E02 requiere E01; E03 requiere E01 y E02.

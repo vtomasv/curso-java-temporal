@@ -1,0 +1,4 @@
+target/
+.laboratorio/
+data/
+*.log

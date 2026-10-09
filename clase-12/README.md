@@ -1,111 +1,71 @@
-# Clase 12: Microservicios, transacciones distribuidas y patrón Saga
+# Clase 12 · Aprobación, vencimiento y transferencias hijas
 
-**Bloque:** Bloque 3 — Workflows resilientes y sistemas distribuidos
-**Duración:** 4 horas
+Interactuar con un Workflow antes de ejecutar la transferencia bancaria.
 
-## Objetivos de aprendizaje
-- Explicar por qué una transacción ACID no cruza microservicios de forma práctica.
-- Distinguir saga orquestada y coreografiada, y seleccionar Temporal para orquestación.
-- Diseñar pasos, compensaciones y orden inverso de rollback.
-- Manejar fallos de compensación y estados parcialmente compensados.
-- Integrar Spring Boot, PostgreSQL y Temporal sin mezclar transacciones locales con Workflow state.
+Duración: **4 horas**. BancoRed es un simulador educativo; no reproduce protocolos ni reglas reales de Redbanc. Dos bancos HTTP/H2 independientes y un portal/Worker. Todos los datos y credenciales son ficticios. Montos enteros CLP.
 
-## Cronograma de la clase
+## Base oficial independiente
 
-| Minutos | Actividad | Instrucción docente |
+Incluye resueltas las funcionalidades de las clases 10–11. No requiere copiar la entrega del alumno. Solo tres TODO nuevos de esta clase. El paquete heredado `com.bancared.clase10` mantiene los contratos de la aplicación; el JAR y Task Queue distinguen la clase. Puertos: 8080 portal, 8081 Cordillera, 8082 Pacífico. Ejecutar una clase a la vez.
+
+## Teoría aplicada
+
+* Signal asíncrono, Query sin mutación y Update confirmado.
+* Workflow.await y vencimiento durable.
+* Cancelación de negocio antes de mover dinero.
+* Child Workflow y deduplicación de comandos de cambio.
+
+## Agenda · 240 minutos
+
+| Minutos | Trabajo | Evidencia |
 |---|---|---|
-| 00–10 | Juego de estados parciales | Analizar qué revertir en cinco fallos. |
-| 10–35 | Transacciones distribuidas | Comparar 2PC, saga y coreografía. |
-| 35–60 | Demo Saga Temporal | Ejecutar flujo con fallo inducido. |
-| 60–80 | Ejercicios E01–E03 | Pasos y compensaciones. |
-| 80–95 | Receso | Preparar servicios stub. |
-| 95–120 | Fallos de compensación e idempotencia | Mostrar estado “requiere intervención”. |
-| 120–160 | Laboratorio E04–E06 | Saga completa. |
-| 160–185 | Desafíos E07–E08 | Outbox y child workflow. |
-| 185–195 | Cierre y tarea | Defensa de diseño de compensación. |
+| 0–15 | Base y pantallas | Tests base verdes |
+| 15–40 | Teoría y demo | Flujo visible |
+| 40–80 | E01 con IA | Primer incremento comprobado |
+| 80–95 | Pausa | Diff explicado |
+| 95–145 | Teoría y E02 | Segundo incremento |
+| 145–195 | Teoría y E03 | Tercer incremento |
+| 195–220 | Variante propia | TODO y prueba antes de editar |
+| 220–240 | Verificación, defensa y continuidad | Bitácora y base docente |
 
-## Ejercicios de clase
+## Terminales y reinicio del JAR
 
-### C12-E01 — Mapa de pasos
-**Especificación:** Definir pasos reserva-presupuesto-agenda-notificación y compensación de cada uno.
-**Criterios de aceptación:** Compensaciones son semánticas, no “rollback SQL remoto”.
-**Archivos involucrados:** `SagaSteps.java`
-**Comando para verificar:** `./mvnw test -Dtest=SagaStepsTest`
+Preparar JDK 25, Python 3 y el CLI de IA autenticado antes de la clase. Desde la raíz del repositorio, en terminal A:
 
-### C12-E02 — Saga mínima
-**Especificación:** Implementar dos pasos y compensar el primero si falla el segundo.
-**Criterios de aceptación:** Compensación registrada en orden seguro e idempotente.
-**Archivos involucrados:** `SagaWorkflowImpl.java`, `SagaActivities.java`
-**Comando para verificar:** `./mvnw test -Dtest=SagaWorkflowTest#testSagaMinima`
+```bash
+cd clase-12/ejercicios
+./mvnw clean verify
+```
 
-### C12-E03 — Fallo por etapa
-**Especificación:** Parametrizar fallo en cada paso y verificar estado final.
-**Criterios de aceptación:** Todos los recursos quedan liberados o marcados para intervención.
-**Archivos involucrados:** `SagaWorkflowImpl.java`, `SagaWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=SagaWorkflowTest#testFalloPorEtapa`
+En terminal B iniciar Temporal **antes** del launcher y mantenerlo abierto:
 
-### C12-E04 — Compensación inestable
-**Especificación:** Hacer fallar liberación temporalmente y configurar retry diferente.
-**Criterios de aceptación:** No pierde necesidad de compensar; visibilidad del fallo.
-**Archivos involucrados:** `SagaWorkflowImpl.java`, `SagaActivities.java`
-**Comando para verificar:** `./mvnw test -Dtest=SagaWorkflowTest#testCompensacionInestable`
+```bash
+temporal server start-dev --ip 127.0.0.1 --ui-port 8233
+```
 
-### C12-E05 — Doble cancelación
-**Especificación:** Compensar dos veces sin error ni efecto duplicado.
-**Criterios de aceptación:** Resultado estable ante repetición y concurrencia.
-**Archivos involucrados:** `SagaActivitiesImpl.java`, `SagaActivitiesTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=SagaActivitiesTest#testDobleCancelacion`
+En terminal A:
 
-### C12-E06 — Endpoint de operación
-**Especificación:** POST inicia saga y GET consulta estado/resultado.
-**Criterios de aceptación:** HTTP no espera indefinidamente; IDs correlacionados.
-**Archivos involucrados:** `SagaController.java`
-**Comando para verificar:** `./mvnw test -Dtest=SagaControllerTest`
+```bash
+python3 scripts/laboratorio.py --reset
+```
 
-### C12-E07 — Contextos separados
-**Especificación:** Convertir reserva de recurso y presupuesto en child workflows.
-**Criterios de aceptación:** Task queues y ownership definidos.
-**Archivos involucrados:** `SagaWorkflowImpl.java`, `ResourceChildWorkflow.java`
-**Comando para verificar:** `./mvnw test -Dtest=SagaWorkflowTest#testChildWorkflows`
+En terminal C, también dentro de `clase-12/ejercicios`, ejecutar tests y `codex`. Portal http://localhost:8080, docente / laboratorio. Consola http://localhost:8233. Windows: `mvnw.cmd` y `python` según instalación.
 
-### C12-E08 — Evento de completitud
-**Especificación:** Diseñar tabla outbox y publicador idempotente al finalizar saga.
-**Criterios de aceptación:** Evita commit DB + publish no atómico; clave de dedupe definida.
-**Archivos involucrados:** `OutboxService.java`, `OutboxTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=OutboxTest`
+Después de cada cambio Java: salir del CLI, pulsar Ctrl+C **en A**, ejecutar perfil del lab, revisar diff y construir. Esperar BUILD SUCCESS y relanzar el launcher en A. `--reset` restablece únicamente los datos ficticios de H2; **no compila y no borra History ni Schedules de Temporal externo**. Cada operación manual usa una clave nueva. Los fallos bancarios se configuran después del reinicio. No resetear con Workflows ejecutándose.
 
-## Tareas para el hogar
+Alternativa sin consola:
 
-### C12-T01 — Saga de asignación
-**Esfuerzo:** 60-90 min
-**Especificación:** Implementar saga de 4 pasos con 4 fallos inducibles y compensaciones.
-**Criterios de aceptación:** Estados finales documentados; no hay efectos duplicados.
+```bash
+python3 scripts/laboratorio.py --temporal embedded --reset
+```
 
-### C12-T02 — Panel de seguimiento
-**Esfuerzo:** 60-90 min
-**Especificación:** Exponer estado de saga, pasos completados y compensaciones desde Query/DB.
-**Criterios de aceptación:** No usa Query para I/O; combina fuentes en capa de consulta.
+Mantener `--temporal embedded` al relanzar si se eligió ese modo. Usa el servidor real de pruebas del SDK; no ofrece consola ni Schedule externo. El Schedule de cumpleaños usa la fecha real de Chile. La simulación de fechas se ejecuta mediante los botones de noche/ciclo. La marca del saludo es una fecha de negocio simulada, no un reloj de producción.
 
-### C12-T03 — Chaos script
-**Esfuerzo:** 60-90 min
-**Especificación:** Ejecutar 50 sagas con probabilidades de fallo y resumir resultados.
-**Criterios de aceptación:** Cero invariantes rotas; fallos pendientes identificables.
+## Material
 
-### C12-T04 — ADR de consistencia
-**Esfuerzo:** 60-90 min
-**Especificación:** Comparar saga orquestada, coreografía y 2PC para el caso.
-**Criterios de aceptación:** Incluye operación, observabilidad y recuperación.
+* [Laboratorios](ejercicios/LABORATORIOS.md): comandos completos, controles y resultados.
+* [Prompts](ejercicios/PROMPTS.md): plan, implementación acotada y diagnóstico.
+* [Bitácora](ejercicios/BITACORA.md): evidencias y explicación del alumno.
+* [Solución docente](solucion/SOLUCION.md): generador por incremento y solución completa.
 
-## Cómo ejecutar
-1. Iniciar servidor Temporal localmente:
-   ```bash
-   temporal server start-dev
-   ```
-2. Ejecutar los tests:
-   ```bash
-   ./mvnw test
-   ```
-3. Ejecutar la aplicación Spring Boot:
-   ```bash
-   ./mvnw spring-boot:run
-   ```
+La base compila antes de empezar. Los perfiles del incremento son deliberadamente rojos hasta completar su TODO. E02 requiere E01; E03 requiere E01 y E02.
