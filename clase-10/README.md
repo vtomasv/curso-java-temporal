@@ -58,7 +58,19 @@ python3 scripts/laboratorio.py --reset
 
 Abrir http://localhost:8080 (`docente / laboratorio`) y http://localhost:8233. Los tres servicios tardan segundos en iniciar. Logs: `ejercicios/.laboratorio/`. Ctrl+C detiene únicamente estos procesos.
 
-**Tras cada cambio Java:** detener launcher, construir JAR con `./mvnw clean verify` y volver a iniciarlo. `--reset` elimina exclusivamente los datos ficticios de `.laboratorio/data`; usarlo antes de cada escenario para obtener los saldos indicados. El dev server sin `--db-filename` conserva History solo mientras está activo: para repetir claves desde cero, reiniciar también Temporal o usar una clave nueva. No resetear bancos con Workflows en ejecución.
+**Tras cada cambio Java:** salir del CLI de IA y pulsar Ctrl+C en la terminal del launcher. Desde `clase-10/ejercicios`, ejecutar esta secuencia después de implementar E01:
+
+```bash
+./mvnw -Plab-e01 test
+git diff -- src/main/java/com/bancared/clase10/PoliticaActivities.java
+./mvnw clean verify
+# Esperar BUILD SUCCESS antes de iniciar:
+python3 scripts/laboratorio.py --reset
+```
+
+El launcher inicia el JAR construido en tres procesos (dos bancos y portal/Worker); no compila Java. `--reset` elimina exclusivamente los datos ficticios de `.laboratorio/data`, pero no borra History de Temporal externo. Mantener Temporal activo y usar una clave nueva en cada repetición, por ejemplo `e01-ok-02`. No resetear bancos con Workflows en ejecución.
+
+Después del arranque, configurar **Laboratorio → Banco Pacífico → 503 antes de aplicar → fallos 2 → latencia 0 → Aplicar escenario**. Los fallos se restablecen al reiniciar el banco, por eso se configuran después. En **Cuentacorrentista**, transferir `100000` de Ana/Cordillera a Bruno/Pacífico con la clave nueva. La pantalla de la diapositiva 12 es **Intermediario**: dos créditos HTTP 503 y el tercer intento `APLICADO`, estado `COMPLETADA`. En **Bancos**: Ana $900.000 y Bruno $600.000. Los pasos completos están en [LABORATORIOS.md](ejercicios/LABORATORIOS.md).
 
 Alternativa sin consola:
 
