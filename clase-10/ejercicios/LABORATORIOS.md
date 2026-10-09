@@ -9,7 +9,7 @@ Trabajar en `clase-10/ejercicios`. Portal: `docente / laboratorio`. Comenzar cad
 3. Pedir explicación y plan corto; relacionar cada cambio con la teoría antes de editar.
 4. Pedir implementar solo el TODO autorizado; no cambiar tests ni consultar `../solucion/`.
 5. Ejecutar test del lab y regresión. Revisar `git diff -- src/main/java`; explicar el diff.
-6. Ctrl+C al launcher, `./mvnw clean verify`, iniciar nuevamente y comprobar en pantalla. Un JAR iniciado no incorpora el código recién editado.
+6. Salir del CLI de IA y pulsar Ctrl+C en la terminal que ejecuta `laboratorio.py`. Construir el JAR con `./mvnw clean verify`; esperar `BUILD SUCCESS`. Ejecutar `python3 scripts/laboratorio.py --reset` y mantener esa terminal abierta. Un JAR iniciado no incorpora el código recién editado y el launcher no compila por sí solo. Si se utiliza el modo embebido, conservar `--temporal embedded` en el comando.
 7. Completar bitácora. Para corregir, compartir el error concreto con IA y conservar el alcance.
 
 ## E01 · recuperarse de errores transitorios
@@ -20,18 +20,31 @@ Archivo: `src/main/java/com/bancared/clase10/PoliticaActivities.java`.
 ./mvnw -Plab-e01 test
 codex
 # Pegar prompt E01; explicar plan; escribir «implementa».
+# Salir del CLI al terminar. En la terminal del launcher, pulsar Ctrl+C.
+# Continuar desde clase-10/ejercicios:
 ./mvnw -Plab-e01 test
+git diff -- src/main/java/com/bancared/clase10/PoliticaActivities.java
 ./mvnw clean verify
+# Solo después de BUILD SUCCESS:
+python3 scripts/laboratorio.py --reset
+# Mantener esta terminal abierta; esperar que http://localhost:8080 responda.
 ```
 
 Mantener StartToClose=5 s por intento y ScheduleToClose=15 s para toda la Activity. Máximo 3 intentos, intervalo inicial 200 ms, backoff 2 y máximo 1 s. Timeout HTTP 3 s por llamada bancaria. `VALIDACION`, `RECHAZO_BANCO`, `FONDOS_INSUFICIENTES` no se reintentan. Temporal exige al menos uno de StartToClose o ScheduleToClose; aquí usamos ambos.
 
-1. Reiniciar app. Laboratorio → Pacífico → `TRANSITORIO`, fallos=2 → aplicar.
-2. Mi cuenta → clave `e01-ok`, monto 100000 → transferir.
-3. Intermediario: `CREDITO` falla en intentos 1 y 2; intento 3 confirma. Estado `COMPLETADA`.
-4. Bancos: Ana $900.000, Bruno $600.000; un débito y un crédito.
-5. Consola Temporal: buscar `transferencia-tx-e01-ok`. History no necesariamente agrega eventos individuales por cada retry intermedio; detalle de Activity/registro del intermediario muestran contador real.
-6. Caso adicional desde cero: clave nueva `e01-rechazo`, Pacífico `PERMANENTE`. Un intento de crédito, `COMPENSADA`, saldos iniciales; Cordillera conserva débito y crédito compensador.
+El lanzador inicia el JAR actualizado en tres procesos: Cordillera, Pacífico y portal/Worker. `--reset` restablece sus datos ficticios, pero **no borra History del servidor Temporal externo**. Mantener Temporal activo en su propia terminal. Para repetir el escenario usar una clave que nunca se haya ejecutado allí, por ejemplo `e01-ok-02`; en una nueva repetición usar `e01-ok-03`. El ID de la captura puede diferir del propio.
+
+1. Abrir http://localhost:8080 e ingresar como `docente`, contraseña `laboratorio`. En **Bancos**, comprobar Ana/A001 $1.000.000 y Bruno/B001 $500.000 antes de transferir.
+2. **Laboratorio** → Banco **Banco Pacífico** → Modo **503 antes de aplicar** (valor interno `TRANSITORIO`) → **Fallos antes de recuperar: 2** → **Latencia en milisegundos: 0** → **Aplicar escenario**. Hacerlo después del reinicio: los fallos vuelven a `NORMAL` cuando se reinicia el banco.
+3. **Cuentacorrentista** → origen Ana/A001 de Cordillera, destino Bruno/B001 de Pacífico → monto `100000` → clave nueva `e01-ok-02` → **Transferir**. Esperar que finalice.
+4. **Intermediario**: `CREDITO` falla con HTTP 503 en intentos 1 y 2; intento 3 confirma `APLICADO`. Estado `COMPLETADA`. Esta es la pantalla de la diapositiva 12.
+5. **Bancos**: Ana $900.000, Bruno $600.000; un débito y un crédito. La suma se conserva en $1.500.000.
+6. Consola Temporal: buscar `transferencia-tx-e01-ok-02` (o el ID correspondiente a la clave elegida). History no necesariamente agrega eventos individuales por cada retry intermedio; detalle de Activity/registro del intermediario muestran contador real.
+7. Caso adicional desde cero: detener launcher, ejecutar nuevamente `python3 scripts/laboratorio.py --reset`, elegir una clave nueva `e01-rechazo-02` y configurar Pacífico como **Rechazo definitivo** (`PERMANENTE`). Un intento de crédito, `COMPENSADA`, saldos iniciales; Cordillera conserva débito y crédito compensador.
+
+La imagen de la PPT usa una ejecución con Temporal embebido: allí aparece «sin consola web». En modo externo aparecerá el enlace a la consola. La comprobación de E01 es el estado, los tres intentos y los saldos, aunque el ID o esa etiqueta difieran.
+
+Si aparece un solo crédito exitoso, revisar que se aplicó el escenario **después** de reiniciar. Si no hay tercer intento, comprobar el perfil E01 y que se reconstruyó el JAR antes de lanzar. Si la clave ya existe en History, usar otra nueva.
 
 Con latencia de 5 s puede haber una llamada HTTP en curso: un timeout no prueba que el banco no aplicó el crédito. Resultado incierto queda para revisión.
 
@@ -43,8 +56,11 @@ Requiere E01. Archivo: `src/main/java/com/bancared/clase10/Idempotencia.java`.
 ./mvnw -Plab-e02 test
 codex
 # Prompt E02; explicar plan; «implementa».
+# Salir del CLI y pulsar Ctrl+C en la terminal del launcher.
 ./mvnw -Plab-e02 test
+git diff -- src/main/java/com/bancared/clase10/Idempotencia.java
 ./mvnw clean verify
+python3 scripts/laboratorio.py --reset
 ```
 
 Recuperar recibo persistido para misma clave y mismos `transferId`, cuenta, monto y dirección. Payload distinto: `CLAVE_REUTILIZADA`. No reaplicar dinero ni usar Set en memoria. Locks, transacción y restricciones SQL ya están preparados; garantizan un efecto económico por transferencia/cuenta/dirección incluso si se intenta otra clave.
@@ -64,8 +80,11 @@ Requiere E01+E02. Archivo: `src/main/java/com/bancared/clase10/ReversaWorkflowIm
 ./mvnw -Plab-e03 test
 codex
 # Prompt E03; explicar plan; «implementa».
+# Salir del CLI y pulsar Ctrl+C en la terminal del launcher.
 ./mvnw -Plab-e03 test
+git diff -- src/main/java/com/bancared/clase10/ReversaWorkflowImpl.java
 ./mvnw -Plaboratorios clean verify
+python3 scripts/laboratorio.py --reset
 ```
 
 Workflow `reversa-tx-<clave>`: obtener original mediante Activity, admitir solo `COMPLETADA` y sin liquidar, debitar destinatario y acreditar origen. Claves estables distintas del original. Conservar estado original y registrar reversa por separado. Ante fallo, consultar recibo: efecto confirmado permite continuar; rechazo definitivo con ausencia confirmada permite rechazar/compensar; consulta fallida o efecto incierto queda `PENDIENTE_REVISION`. No usar SQL/HTTP, IDs aleatorios, reloj del sistema ni sleep dentro del Workflow.
