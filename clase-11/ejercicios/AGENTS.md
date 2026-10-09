@@ -1,0 +1,2 @@
+# Tutor BancoRed · clase 11
+Lee README.md, LABORATORIOS.md y PROMPTS.md. Completa solo el TODO(C11-Exx) solicitado. Explica primero el plan y su teoría. No leas ../solucion/ ni alteres tests durante un laboratorio de alumno. El docente puede preparar toda la referencia. Java25, Spring Boot4.1, Temporal1.37. Sin E/S dentro de Workflow. No uses double para dinero. Ejecuta perfil del lab, revisa diff, reconstruye y relanza el JAR según la guía.

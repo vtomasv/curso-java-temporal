@@ -1,0 +1,57 @@
+{
+  "titulo": "Asistente bancario, replay y cierre del proyecto",
+  "objetivo": "Agregar consultas con fuentes, evolucionar el Workflow y verificar el proyecto completo.",
+  "temas": [
+    "RAG léxico, salida estructurada y fallback",
+    "Modelo simulado y proveedor remoto opcional en Activity",
+    "Workflow.getVersion y replay de una historia real",
+    "Métricas agregadas, seguridad, rendimiento y defensa final"
+  ],
+  "labs": [
+    {
+      "id": "E01",
+      "titulo": "Cambio compatible y replay",
+      "archivo": "AsistenteWorkflowImpl.java",
+      "teoria": "Agregar una Activity cambia los comandos del Workflow. getVersion mantiene la ruta de historias antiguas y registra la nueva rama en ejecuciones nuevas.",
+      "pasos": [
+        "Ejecutar ./mvnw -Plab-e01 test: genera historia v1 y la reproduce con el código nuevo.",
+        "El archivo target/historia-v1.json contiene la historia real del servidor de pruebas.",
+        "Tras build/reset: Asistente, clave c15-valida-01, Respuesta válida. Preguntar «¿Puedo reversar una transferencia liquidada?».",
+        "Consultar con Temporal; esperar RESPONDIDA y fuente POL-LIQUIDACION."
+      ],
+      "esperado": "Replay v1 verde y nueva ejecución con Activity de validación. Consulta informativa sin efectos bancarios.",
+      "captura": "c15-e01",
+      "vista": "asistente"
+    },
+    {
+      "id": "E02",
+      "titulo": "Validar fuentes y fallback",
+      "archivo": "RespuestaSegura.java",
+      "teoria": "El contrato valida estructura y pertenencia de fuentes al contexto, pero no prueba por sí solo la veracidad semántica. El fallback usa texto recuperado; la IA no dispone de herramientas financieras.",
+      "pasos": [
+        "Asistente y operación: pregunta de reversa, clave c15-fallback-01, escenario Fuente inventada.",
+        "Consultar y esperar FALLBACK con POL-REVERSA y proveedor FALLBACK_LOCAL.",
+        "Repetir con claves nuevas y escenarios Salida vacía o Proveedor no disponible.",
+        "Bancos conserva saldos y movimientos anteriores; ningún texto del modelo ejecuta acciones."
+      ],
+      "esperado": "Fuentes inventadas o salidas inválidas usan fallback local citado. Proveedor simulado está identificado.",
+      "captura": "c15-e02",
+      "vista": "asistente"
+    },
+    {
+      "id": "E03",
+      "titulo": "Resumen y defensa final",
+      "archivo": "ResumenOperativo.java",
+      "teoria": "Las métricas resumen hechos de negocio. El volumen bruto no es saldo ni neto. La defensa exige explicar invariantes, fallos y límites con evidencias del código.",
+      "pasos": [
+        "Desde reset, transferir 100000 Ana a Bruno con clave nueva y esperar COMPLETADA.",
+        "Asistente y operación: transferencias 1, completadas 1, volumenCompletado 100000, pendientes 0.",
+        "Ejecutar ./mvnw -Plaboratorios clean verify y completar bitácora/rúbrica.",
+        "Demostrar transferencia, reversa, cumpleaños, aprobación, lote, redelivery y fallback; explicar un fallo sin ayuda de IA."
+      ],
+      "esperado": "Métricas agregadas sin cuentas ni nombres. Suite completa verde y demo final con invariantes conservadas.",
+      "captura": "c15-e03",
+      "vista": "asistente"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "titulo": "Notificaciones, outbox, inbox y mensajes fallidos",
+  "objetivo": "Publicar y consumir eventos de las operaciones sin perderlos ni duplicar notificaciones.",
+  "temas": [
+    "Transacción de negocio y evento outbox",
+    "Confirmación de publicación y entrega al menos una vez",
+    "Inbox persistido, redelivery y ack después del efecto",
+    "Contrato versionado, DLQ y RabbitMQ opcional real"
+  ],
+  "labs": [
+    {
+      "id": "E01",
+      "titulo": "Outbox confirmado",
+      "archivo": "OutboxStore.java",
+      "teoria": "El estado y el evento se escriben en una transacción local. Publicar no equivale a confirmar; si falta confirmación, el evento permanece pendiente y puede repetirse.",
+      "pasos": [
+        "Tras reset, transferir 100000 Ana a Bruno, clave c14-tx-01; esperar COMPLETADA.",
+        "Notificaciones: outbox muestra transfer:tx-c14-tx-01 PENDIENTE.",
+        "Acción Publicar outbox pendiente, clave c14-publicar-01. Ejecutar y esperar PUBLICADO.",
+        "El transporte SQL_LOCAL persiste el mensaje. Todavía no hay notificación en inbox."
+      ],
+      "esperado": "Evento PUBLICADO solo después de confirmar transporte. La cola tiene un mensaje pendiente.",
+      "captura": "c14-e01",
+      "vista": "eventos"
+    },
+    {
+      "id": "E02",
+      "titulo": "Inbox y redelivery",
+      "archivo": "InboxStore.java",
+      "teoria": "El inbox registra el evento y la notificación en una transacción. Repetir mismo ID/payload recupera el resultado. Otro payload con igual ID se rechaza.",
+      "pasos": [
+        "Preparar y publicar una transferencia como E01 con claves nuevas tras reset.",
+        "Acción Consumir hasta 25 mensajes; ejecutar con clave nueva. Inbox tiene una notificación.",
+        "Acción Reenviar evento ya recibido; luego Consumir con otra clave nueva.",
+        "Comprobar una notificación, dos entregas ACK y los mismos saldos de clientes."
+      ],
+      "esperado": "Una notificación aunque el evento se entregue dos veces. Inbox sobrevive al reinicio sin reset.",
+      "captura": "c14-e02",
+      "vista": "eventos"
+    },
+    {
+      "id": "E03",
+      "titulo": "Contrato y DLQ",
+      "archivo": "PoliticaMensaje.java",
+      "teoria": "Un mensaje con esquema inválido no se arregla reintentándolo. Se aparta en DLQ y se conserva evidencia; un consumidor nunca decide mover dinero.",
+      "pasos": [
+        "Desde reset, recrear E02: transferir 100000, publicar, consumir, reenviar y consumir, con claves nuevas. Luego encolar versión 99.",
+        "Acción Consumir hasta 25 mensajes, otra clave nueva.",
+        "Cola muestra DLQ; inbox conserva solamente notificaciones válidas.",
+        "Consumir otra vez no reintenta el mensaje inválido. RabbitMQ opcional muestra la cola bancared.dlq."
+      ],
+      "esperado": "Mensaje versión 99 en DLQ. Cero notificaciones para ese mensaje y cero movimientos bancarios nuevos.",
+      "captura": "c14-e03",
+      "vista": "eventos"
+    }
+  ]
+}

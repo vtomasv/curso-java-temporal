@@ -1,0 +1,57 @@
+{
+  "titulo": "Cumpleaños y procesos nocturnos",
+  "objetivo": "Configurar fechas, marcas diarias, timers y Schedule sin tocar las pantallas.",
+  "temas": [
+    "Fecha de negocio y zona America/Santiago",
+    "E/S en Activity y reemplazo transaccional de marcas",
+    "Schedule diario, overlap SKIP y disparo manual",
+    "Child Workflows, timer durable y Continue-As-New"
+  ],
+  "labs": [
+    {
+      "id": "E01",
+      "titulo": "Regla de cumpleaños",
+      "archivo": "PoliticaCumple.java",
+      "teoria": "El cumpleaños compara mes y día. El contrato fija el 28/02 para nacidos el 29/02 en años no bisiestos.",
+      "pasos": [
+        "Cumpleaños: fecha de proceso 2026-10-08.",
+        "Pulsar Evaluar regla sin marcar.",
+        "Comprobar Coincidencias: A001, sin modificar saldos.",
+        "Probar 2026-10-09: ninguna coincidencia con los datos iniciales."
+      ],
+      "esperado": "La regla coincide con Ana el 08/10. Tests cubren año distinto y 29/02.",
+      "captura": "c11-e01",
+      "vista": "cumple"
+    },
+    {
+      "id": "E02",
+      "titulo": "Workflow de saludo diario",
+      "archivo": "CumpleWorkflowImpl.java",
+      "teoria": "El Workflow decide el orden. Las Activities consultan bancos y reemplazan las marcas de forma atómica; el reloj real está fuera del Workflow.",
+      "pasos": [
+        "Tras build y reset: Cumpleaños, clave c11-noche-01, fecha 2026-10-08, Una noche.",
+        "Ejecutar proceso; esperar fecha vigente 2026-10-08 y marca A001.",
+        "Cuentacorrentista: Ana ve el saludo, sin movimientos de dinero.",
+        "Nueva clave c11-noche-02, fecha 2026-10-09: ejecutar y comprobar que A001 deja de aparecer."
+      ],
+      "esperado": "El saludo está marcado para el día procesado y se retira al ejecutar la noche siguiente.",
+      "captura": "c11-e02",
+      "vista": "cliente"
+    },
+    {
+      "id": "E03",
+      "titulo": "Schedule y continuidad",
+      "archivo": "AgendaCumple.java",
+      "teoria": "Schedule dispara ejecuciones diarias en una zona horaria. La política SKIP evita solapamiento. El ciclo alternativo usa timer y Continue-As-New cada 30 noches.",
+      "pasos": [
+        "Con Temporal externo: Crear Schedule; observar cumple-diario-BANCA-CLASE11 en la consola.",
+        "Disparar ahora ejecuta con la fecha real de Chile, no con la fecha simulada del formulario.",
+        "Pausar y Reanudar permiten controlar próximas ejecuciones.",
+        "Simulación rápida: nacimiento de Bruno 1988-10-09; fecha 2026-10-08, modo Dos noches, clave nueva. Al terminar queda solo B001."
+      ],
+      "esperado": "Calendar diario 00:05 America/Santiago. Simulación de dos noches retira A001 y marca B001.",
+      "captura": "c11-e03",
+      "vista": "cumple"
+    }
+  ]
+}

@@ -1,114 +1,71 @@
-# Clase 13: Pruebas Temporal, replay, versionado, observabilidad y seguridad
+# Clase 13 · Compensación por lotes y liquidación interbancaria
 
-**Bloque:** Bloque 3 — Workflows resilientes y sistemas distribuidos  
-**Duración:** 4 horas  
+Cerrar transferencias en un lote exclusivo y liquidar posiciones netas entre dos bancos.
 
-## Objetivos de Aprendizaje
-- Escribir pruebas de integración Temporal con `TestWorkflowEnvironment` y salto de tiempo.
-- Aplicar replay testing contra historias reales antes de desplegar cambios.
-- Usar versionado/patching y Continue-As-New para cambios compatibles.
-- Instrumentar métricas, tracing, logs y Search Attributes sin filtrar datos sensibles.
-- Configurar acceso local/cloud con API key o mTLS y separar secretos/payloads.
+Duración: **4 horas**. BancoRed es un simulador educativo; no reproduce protocolos ni reglas reales de Redbanc. Dos bancos HTTP/H2 independientes y un portal/Worker. Todos los datos y credenciales son ficticios. Montos enteros CLP.
 
-## Cronograma de la Clase
+## Base oficial independiente
 
-| Minutos | Actividad | Instrucción docente |
+Incluye resueltas las funcionalidades de las clases 10–12. No requiere copiar la entrega del alumno. Solo tres TODO nuevos de esta clase. El paquete heredado `com.bancared.clase10` mantiene los contratos de la aplicación; el JAR y Task Queue distinguen la clase. Puertos: 8080 portal, 8081 Cordillera, 8082 Pacífico. Ejecutar una clase a la vez.
+
+## Teoría aplicada
+
+* Compensación por neteo, liquidación y reversa.
+* Snapshot, reserva exclusiva y transacciones SQL locales.
+* Saga con comandos idempotentes y recuperación de recibos.
+* Incertidumbre, compensación conocida y conservación de liquidez.
+
+## Agenda · 240 minutos
+
+| Minutos | Trabajo | Evidencia |
 |---|---|---|
-| 00–10 | Revisión de suite actual | Clasificar tests lentos/frágiles. |
-| 10–35 | Testing y time skipping | Construir un test de vencimiento. |
-| 35–60 | Replay/versioning demo | Cambiar código y observar nondeterminism. |
-| 60–80 | Ejercicios E01–E03 | Test env, replay y versionado. |
-| 80–95 | Receso | Preparar observabilidad. |
-| 95–120 | Metrics, visibility y seguridad | Distinguir Search Attribute/Memo/payload. |
-| 120–160 | Laboratorio E04–E06 | Operabilidad y conexión segura. |
-| 160–185 | Desafíos E07–E08 | Gate CI y auditoría de datos. |
-| 185–195 | Cierre y tarea | Checklist de despliegue firmado por equipo. |
+| 0–15 | Base y pantallas | Tests base verdes |
+| 15–40 | Teoría y demo | Flujo visible |
+| 40–80 | E01 con IA | Primer incremento comprobado |
+| 80–95 | Pausa | Diff explicado |
+| 95–145 | Teoría y E02 | Segundo incremento |
+| 145–195 | Teoría y E03 | Tercer incremento |
+| 195–220 | Variante propia | TODO y prueba antes de editar |
+| 220–240 | Verificación, defensa y continuidad | Bitácora y base docente |
 
-## Ejercicios de Clase
+## Terminales y reinicio del JAR
 
-### C13-E01 — Vencimiento en segundos
-**Especificación:** Probar Workflow con timer de 30 días usando time skipping.
-**Criterios de Aceptación:** Test dura segundos; código de producción sin reloj inyectado artificial.
-**Archivos involucrados:** `VencimientoWorkflow.java`, `VencimientoWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=VencimientoWorkflowTest`
+Preparar JDK 25, Python 3 y el CLI de IA autenticado antes de la clase. Desde la raíz del repositorio, en terminal A:
 
-### C13-E02 — Signals y Updates
-**Especificación:** Probar señal, query, update inválido y cancelación.
-**Criterios de Aceptación:** Orden de interacción controlado; resultados exactos.
-**Archivos involucrados:** `InteraccionWorkflow.java`, `InteraccionWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=InteraccionWorkflowTest`
+```bash
+cd clase-13/ejercicios
+./mvnw clean verify
+```
 
-### C13-E03 — Historia incompatible
-**Especificación:** Ejecutar replay de historia y detectar cambio de orden de Activities.
-**Criterios de Aceptación:** Falla antes del fix; pasa tras estrategia compatible.
-**Archivos involucrados:** `ReplayWorkflowTest.java`, `historia_incompatible.json`
-**Comando para verificar:** `./mvnw test -Dtest=ReplayWorkflowTest`
+En terminal B iniciar Temporal **antes** del launcher y mantenerlo abierto:
 
-### C13-E04 — Nueva validación
-**Especificación:** Introducir rama versionada para nuevos Workflows preservando los antiguos.
-**Criterios de Aceptación:** Ambas versiones replayan; plan para retirar código antiguo.
-**Archivos involucrados:** `VersionadoWorkflow.java`, `VersionadoWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=VersionadoWorkflowTest`
+```bash
+temporal server start-dev --ip 127.0.0.1 --ui-port 8233
+```
 
-### C13-E05 — Search Attributes operativos
-**Especificación:** Indexar estado, prioridad y responsable; consultar workflows.
-**Criterios de Aceptación:** No coloca PII sensible; tipos de atributo correctos.
-**Archivos involucrados:** `SearchAttributesWorkflow.java`, `SearchAttributesWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=SearchAttributesWorkflowTest`
+En terminal A:
 
-### C13-E06 — Correlación end-to-end
-**Especificación:** Propagar correlationId y observar HTTP→Workflow→Activity.
-**Criterios de Aceptación:** No depende de logs duplicados en replay; IDs consistentes.
-**Archivos involucrados:** `CorrelacionWorkflow.java`, `CorrelacionActivity.java`
-**Comando para verificar:** `./mvnw test -Dtest=CorrelacionWorkflowTest`
+```bash
+python3 scripts/laboratorio.py --reset
+```
 
-### C13-E07 — Configuración sin secretos
-**Especificación:** Externalizar target, namespace y API key/mTLS; perfiles local/cloud.
-**Criterios de Aceptación:** Ninguna clave real; TLS/API key configurables.
-**Archivos involucrados:** `application.yml`, `.env.example`
-**Comando para verificar:** Revisión manual de archivos.
+En terminal C, también dentro de `clase-13/ejercicios`, ejecutar tests y `codex`. Portal http://localhost:8080, docente / laboratorio. Consola http://localhost:8233. Windows: `mvnw.cmd` y `python` según instalación.
 
-### C13-E08 — History hygiene
-**Especificación:** Revisar payloads, errores y Search Attributes para detectar datos excesivos.
-**Criterios de Aceptación:** Propone redacción, referencia por ID o codec cuando corresponde.
-**Archivos involucrados:** `audit.md`
-**Comando para verificar:** Revisión manual del documento.
+Después de cada cambio Java: salir del CLI, pulsar Ctrl+C **en A**, ejecutar perfil del lab, revisar diff y construir. Esperar BUILD SUCCESS y relanzar el launcher en A. `--reset` restablece únicamente los datos ficticios de H2; **no compila y no borra History ni Schedules de Temporal externo**. Cada operación manual usa una clave nueva. Los fallos bancarios se configuran después del reinicio. No resetear con Workflows ejecutándose.
 
-## Tareas para el Hogar
+Alternativa sin consola:
 
-### C13-T01 — Suite Temporal completa
-**Esfuerzo:** 60-90 min
-**Especificación:** Agregar 20 pruebas con time skipping, fault injection, signals, updates, cancellation y replay.
-**Criterios de Aceptación:** Mayoría integración; version de temporal-testing alineada con SDK.
+```bash
+python3 scripts/laboratorio.py --temporal embedded --reset
+```
 
-### C13-T02 — Gate de replay
-**Esfuerzo:** 60-90 min
-**Especificación:** Crear comando CI que descargue/use historias de fixtures y ejecute replay.
-**Criterios de Aceptación:** Falla ante nondeterminism y documenta actualización de fixtures.
+Mantener `--temporal embedded` al relanzar si se eligió ese modo. Usa el servidor real de pruebas del SDK; no ofrece consola ni Schedule externo. El Schedule de cumpleaños usa la fecha real de Chile. La simulación de fechas se ejecuta mediante los botones de noche/ciclo. La marca del saludo es una fecha de negocio simulada, no un reloj de producción.
 
-### C13-T03 — Dashboard operativo
-**Esfuerzo:** 60-90 min
-**Especificación:** Definir métricas, SLO y consultas de visibilidad para workflows críticos.
-**Criterios de Aceptación:** Incluye latencia, fallos, retries, task queue y pendientes.
+## Material
 
-### C13-T04 — Modelo de seguridad Temporal
-**Esfuerzo:** 60-90 min
-**Especificación:** Threat model de conexión, workers, payloads, secretos y acceso a UI/namespace.
-**Criterios de Aceptación:** Mitigaciones priorizadas y responsabilidades claras.
+* [Laboratorios](ejercicios/LABORATORIOS.md): comandos completos, controles y resultados.
+* [Prompts](ejercicios/PROMPTS.md): plan, implementación acotada y diagnóstico.
+* [Bitácora](ejercicios/BITACORA.md): evidencias y explicación del alumno.
+* [Solución docente](solucion/SOLUCION.md): generador por incremento y solución completa.
 
-## Cómo ejecutar
-
-1. **Iniciar servidor Temporal local:**
-   ```bash
-   temporal server start-dev
-   ```
-
-2. **Ejecutar tests:**
-   ```bash
-   ./mvnw test
-   ```
-
-3. **Ejecutar aplicación Spring Boot:**
-   ```bash
-   ./mvnw spring-boot:run
-   ```
+La base compila antes de empezar. Los perfiles del incremento son deliberadamente rojos hasta completar su TODO. E02 requiere E01; E03 requiere E01 y E02.

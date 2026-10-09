@@ -1,0 +1,57 @@
+{
+  "titulo": "Aprobación, vencimiento y transferencias hijas",
+  "objetivo": "Interactuar con un Workflow antes de ejecutar la transferencia bancaria.",
+  "temas": [
+    "Signal asíncrono, Query sin mutación y Update confirmado",
+    "Workflow.await y vencimiento durable",
+    "Cancelación de negocio antes de mover dinero",
+    "Child Workflow y deduplicación de comandos de cambio"
+  ],
+  "labs": [
+    {
+      "id": "E01",
+      "titulo": "Límites y contrato de aprobación",
+      "archivo": "PoliticaAprobacion.java",
+      "teoria": "La validación del servidor protege el contrato aunque se omitan controles del navegador. La espera no reserva fondos.",
+      "pasos": [
+        "Aprobaciones: monto 100000, plazo 30; pulsar Validar reglas.",
+        "Esperado VALIDACION_OK, sin movimientos bancarios.",
+        "Cambiar monto a 0 y pulsar Validar reglas: error de validación.",
+        "Los tests comprueban monto 1..2000000 y plazo 5..300 segundos."
+      ],
+      "esperado": "Validación rechaza monto o plazo fuera de rango. Saldos $1.000.000 / $500.000.",
+      "captura": "c12-e01",
+      "vista": "aprobaciones"
+    },
+    {
+      "id": "E02",
+      "titulo": "Esperar decisión y orquestar un hijo",
+      "archivo": "AprobacionWorkflowImpl.java",
+      "teoria": "await espera una decisión o un timer. Cancelar/rechazar/vencer finaliza sin crear la transferencia. Aprobar inicia un hijo con identidad estable.",
+      "pasos": [
+        "Nueva clave c12-aprobacion-01, monto 100000, plazo 30: Solicitar aprobación.",
+        "Consultar Query: ESPERANDO; Bancos todavía muestra saldos iniciales.",
+        "Aprobar; esperar COMPLETADA y $900.000 / $600.000.",
+        "Caso independiente desde reset, nueva clave y plazo 5: no aprobar. Esperar VENCIDA, sin movimientos."
+      ],
+      "esperado": "La solicitud vencida no mueve dinero. La aprobada genera aprobación padre y transferencia hija en Temporal.",
+      "captura": "c12-e02",
+      "vista": "aprobaciones"
+    },
+    {
+      "id": "E03",
+      "titulo": "Update confirmado e idempotente",
+      "archivo": "CambiosAprobacion.java",
+      "teoria": "Un Update devuelve el monto confirmado. Repetir un comando antiguo no deshace un cambio posterior. La misma clave con otro payload se rechaza.",
+      "pasos": [
+        "Desde reset: solicitud nueva c12-update-01, monto 100000, plazo 60.",
+        "Cambiar monto: solicitud c12-update-01, clave c12-cambio-01, monto 120000.",
+        "Enviar Update confirmado; repetir misma clave y monto. Query indica 120000.",
+        "Aprobar y esperar COMPLETADA: Ana $880.000, Bruno $620.000."
+      ],
+      "esperado": "Una transferencia de $120.000 y un débito/crédito. Update fuera de ventana se rechaza.",
+      "captura": "c12-e03",
+      "vista": "aprobaciones"
+    }
+  ]
+}

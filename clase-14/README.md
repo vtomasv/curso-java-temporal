@@ -1,112 +1,83 @@
-# Clase 14: Inteligencia artificial en aplicaciones Java y agentes durables
+# Clase 14 · Notificaciones, outbox, inbox y mensajes fallidos
 
-**Bloque:** Bloque 4 — IA y tecnologías avanzadas  
-**Duración:** 4 horas
+Publicar y consumir eventos de las operaciones sin perderlos ni duplicar notificaciones.
 
-## Objetivos de aprendizaje
-- Usar Spring AI para chat, structured output y tool calling con configuración externalizada.
-- Diseñar prompts con contrato, contexto, límites y validación de salida.
-- Implementar RAG básico con chunking, embeddings y vector store.
-- Ejecutar llamadas de modelo y herramientas externas como Activities Temporal.
-- Aplicar guardrails, evaluación, privacidad, costos y fallback.
+Duración: **4 horas**. BancoRed es un simulador educativo; no reproduce protocolos ni reglas reales de Redbanc. Dos bancos HTTP/H2 independientes y un portal/Worker. Todos los datos y credenciales son ficticios. Montos enteros CLP.
 
-## Cronograma de la clase
+## Base oficial independiente
 
-| Minutos | Actividad | Instrucción docente |
+Incluye resueltas las funcionalidades de las clases 10–13. No requiere copiar la entrega del alumno. Solo tres TODO nuevos de esta clase. El paquete heredado `com.bancared.clase10` mantiene los contratos de la aplicación; el JAR y Task Queue distinguen la clase. Puertos: 8080 portal, 8081 Cordillera, 8082 Pacífico. Ejecutar una clase a la vez.
+
+## Teoría aplicada
+
+* Transacción de negocio y evento outbox.
+* Confirmación de publicación y entrega al menos una vez.
+* Inbox persistido, redelivery y ack después del efecto.
+* Contrato versionado, DLQ y RabbitMQ opcional real.
+
+## Agenda · 240 minutos
+
+| Minutos | Trabajo | Evidencia |
 |---|---|---|
-| 00–10 | Evaluación de casos de uso | Clasificar IA necesaria, útil o innecesaria. |
-| 10–35 | Fundamentos y Spring AI | Explicar variabilidad y contrato. |
-| 35–60 | Demo structured output | Validar JSON/DTO y fallback. |
-| 60–80 | Ejercicios E01–E03 | Prompts, DTO y tool calling. |
-| 80–95 | Receso | Preparar documentos RAG. |
-| 95–120 | RAG y seguridad | Mostrar retrieval y prompt injection. |
-| 120–160 | Laboratorio E04–E06 | RAG + Activity Temporal. |
-| 160–185 | Desafíos E07–E08 | Evaluación y costos. |
-| 185–195 | Cierre y preparación de visita | Entregar guía de observación para visita profesional del 26–30 OCT. |
+| 0–15 | Base y pantallas | Tests base verdes |
+| 15–40 | Teoría y demo | Flujo visible |
+| 40–80 | E01 con IA | Primer incremento comprobado |
+| 80–95 | Pausa | Diff explicado |
+| 95–145 | Teoría y E02 | Segundo incremento |
+| 145–195 | Teoría y E03 | Tercer incremento |
+| 195–220 | Variante propia | TODO y prueba antes de editar |
+| 220–240 | Verificación, defensa y continuidad | Bitácora y base docente |
 
-## Ejercicios de clase
+## Terminales y reinicio del JAR
 
-### C14-E01 — Clasificador estructurado
-**Especificación:** Diseñar prompt que clasifique solicitud y devuelva DTO con categoría, urgencia y explicación breve.
-**Criterios de aceptación:** Salida validada; valores fuera de enum rechazados.
-**Archivos involucrados:** `ClasificadorService.java`, `ClasificacionDTO.java`, `ClasificadorServiceTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ClasificadorServiceTest`
+Preparar JDK 25, Python 3 y el CLI de IA autenticado antes de la clase. Desde la raíz del repositorio, en terminal A:
 
-### C14-E02 — Fallback sin IA
-**Especificación:** Ante timeout o salida inválida, usar clasificación determinista simple.
-**Criterios de aceptación:** La operación crítica continúa; fallo de IA es observable.
-**Archivos involucrados:** `ClasificadorService.java`, `ClasificadorServiceTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ClasificadorServiceTest`
+```bash
+cd clase-14/ejercicios
+./mvnw clean verify
+```
 
-### C14-E03 — Consulta de catálogo
-**Especificación:** Exponer herramienta read-only para consultar recursos; el modelo no modifica DB.
-**Criterios de aceptación:** Allowlist; valida parámetros; autorización en backend.
-**Archivos involucrados:** `CatalogoTools.java`, `AsistenteService.java`, `AsistenteServiceTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=AsistenteServiceTest`
+En terminal B iniciar Temporal **antes** del launcher y mantenerlo abierto:
 
-### C14-E04 — Asistente de normativa
-**Especificación:** Ingerir 3 documentos, recuperar fragmentos y responder con referencias internas.
-**Criterios de aceptación:** Respuesta distingue "no encontrado"; muestra fuente/chunk.
-**Archivos involucrados:** `NormativaRagService.java`, `NormativaRagServiceTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=NormativaRagServiceTest`
+```bash
+temporal server start-dev --ip 127.0.0.1 --ui-port 8233
+```
 
-### C14-E05 — Prompt injection lab
-**Especificación:** Probar documentos que intentan cambiar instrucciones y mitigar mediante separación de roles/allowlist.
-**Criterios de aceptación:** No ejecuta herramienta no autorizada ni revela prompt/secretos.
-**Archivos involucrados:** `SeguridadAiService.java`, `SeguridadAiServiceTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=SeguridadAiServiceTest`
+En terminal A:
 
-### C14-E06 — Análisis durable
-**Especificación:** Llamar al modelo desde Activity con timeout, retry limitado y registro de modelo/promptVersion.
-**Criterios de aceptación:** No model call en Workflow; error permanente no se reintenta sin límite.
-**Archivos involucrados:** `AnalisisAiActivity.java`, `AnalisisAiActivityImpl.java`, `AnalisisWorkflow.java`, `AnalisisWorkflowImpl.java`, `AnalisisWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=AnalisisWorkflowTest`
+```bash
+python3 scripts/laboratorio.py --reset
+```
 
-### C14-E07 — Conjunto dorado
-**Especificación:** Crear 20 preguntas/respuestas esperadas y medir exactitud, abstención y fuentes.
-**Criterios de aceptación:** Métricas definidas; casos fallidos analizados.
-**Archivos involucrados:** `EvaluacionAiTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=EvaluacionAiTest`
+En terminal C, también dentro de `clase-14/ejercicios`, ejecutar tests y `codex`. Portal http://localhost:8080, docente / laboratorio. Consola http://localhost:8233. Windows: `mvnw.cmd` y `python` según instalación.
 
-### C14-E08 — Presupuesto de tokens
-**Especificación:** Comparar dos configuraciones y establecer límites de tokens/latencia/costo simulado.
-**Criterios de aceptación:** Decisión basada en datos y calidad mínima.
-**Archivos involucrados:** `application.yaml`, `PresupuestoTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=PresupuestoTest`
+Después de cada cambio Java: salir del CLI, pulsar Ctrl+C **en A**, ejecutar perfil del lab, revisar diff y construir. Esperar BUILD SUCCESS y relanzar el launcher en A. `--reset` restablece únicamente los datos ficticios de H2; **no compila y no borra History ni Schedules de Temporal externo**. Cada operación manual usa una clave nueva. Los fallos bancarios se configuran después del reinicio. No resetear con Workflows ejecutándose.
 
-## Tareas para el hogar
+Alternativa sin consola:
 
-### C14-T01 — Asistente SIGEO
-**Especificación:** Implementar ayuda contextual con structured output y RAG sobre documentación del sistema.
-**Criterios de aceptación:** No toma decisiones irreversibles; fuentes visibles.
+```bash
+python3 scripts/laboratorio.py --temporal embedded --reset
+```
 
-### C14-T02 — AI Activity resiliente
-**Especificación:** Integrar llamada de IA como Activity con retry, timeout, fallback y trazabilidad de versión.
-**Criterios de aceptación:** Determinismo preservado; payloads minimizados.
+Mantener `--temporal embedded` al relanzar si se eligió ese modo. Usa el servidor real de pruebas del SDK; no ofrece consola ni Schedule externo. El Schedule de cumpleaños usa la fecha real de Chile. La simulación de fechas se ejecuta mediante los botones de noche/ciclo. La marca del saludo es una fecha de negocio simulada, no un reloj de producción.
 
-### C14-T03 — Red-team de prompts
-**Especificación:** Crear 15 ataques de inyección/exfiltración/tool abuse y registrar mitigaciones.
-**Criterios de aceptación:** Severidad, evidencia y prueba regresiva.
+## Material
 
-### C14-T04 — Guía visita profesional
-**Especificación:** Preparar 12 preguntas sobre arquitectura, seguridad, DevOps, mensajería, Temporal/alternativas e IA responsable.
-**Criterios de aceptación:** Preguntas abiertas y vinculadas al curso.
+* [Laboratorios](ejercicios/LABORATORIOS.md): comandos completos, controles y resultados.
+* [Prompts](ejercicios/PROMPTS.md): plan, implementación acotada y diagnóstico.
+* [Bitácora](ejercicios/BITACORA.md): evidencias y explicación del alumno.
+* [Solución docente](solucion/SOLUCION.md): generador por incremento y solución completa.
 
-## Cómo ejecutar
+La base compila antes de empezar. Los perfiles del incremento son deliberadamente rojos hasta completar su TODO. E02 requiere E01; E03 requiere E01 y E02.
 
-1. Iniciar servidor Temporal en desarrollo:
-   ```bash
-   temporal server start-dev
-   ```
-2. Iniciar RabbitMQ (si aplica):
-   ```bash
-   docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
-   ```
-3. Configurar variable de entorno para Spring AI (usando un mock o clave real para pruebas locales):
-   ```bash
-   export OPENAI_API_KEY="tu-api-key"
-   ```
-4. Ejecutar tests:
-   ```bash
-   ./mvnw test
-   ```
+## Transporte local y RabbitMQ opcional
+
+Por defecto `SQL_LOCAL` permite ejecutar todos los laboratorios sin Docker. Es una cola SQL persistente identificada en pantalla; no se presenta como RabbitMQ. El adaptador AMQP usa confirmación de publicación, colas durables y ack posterior al inbox. Para el broker real, desde ejercicios:
+
+```bash
+docker compose up -d
+# Esperar estado healthy; luego, tras detener launcher:
+python3 scripts/laboratorio.py --broker rabbit --reset
+```
+
+RabbitMQ: http://localhost:15672, curso / laboratorio, vhost bancared. Al recompilar mantener `--broker rabbit`. Las colas del broker persisten independientemente del reset de H2: usar eventos y claves nuevos; no mezclar escenarios con datos previos. Para repetición limpia del broker ficticio del curso: `docker compose down -v` y `docker compose up -d` (elimina sus mensajes). Mantener la consola de Temporal en su terminal.

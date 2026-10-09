@@ -1,0 +1,57 @@
+{
+  "titulo": "Compensación por lotes y liquidación interbancaria",
+  "objetivo": "Cerrar transferencias en un lote exclusivo y liquidar posiciones netas entre dos bancos.",
+  "temas": [
+    "Compensación por neteo, liquidación y reversa",
+    "Snapshot, reserva exclusiva y transacciones SQL locales",
+    "Saga con comandos idempotentes y recuperación de recibos",
+    "Incertidumbre, compensación conocida y conservación de liquidez"
+  ],
+  "labs": [
+    {
+      "id": "E01",
+      "titulo": "Posiciones netas",
+      "archivo": "CalculoNeto.java",
+      "teoria": "Una transferencia de A a B aumenta la posición de B y reduce la de A. Dos direcciones se netean. Una reversa completada cancela el aporte del original.",
+      "pasos": [
+        "Desde reset, Laboratorio: ambos bancos Disponible.",
+        "Transferir 100000 de Ana a Bruno con clave c13-ida-01; esperar COMPLETADA.",
+        "Transferir 60000 de Bruno a Ana con clave c13-vuelta-01; esperar COMPLETADA.",
+        "Compensación: Calcular netos sin reservar. Cordillera -40000, Pacífico +40000."
+      ],
+      "esperado": "Saldos clientes $960.000 / $540.000. Posiciones -$40.000 / +$40.000, suma cero.",
+      "captura": "c13-e01",
+      "vista": "liquidacion"
+    },
+    {
+      "id": "E02",
+      "titulo": "Lote exclusivo e inmutable",
+      "archivo": "SeleccionLote.java",
+      "teoria": "Un cierre toma un snapshot bajo lock. Cada transferencia pertenece a un solo lote abierto; se excluyen efectos inciertos y reversas en curso.",
+      "pasos": [
+        "Repetir preparación de dos transferencias con claves nuevas tras reset.",
+        "Compensación: clave c13-lote-01, Preparar lote.",
+        "Comprobar dos miembros y netos -40000 / +40000. Repetir prepara el mismo snapshot.",
+        "Preparar c13-lote-02: cero miembros. La reversa de una transferencia reservada queda bloqueada."
+      ],
+      "esperado": "Dos miembros exclusivos en el primer lote. Segundo lote vacío, sin duplicar posiciones.",
+      "captura": "c13-e02",
+      "vista": "liquidacion"
+    },
+    {
+      "id": "E03",
+      "titulo": "Liquidación Saga y compensación segura",
+      "archivo": "LiquidacionWorkflowImpl.java",
+      "teoria": "La Saga mueve liquidez del banco deudor al acreedor. Una compensación crea un asiento nuevo. Un timeout requiere confirmar recibo antes de devolver liquidez.",
+      "pasos": [
+        "Preparar el lote de dos transferencias como en E02 y pulsar Liquidar lote.",
+        "Esperar LIQUIDADO: liquidez Cordillera 1960000, Pacífico 2040000.",
+        "Bancos: clientes conservan $960.000 / $540.000. Repetir no agrega asientos.",
+        "Caso de rechazo desde reset: realizar transferencias, preparar lote nuevo y recién entonces configurar Pacífico Rechazo definitivo. Liquidar: COMPENSADO; liquidez $2.000.000 por banco."
+      ],
+      "esperado": "Liquidación mueve $40.000 de liquidez, no vuelve a mover $160.000 de clientes. Rechazo conocido devuelve liquidez; incertidumbre conserva reserva.",
+      "captura": "c13-e03",
+      "vista": "liquidacion"
+    }
+  ]
+}

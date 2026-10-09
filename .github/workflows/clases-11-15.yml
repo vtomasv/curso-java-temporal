@@ -1,0 +1,32 @@
+name: BancoRed clases 11 a 15
+on:
+  push:
+    paths: ["clase-11/**", "clase-12/**", "clase-13/**", "clase-14/**", "clase-15/**", ".github/workflows/clases-11-15.yml"]
+  pull_request:
+    paths: ["clase-11/**", "clase-12/**", "clase-13/**", "clase-14/**", "clase-15/**", ".github/workflows/clases-11-15.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        clase: [11, 12, 13, 14, 15]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+          cache-dependency-path: clase-${{ matrix.clase }}/ejercicios/pom.xml
+      - name: Base independiente
+        run: ./mvnw --batch-mode clean verify
+        working-directory: clase-${{ matrix.clase }}/ejercicios
+      - name: Generar referencia completa
+        run: python3 clase-${{ matrix.clase }}/solucion/preparar.py "$RUNNER_TEMP/bancared-resuelta"
+      - name: Tres incrementos y regresión
+        run: ./mvnw --batch-mode -Plaboratorios clean verify
+        working-directory: ${{ runner.temp }}/bancared-resuelta
