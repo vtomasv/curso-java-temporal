@@ -1,132 +1,94 @@
-# Clase 10: Activities, timeouts, reintentos, heartbeats e idempotencia
+# Clase 10 · Transferencias confiables con Java y Temporal
 
-**Bloque:** Bloque 3 — Workflows resilientes y sistemas distribuidos
-**Duración:** 4 horas
+Cuatro horas de teoría, demostración y cambios con IA sobre una aplicación que ya funciona. No depende de entregar la clase anterior. **BancoRed** es un intermediario bancario ficticio inspirado en una red interbancaria; no reproduce protocolos ni reglas reales de Redbanc.
 
-La carpeta `ejercicios/` contiene una línea base funcional. `./mvnw clean verify` debe pasar desde un clon limpio con Java 25, sin Maven instalado y sin un servidor Temporal externo: las pruebas levantan `TestWorkflowEnvironment`. Los ejercicios parten observando una política correcta y luego cambian timeouts, tipos de fallo o puntos de heartbeat para comparar resultados.
+Al terminar, el alumno explica Workflow vs. Activity, configura reintentos, recupera recibos persistidos y crea una reversa sin borrar la transferencia original.
 
-## Objetivos de Aprendizaje
-- Configurar Start-to-Close, Schedule-to-Close, Schedule-to-Start y Heartbeat timeouts según el caso.
-- Diseñar RetryOptions y clasificar errores no reintentables.
-- Hacer Activities idempotentes usando claves de negocio y registros de deduplicación.
-- Emitir heartbeats y reanudar progreso de actividades largas.
-- Aplicar cancelación y compensación sin reintentos infinitos.
+## Lo que recibimos funcionando
 
-## Cronograma de la Clase
+* Portal Spring Boot con pantallas de cliente, bancos, intermediario y fallos de laboratorio.
+* Cordillera (8081) y Pacífico (8082): procesos HTTP y bases H2 independientes. Portal/Worker en 8080, Temporal externo en 7233 y consola en 8233.
+* Transferencia mediante Activities, claves estables, validación, transacciones SQL locales, locks y movimientos persistidos.
+* Compensación técnica del débito cuando el destino rechaza definitivamente el crédito. Un efecto incierto queda `PENDIENTE_REVISION`: no se devuelve dinero sin conocer el resultado.
+* Usuarios `docente`, `ana`, `bruno`, contraseña `laboratorio`. Los clientes solo operan su cuenta; solo docente configura fallos. APIs bancarias autenticadas.
 
-| Minutos | Actividad | Instrucción docente |
+Todos los datos son ficticios. Montos enteros CLP (`long`). Ana/A001 parte con $1.000.000, Bruno/B001 con $500.000; Carla/A002 tiene $300.000. La suma de Ana+Bruno es $1.500.000.
+
+## Agenda · 240 minutos
+
+| Minutos | Actividad | Evidencia |
 |---|---|---|
-| 00–10 | Quiz de timeouts | Elegir timeout para 5 Activities. |
-| 10–35 | Semántica y reintentos | Dibujar intentos y backoff. |
-| 35–60 | Demo Activity inestable | Observar intentos en UI. |
-| 60–80 | Ejercicios E01–E03 | Timeouts, retry y error classification. |
-| 80–95 | Receso | Preparar Activity larga. |
-| 95–120 | Idempotencia y heartbeats | Mostrar deduplicación y resume. |
-| 120–160 | Laboratorio E04–E06 | Procesamiento de lote y cancelación. |
-| 160–185 | Desafíos E07–E08 | Métricas y fault matrix. |
-| 185–195 | Cierre y tarea | Revisión de política de fallos. |
+| 0–15 | Arranque y diagnóstico | Tests base verdes y portal activo |
+| 15–40 | Teoría + demo: Workflow, Activity, timeouts | Transferencia normal y History |
+| 40–75 | E01: reintentos ante fallos transitorios | Tercer intento exitoso |
+| 75–90 | Puesta en común y pausa | Explicar presupuesto de tiempo |
+| 90–110 | Teoría: recibos y claves | Respuesta perdida |
+| 110–145 | E02: idempotencia persistente | Un crédito aunque se pierda la respuesta |
+| 145–165 | Teoría: compensación vs. reversa | Movimientos nuevos, original conservado |
+| 165–210 | E03: reversa independiente | Saldos restaurados y repetición segura |
+| 210–230 | Variante propia y bitácora | Cambio pequeño explicado por alumno |
+| 230–240 | Cierre y base oficial clase 11 | Evidencias y preguntas de salida |
 
-## Ejercicios de Clase
+## Preparación
 
-### C10-E01 — Actividad HTTP acotada
-**Especificación:** Inspeccionar el timeout de 2 s y simular latencias 1/3/10 s; después variar el límite y predecir el resultado.
-**Entregable:** ActivityOptions y tabla de resultados.
-**Criterios de Aceptación:** Falla dentro de tiempo previsto; no depende de timeout infinito.
-**Archivos involucrados:** `HttpActivity.java`, `HttpWorkflow.java`, `HttpWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=HttpWorkflowTest`
+JDK 25, Python 3, Git y Temporal CLI. Maven se descarga con el wrapper. CLI de IA autenticado **antes** de la clase: [instalación oficial de Codex CLI](https://learn.chatgpt.com/docs/cli). Los prompts sirven también en otro CLI con acceso al repositorio.
 
-### C10-E02 — Servicio 503 temporal
-**Especificación:** Observar los reintentos de 503 con backoff y comprobar que 400 se detiene inmediatamente.
-**Entregable:** RetryOptions y tests.
-**Criterios de Aceptación:** 400 clasificado no reintentable; máximo de intentos explícito.
-**Archivos involucrados:** `ServiceActivity.java`, `ServiceWorkflow.java`, `ServiceWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ServiceWorkflowTest`
+Desde la raíz del repositorio:
 
-### C10-E03 — ApplicationFailure tipada
-**Especificación:** Ejecutar fallos tipados VALIDATION, NOT_FOUND y PROVIDER_UNAVAILABLE y ampliar la tabla con un tipo nuevo.
-**Entregable:** Activity y manejo en Workflow.
-**Criterios de Aceptación:** Workflow decide según tipo, no parsea mensajes.
-**Archivos involucrados:** `TypedFailureActivity.java`, `TypedFailureWorkflow.java`, `TypedFailureWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=TypedFailureWorkflowTest`
-
-### C10-E04 — Reserva única
-**Especificación:** Ejecutar dos llamadas con la misma idempotency key y comprobar que existe una sola reserva.
-**Entregable:** Repositorio fake y test de doble invocación.
-**Criterios de Aceptación:** Mismo comando retorna mismo resultado sin segunda reserva.
-**Archivos involucrados:** `ReservationActivity.java`, `ReservationWorkflow.java`, `ReservationWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ReservationWorkflowTest`
-
-### C10-E05 — Procesamiento por páginas
-**Especificación:** Observar el fallo simulado, el heartbeat del último offset y la reanudación hasta 1000 registros.
-**Entregable:** Activity y prueba de interrupción.
-**Criterios de Aceptación:** No reprocesa más de la ventana permitida; progreso visible.
-**Archivos involucrados:** `BatchProcessingActivity.java`, `BatchProcessingWorkflow.java`, `BatchProcessingWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=BatchProcessingWorkflowTest`
-
-### C10-E06 — Cancelar exportación
-**Especificación:** Cancelar la Activity larga y comprobar que el heartbeat propaga la cancelación y siempre se limpian los recursos.
-**Entregable:** Workflow/Activity y test.
-**Criterios de Aceptación:** Cancelación cooperativa; cleanup idempotente.
-**Archivos involucrados:** `ExportActivity.java`, `ExportWorkflow.java`, `ExportWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=ExportWorkflowTest`
-
-### C10-E07 — Intento y latencia
-**Especificación:** Agregar logs/metrics con workflowId, activityId e intento sin duplicar datos sensibles.
-**Entregable:** Salida y panel textual.
-**Criterios de Aceptación:** Permite distinguir intento y causa; no imprime payload completo.
-**Archivos involucrados:** `LoggingActivity.java`, `LoggingWorkflow.java`, `LoggingWorkflowTest.java`
-**Comando para verificar:** `./mvnw test -Dtest=LoggingWorkflowTest`
-
-### C10-E08 — Tabla de resiliencia
-**Especificación:** Ejecutar 8 combinaciones de fallo/timeout/retry y documentar resultado esperado/real.
-**Entregable:** `resilience-matrix.md`.
-**Criterios de Aceptación:** Coincidencia razonada; anomalías investigadas.
-**Archivos involucrados:** `resilience-matrix.md`
-**Comando para verificar:** Revisión manual.
-
-## Tareas para el Hogar
-
-### C10-T01 — Integración inestable
-**Esfuerzo:** 60-90 min
-**Especificación:** Workflow llama a catálogo y notificación simulados con fallos programables, timeouts y retry por tipo.
-**Entregable:** Módulo y 15 pruebas.
-**Criterios de Aceptación:** Sin retry infinito; errores permanentes terminan rápido.
-
-### C10-T02 — Actividad idempotente real
-**Esfuerzo:** 60-90 min
-**Especificación:** Persistir deduplicación en PostgreSQL con clave única y manejar concurrencia.
-**Entregable:** Activity y migración.
-**Criterios de Aceptación:** Dos ejecuciones concurrentes producen un solo efecto.
-
-### C10-T03 — Activity larga reanudable
-**Esfuerzo:** 60-90 min
-**Especificación:** Importar archivo grande con heartbeat de offset y cancelación.
-**Entregable:** Implementación y prueba de reinicio.
-**Criterios de Aceptación:** Reanuda desde progreso; cierre seguro de archivo.
-
-### C10-T04 — Runbook de Activity fallida
-**Esfuerzo:** 60-90 min
-**Especificación:** Procedimiento para inspeccionar, resetear/reintentar o corregir un fallo sin manipular DB a ciegas.
-**Entregable:** `docs/activity-runbook.md`.
-**Criterios de Aceptación:** Incluye criterios para fallo transitorio/permanente.
-
-## Cómo ejecutar
-
-Para ejecutar los tests de la clase:
 ```bash
+git switch -c alumno/clase-10
 cd clase-10/ejercicios
-java -version                 # Debe indicar Java 25
-./mvnw clean test
+java -version
+./mvnw clean verify
 ```
 
-En Windows use `mvnw.cmd clean test`.
+Windows: `mvnw.cmd` en lugar de `./mvnw`; `python` si corresponde.
 
-Para ejecutar un test específico:
+En segunda terminal, mantener Temporal abierto:
+
 ```bash
-./mvnw test -Dtest=NombreDelTest
+temporal server start-dev --ip 127.0.0.1 --ui-port 8233
 ```
 
-Para iniciar el servidor de Temporal en modo desarrollo (si se requiere probar manualmente):
+En la terminal del proyecto:
+
 ```bash
-temporal server start-dev
+python3 scripts/laboratorio.py --reset
 ```
+
+Abrir http://localhost:8080 (`docente / laboratorio`) y http://localhost:8233. Los tres servicios tardan segundos en iniciar. Logs: `ejercicios/.laboratorio/`. Ctrl+C detiene únicamente estos procesos.
+
+**Tras cada cambio Java:** detener launcher, construir JAR con `./mvnw clean verify` y volver a iniciarlo. `--reset` elimina exclusivamente los datos ficticios de `.laboratorio/data`; usarlo antes de cada escenario para obtener los saldos indicados. El dev server sin `--db-filename` conserva History solo mientras está activo: para repetir claves desde cero, reiniciar también Temporal o usar una clave nueva. No resetear bancos con Workflows en ejecución.
+
+Alternativa sin consola:
+
+```bash
+python3 scripts/laboratorio.py --temporal embedded --reset
+```
+
+Usa el servidor real de **pruebas** del SDK Java, sin consola web ni History persistente. Permite labs/tests; no reemplaza la demostración de consola con servidor externo.
+
+## Laboratorios
+
+[LABORATORIOS.md](ejercicios/LABORATORIOS.md): pasos, comandos y resultados exactos. [PROMPTS.md](ejercicios/PROMPTS.md): texto para pegar en el CLI. Tres archivos, tres `TODO(C10-Exx)`.
+
+Los tests del incremento son deliberadamente rojos antes de implementarlo:
+
+```bash
+./mvnw -Plab-e01 test
+./mvnw -Plab-e02 test
+./mvnw -Plab-e03 test
+```
+
+La base `./mvnw clean verify` pasa desde el inicio. E02 requiere E01; E03 requiere E01+E02. Si alguien se atrasa, el docente entrega una base oficial hasta el lab anterior sin sobrescribir su carpeta. Al finalizar:
+
+```bash
+./mvnw -Plaboratorios clean verify
+git diff -- src/main/java
+```
+
+Completar [BITACORA.md](ejercicios/BITACORA.md): teoría, prompt, diff, test, captura propia y explicación. Documentar la variante con `TODO(C10-VARIANTE)` antes de implementarla.
+
+La [guía docente](solucion/SOLUCION.md) genera una solución completa para entrar a la clase 11 sin depender de entregas anteriores. Las clases 11–15 aún no se implementan en este cambio.
+
+Referencias: [Activity failures/timeouts](https://docs.temporal.io/encyclopedia/detecting-activity-failures), [retry policies](https://docs.temporal.io/encyclopedia/retry-policies), [Java SDK](https://docs.temporal.io/develop/java).
