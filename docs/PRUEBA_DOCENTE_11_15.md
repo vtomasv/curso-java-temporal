@@ -6,6 +6,16 @@ Para cada N entre 11 y 15, desde la raíz ejecutar `python3 clase-N/solucion/pre
 
 Si se desea revisar solo un incremento: añadir `--hasta e01` o `--hasta e02` al generador. El destino debe ser nuevo. Nunca sobrescribe ejercicios ni trabajo del alumno.
 
+Si se va a continuar un laboratorio dentro de una copia docente generada fuera del repositorio, inicializar Git allí para poder revisar el diff de los siguientes cambios. Desde la carpeta generada:
+
+```bash
+git init
+git add .
+git -c user.name='Docente' -c user.email='docente@example.invalid' commit -m 'Base docente preparada'
+```
+
+Los ejercicios originales ya están dentro del repositorio y no necesitan este paso. La referencia completa puede probarse sin inicializar Git.
+
 ## Evidencia de comprobación local
 
 | Clase | Tests base | Tests referencia completa |
