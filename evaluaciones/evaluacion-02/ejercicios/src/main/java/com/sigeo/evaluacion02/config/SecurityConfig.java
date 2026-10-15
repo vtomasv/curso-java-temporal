@@ -2,9 +2,11 @@ package com.sigeo.evaluacion02.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,21 +16,21 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
     SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
-        // TODO(EV02-E07):
-        // - /api/** siempre autenticado;
-        // - POST /api/solicitudes requiere OPERADOR;
-        // - POST /api/solicitudes/*/aprobacion requiere SUPERVISOR;
-        // - negar rutas no declaradas;
-        // - HTTP Basic y sesión STATELESS;
-        // - ignorar CSRF solo para /api/**.
         return http
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/solicitudes").hasRole("OPERADOR")
+                        .requestMatchers(HttpMethod.POST, "/api/solicitudes/*/aprobacion").hasRole("SUPERVISOR")
+                        .requestMatchers("/api/**").authenticated()
+                        .anyRequest().denyAll())
                 .httpBasic(Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
                 .build();
     }
 

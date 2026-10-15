@@ -14,7 +14,15 @@ public record SolicitudResponse(
         long version
 ) {
     public static SolicitudResponse from(Solicitud solicitud) {
-        // TODO(EV02-E03): Mapear todos los campos sin exponer la entidad JPA.
-        return null;
+        SolicitudResponse response = new SolicitudResponse(
+                solicitud.getId(),
+                solicitud.getSolicitante(),
+                solicitud.getDescripcion(),
+                solicitud.getPrioridad(),
+                solicitud.getEstado(),
+                solicitud.getPropietario(),
+                solicitud.getVersion()
+        );
+        return response;
     }
 }

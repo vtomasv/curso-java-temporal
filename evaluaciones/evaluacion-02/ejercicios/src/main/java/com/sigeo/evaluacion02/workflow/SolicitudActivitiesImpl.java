@@ -13,12 +13,18 @@ public class SolicitudActivitiesImpl implements SolicitudActivities {
 
     @Override
     public String registrar(SolicitudWorkflowInput input) {
-        // TODO(EV02-E08):
-        // - validar input, id, descripción y clave;
-        // - para datos inválidos lanzar ApplicationFailure de tipo VALIDATION;
-        // - retornar el mismo resultado para una clave repetida sin repetir el efecto;
-        // - para una clave nueva guardar "REG-" + input.id().
-        throw new UnsupportedOperationException("TODO EV02-E08");
+        if (input == null
+                || input.id() == null || input.id().isBlank()
+                || input.descripcion() == null || input.descripcion().isBlank()
+                || input.claveIdempotencia() == null || input.claveIdempotencia().isBlank()) {
+            throw ApplicationFailure.newNonRetryableFailure(
+                    "El id, la descripción y la clave de idempotencia son obligatorios.", "VALIDATION");
+        }
+
+        return resultadosPorClave.computeIfAbsent(input.claveIdempotencia(), clave -> {
+            efectosRegistrados.incrementAndGet();
+            return "REG-" + input.id();
+        });
     }
 
     @Override

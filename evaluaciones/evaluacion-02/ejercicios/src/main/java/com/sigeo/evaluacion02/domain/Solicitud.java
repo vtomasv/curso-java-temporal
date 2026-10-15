@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "solicitudes")
@@ -51,20 +52,30 @@ public class Solicitud {
             String propietario,
             String claveIdempotencia
     ) {
-        // TODO(EV02-E01): Validar textos nulos/en blanco y prioridad nula.
-        // El estado inicial debe ser PENDIENTE.
+        if (id == null || id.trim().isEmpty()) throw new IllegalArgumentException("El id no puede ser nulo o vacío");
+
         this.id = id;
+        if (solicitante == null || solicitante.trim().isEmpty()) throw new IllegalArgumentException("El solicitante no puede ser nulo o vacío");
+        if (descripcion == null || descripcion.trim().isEmpty()) throw new IllegalArgumentException("La descripcion no puede ser nula o vacía");
+        if (prioridad == null) throw new IllegalArgumentException("La prioridad no puede ser nula");
+        if (propietario == null || propietario.trim().isEmpty()) throw new IllegalArgumentException("El propietario no puede ser nulo o vacío");
+        if (claveIdempotencia == null || claveIdempotencia.trim().isEmpty()) throw new IllegalArgumentException("La clave de idempotencia no puede ser nula");
         this.solicitante = solicitante;
         this.descripcion = descripcion;
         this.prioridad = prioridad;
         this.propietario = propietario;
         this.claveIdempotencia = claveIdempotencia;
-        this.estado = null;
+        this.estado =   EstadoSolicitud.PENDIENTE;
     }
 
+
     public void aprobar() {
-        // TODO(EV02-E02): Permitir PENDIENTE -> APROBADA una sola vez.
-        // Una segunda aprobación debe lanzar IllegalStateException con contexto.
+        if(this.estado != EstadoSolicitud.PENDIENTE) {
+            throw new IllegalStateException("La solicitud " + this.id + " no se encuentra en estado PENDIENTE.");
+        }else { 
+            this.estado = EstadoSolicitud.APROBADA;
+        }
+
     }
 
     public String getId() {

@@ -33,19 +33,17 @@ public class SolicitudController {
             @RequestHeader("Idempotency-Key") @NotBlank String claveIdempotencia,
             Authentication authentication
     ) {
-        // TODO(EV02-E05): Delegar usando el nombre autenticado y responder 201 + Location.
-        return ResponseEntity.status(501).build();
+        SolicitudResponse response = service.crear(request, authentication.getName(), claveIdempotencia);
+        return ResponseEntity.created(URI.create("/api/solicitudes/" + response.id())).body(response);
     }
 
     @GetMapping("/{id}")
     public SolicitudResponse buscar(@PathVariable String id) {
-        // TODO(EV02-E05): Delegar en el servicio.
-        return null;
+        return service.buscarPorId(id);
     }
 
     @PostMapping("/{id}/aprobacion")
     public SolicitudResponse aprobar(@PathVariable String id) {
-        // TODO(EV02-E05): Delegar en el servicio.
-        return null;
+        return service.aprobar(id);
     }
 }

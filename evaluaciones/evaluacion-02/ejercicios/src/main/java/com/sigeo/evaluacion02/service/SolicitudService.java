@@ -24,16 +24,28 @@ public class SolicitudService {
             String propietario,
             String claveIdempotencia
     ) {
-        // TODO(EV02-E04): Si la clave ya existe, devolver la solicitud previa.
-        // Si no existe, crear, guardar y mapear la entidad.
-        throw new UnsupportedOperationException("TODO EV02-E04");
+        var existente = this.repository.findByClaveIdempotencia(claveIdempotencia);
+        if (existente.isPresent()) {
+            return SolicitudResponse.from(existente.get());
+        }
+
+        Solicitud guardada = this.repository.save(new Solicitud(
+                request.id(),
+                request.solicitante(),
+                request.descripcion(),
+                request.prioridad(),
+                propietario,
+                claveIdempotencia
+        ));
+        return SolicitudResponse.from(guardada);
     }
 
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public SolicitudResponse buscarPorId(String id) {
         // TODO(EV02-E04): Buscar por id o lanzar SolicitudNoEncontradaException.
-        throw new UnsupportedOperationException("TODO EV02-E04");
+        Solicitud solicitud = this.repository.findById(id).orElseThrow(() -> new SolicitudNoEncontradaException(id));
+        return SolicitudResponse.from(solicitud);
     }
 
     @Transactional
