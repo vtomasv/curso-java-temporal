@@ -106,7 +106,7 @@ class E07ConfirmacionIncertidumbreTest {
             ResultadoDespacho resultado = workflow.iniciar(
                     new DespachoInput("ORDEN-E07-CANCEL", TRES_UNIDADES));
 
-            assertThat(aceptada).hasValue(true);
+            assertThat(aceptada).isTrue();
             assertThat(resultado.estado()).isEqualTo(EstadoDespacho.CANCELADA);
         }
     }
