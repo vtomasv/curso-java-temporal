@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Detalle SICOR</title><link rel="stylesheet" th:href="@{/app.css}"></head>
+<body>
+<header><a th:href="@{/}">← Volver</a><strong>SICOR</strong></header>
+<main>
+    <section>
+        <p class="eyebrow" th:text="|${detalle.resumen.tipo} · ${detalle.resumen.confidencialidad}|"></p>
+        <h1 th:text="${detalle.resumen.asunto}"></h1>
+        <dl><dt>ID</dt><dd th:text="${detalle.resumen.id}"></dd><dt>Estado</dt><dd th:text="${detalle.resumen.estado}"></dd><dt>Destinatarios</dt><dd th:text="${detalle.resumen.destinatarios}"></dd><dt>Creador</dt><dd th:text="${detalle.creador}"></dd></dl>
+        <h2>Contenido</h2>
+        <article class="contenido" th:text="${detalle.contenido}"></article>
+        <h2>Firmas</h2>
+        <p th:text="|${detalle.resumen.firmas} de ${detalle.resumen.firmasRequeridas} requeridas|"></p>
+        <ul><li th:each="firma : ${detalle.firmas}" th:text="|${firma.firmante} (${firma.rol})|"></li></ul>
+        <form th:action="@{/ordenes/{id}/firmar(id=${detalle.resumen.id})}" method="post"><button>Firmar orden</button></form>
+    </section>
+</main>
+</body>
+</html>

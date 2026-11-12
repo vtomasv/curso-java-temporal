@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SICOR Evaluación 03</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body>
+<header>
+    <div><strong>SICOR</strong><span> Sistema ficticio de comunicaciones y órdenes resilientes</span></div>
+    <form th:action="@{/logout}" method="post"><button class="secondary">Cerrar sesión</button></form>
+</header>
+<main>
+    <section>
+        <h1>Órdenes y comunicaciones</h1>
+        <p>La lista muestra metadatos. El contenido de clasificación máxima solo se revela después de reautenticar al usuario actual.</p>
+        <table>
+            <thead><tr><th>ID</th><th>Asunto</th><th>Tipo</th><th>Clasificación</th><th>Estado</th><th>Firmas</th></tr></thead>
+            <tbody>
+            <tr th:each="orden : ${ordenes}">
+                <td><a th:href="@{/ordenes/{id}(id=${orden.id})}" th:text="${orden.id}"></a></td>
+                <td th:text="${orden.asunto}"></td>
+                <td th:text="${orden.tipo}"></td>
+                <td th:text="${orden.confidencialidad}"></td>
+                <td th:text="${orden.estado}"></td>
+                <td th:text="|${orden.firmas}/${orden.firmasRequeridas}|"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Crear comunicación</h2>
+        <form th:action="@{/ordenes/nueva}" th:object="${crearOrdenRequest}" method="post" class="grid-form">
+            <label>ID<input th:field="*{id}" placeholder="ORD-100"></label>
+            <label>Clave idempotente<input th:field="*{claveIdempotencia}" placeholder="CLAVE-100"></label>
+            <label>Asunto<input th:field="*{asunto}"></label>
+            <label>Tipo<select th:field="*{tipo}"><option th:each="t : ${tipos}" th:value="${t}" th:text="${t}"></option></select></label>
+            <label>Clasificación<select th:field="*{confidencialidad}"><option th:each="c : ${confidencialidades}" th:value="${c}" th:text="${c}"></option></select></label>
+            <fieldset><legend>Unidades destinatarias</legend><label th:each="u : ${unidades}"><input type="checkbox" th:field="*{destinatarios}" th:value="${u}"><span th:text="${u}"></span></label></fieldset>
+            <label class="full">Contenido<textarea th:field="*{contenido}" rows="5"></textarea></label>
+            <div class="full errors" th:if="${#fields.hasErrors('*')}" th:errors="*{all}"></div>
+            <button class="full" type="submit">Crear borrador operativo</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

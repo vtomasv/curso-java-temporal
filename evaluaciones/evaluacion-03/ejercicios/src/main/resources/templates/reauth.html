@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reautenticación SICOR</title><link rel="stylesheet" th:href="@{/app.css}"></head>
+<body>
+<header><a th:href="@{/}">← Volver</a><strong>SICOR</strong></header>
+<main><section class="narrow">
+    <p class="eyebrow">CLASIFICACIÓN MÁXIMA</p>
+    <h1>Confirme su identidad</h1>
+    <p>La orden <strong th:text="${orden.id}"></strong> requiere ingresar nuevamente el usuario actual y su contraseña. El contenido todavía no fue enviado a esta página.</p>
+    <form th:action="@{/ordenes/{id}/reauth(id=${orden.id})}" method="post" class="stack">
+        <label>Usuario<input name="usuario" th:value="${usuarioActual}" autocomplete="username"></label>
+        <label>Contraseña<input name="password" type="password" autocomplete="current-password"></label>
+        <p class="errors" th:if="${error}" th:text="${error}"></p>
+        <button type="submit">Validar y mostrar contenido</button>
+    </form>
+</section></main>
+</body>
+</html>
