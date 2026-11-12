@@ -1,10 +1,13 @@
 package com.enlace.evaluacion03.web;
 
 import com.enlace.evaluacion03.domain.Confidencialidad;
+import com.enlace.evaluacion03.domain.EstadoOrden;
 import com.enlace.evaluacion03.domain.TipoOrden;
 import com.enlace.evaluacion03.domain.UnidadDestino;
+import com.enlace.evaluacion03.service.DespachoTemporalService;
 import com.enlace.evaluacion03.service.OrdenService;
 import com.enlace.evaluacion03.service.ReautenticacionService;
+import io.temporal.client.WorkflowException;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -24,10 +27,13 @@ public class OrdenWebController {
 
     private final OrdenService ordenes;
     private final ReautenticacionService reautenticacion;
+    private final DespachoTemporalService temporal;
 
-    public OrdenWebController(OrdenService ordenes, ReautenticacionService reautenticacion) {
+    public OrdenWebController(OrdenService ordenes, ReautenticacionService reautenticacion,
+                              DespachoTemporalService temporal) {
         this.ordenes = ordenes;
         this.reautenticacion = reautenticacion;
+        this.temporal = temporal;
     }
 
     @GetMapping("/")
@@ -62,7 +68,9 @@ public class OrdenWebController {
             model.addAttribute("usuarioActual", authentication.getName());
             return "reauth";
         }
-        model.addAttribute("detalle", ordenes.detalle(id, authentication));
+        OrdenDetalle detalle = ordenes.detalle(id, authentication);
+        model.addAttribute("detalle", detalle);
+        cargarDespacho(detalle.resumen(), authentication, model);
         return "detalle";
     }
 
@@ -90,6 +98,69 @@ public class OrdenWebController {
                 .orElse("SIN_ROL");
         ordenes.firmar(id, authentication.getName(), rol);
         return "redirect:/ordenes/" + id;
+    }
+
+    @PostMapping("/ordenes/{id}/despachar")
+    String despachar(@PathVariable String id, Authentication authentication) {
+        ordenes.resumenAutorizado(id, authentication);
+        temporal.iniciar(ordenes.prepararDespacho(id));
+        return "redirect:/ordenes/" + id;
+    }
+
+    @PostMapping("/ordenes/{id}/confirmar")
+    String confirmar(@PathVariable String id,
+                     @RequestParam UnidadDestino unidad,
+                     @RequestParam String reciboId,
+                     Authentication authentication) {
+        ordenes.resumenAutorizado(id, authentication);
+        temporal.confirmarRecepcion(id, unidad.name(), reciboId);
+        return "redirect:/ordenes/" + id;
+    }
+
+    @PostMapping("/ordenes/{id}/cancelar")
+    String cancelar(@PathVariable String id, @RequestParam String motivo,
+                    Authentication authentication) {
+        ordenes.resumenAutorizado(id, authentication);
+        if (!temporal.cancelar(id, motivo)) {
+            throw new IllegalStateException("El Workflow ya no admite cancelación");
+        }
+        return "redirect:/ordenes/" + id;
+    }
+
+    private void cargarDespacho(OrdenResumen resumen, Authentication authentication, Model model) {
+        boolean enDespacho = resumen.estado() == EstadoOrden.EN_DESPACHO;
+        model.addAttribute("workflowId", temporal.workflowId(resumen.id()));
+        model.addAttribute("puedeDespachar",
+                (resumen.estado() == EstadoOrden.LISTA_PARA_ENVIO || enDespacho)
+                        && tieneAlgunRol(authentication, "OPERADOR", "COMANDANTE"));
+        model.addAttribute("puedeConfirmar", enDespacho
+                && tieneAlgunRol(authentication, "OFICIAL", "COMANDANTE"));
+        model.addAttribute("puedeCancelar", enDespacho
+                && tieneAlgunRol(authentication, "COMANDANTE"));
+        if (!tieneWorkflow(resumen.estado())) return;
+
+        try {
+            model.addAttribute("progreso", temporal.consultarProgreso(resumen.id()));
+            model.addAttribute("recibos", temporal.consultarRecibos(resumen.id()));
+        } catch (WorkflowException exception) {
+            model.addAttribute("temporalError",
+                    "El Workflow todavía no está disponible para consulta. Recargue la página.");
+        }
+    }
+
+    private boolean tieneWorkflow(EstadoOrden estado) {
+        return estado == EstadoOrden.EN_DESPACHO
+                || estado == EstadoOrden.ENTREGADA
+                || estado == EstadoOrden.PENDIENTE_REVISION
+                || estado == EstadoOrden.CANCELADA;
+    }
+
+    private boolean tieneAlgunRol(Authentication authentication, String... roles) {
+        Set<String> permitidos = java.util.Arrays.stream(roles)
+                .map(rol -> "ROLE_" + rol)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority -> permitidos.contains(authority.getAuthority()));
     }
 
     private void cargarFormulario(Model model) {

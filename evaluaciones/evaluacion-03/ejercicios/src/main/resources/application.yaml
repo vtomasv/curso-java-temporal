@@ -13,3 +13,7 @@ server:
   port: 8080
   error:
     include-message: always
+sicor:
+  temporal:
+    mode: ${SICOR_TEMPORAL_MODE:embedded}
+    target: ${SICOR_TEMPORAL_TARGET:127.0.0.1:7233}

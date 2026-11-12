@@ -32,6 +32,38 @@ para compilar con la versión final de la plantilla.
 
 ---
 
+## Infraestructura Temporal incluida en la plantilla
+
+La aplicación ejecutable ya contiene el puente enseñado hasta la clase 13:
+
+- `TemporalConfig` crea el `WorkflowClient`, registra un Worker en
+  `SICOR-EV03` y soporta los modos `embedded` y `external`;
+- `DespachoTemporalService` usa el Workflow ID estable `despacho-<ordenId>` y
+  expone Start, Query, Signal y Update a la capa web;
+- `DespachoActivitiesImpl` se registra como Activity y delega la persistencia
+  de estados terminales a un servicio Spring;
+- el input durable contiene el ID y las unidades, pero no el contenido
+  confidencial que quedaría registrado en el History.
+
+Esta infraestructura no es una octava misión y no debe reemplazarse. Las
+misiones E05 a E07 completan las decisiones dentro de Activities y Workflows que
+el Worker ejecuta. Para comprobar que la aplicación no usa Temporal sólo en
+tests aislados, ejecute:
+
+```bash
+./mvnw -Dtest=TemporalRuntimeIntegrationTest test
+```
+
+Para inspeccionar el History en la consola local, levante el servidor y cambie
+el modo sin modificar código:
+
+```bash
+temporal server start-dev
+SICOR_TEMPORAL_MODE=external ./mvnw spring-boot:run
+```
+
+---
+
 ## EV03-E01 — Modelo e invariantes
 
 ### Pregunta de diseño

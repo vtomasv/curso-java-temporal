@@ -13,7 +13,60 @@
         <h2>Firmas</h2>
         <p th:text="|${detalle.resumen.firmas} de ${detalle.resumen.firmasRequeridas} requeridas|"></p>
         <ul><li th:each="firma : ${detalle.firmas}" th:text="|${firma.firmante} (${firma.rol})|"></li></ul>
-        <form th:action="@{/ordenes/{id}/firmar(id=${detalle.resumen.id})}" method="post"><button>Firmar orden</button></form>
+        <form th:if="${detalle.resumen.estado.name() == 'PENDIENTE_FIRMAS'}"
+              th:action="@{/ordenes/{id}/firmar(id=${detalle.resumen.id})}" method="post">
+            <button>Firmar orden</button>
+        </form>
+
+        <div class="temporal-panel" th:if="${puedeDespachar}">
+            <h2>Despacho durable</h2>
+            <p>La política de firmas está completa. El ID estable permite iniciar o recuperar el mismo Workflow de Temporal.</p>
+            <form th:action="@{/ordenes/{id}/despachar(id=${detalle.resumen.id})}" method="post">
+                <button>Iniciar o recuperar Workflow</button>
+            </form>
+        </div>
+
+        <div class="errors" th:if="${temporalError}" th:text="${temporalError}"></div>
+
+        <div class="temporal-panel" th:if="${progreso != null}">
+            <h2>Temporal · progreso durable</h2>
+            <dl>
+                <dt>Workflow ID</dt><dd th:text="${workflowId}"></dd>
+                <dt>Task Queue</dt><dd>SICOR-EV03</dd>
+                <dt>Estado</dt><dd th:text="${progreso.estado}"></dd>
+                <dt>Enviadas</dt><dd th:text="|${progreso.enviadas} de ${progreso.total}|"></dd>
+                <dt>Confirmadas</dt><dd th:text="|${progreso.confirmadas} de ${progreso.total}|"></dd>
+            </dl>
+
+            <h3>Recibos de las Activities</h3>
+            <table>
+                <thead><tr><th>Unidad</th><th>Recibo</th><th>Signal</th></tr></thead>
+                <tbody>
+                <tr th:each="recibo : ${recibos}">
+                    <td th:text="${recibo.unidad}"></td>
+                    <td th:text="${recibo.reciboId}"></td>
+                    <td th:if="${puedeConfirmar and !progreso.unidadesConfirmadas.contains(recibo.unidad)}">
+                        <form th:action="@{/ordenes/{id}/confirmar(id=${detalle.resumen.id})}" method="post">
+                            <input type="hidden" name="unidad" th:value="${recibo.unidad}">
+                            <input type="hidden" name="reciboId" th:value="${recibo.reciboId}">
+                            <button>Confirmar recepción</button>
+                        </form>
+                    </td>
+                    <td th:unless="${puedeConfirmar and !progreso.unidadesConfirmadas.contains(recibo.unidad)}"
+                        th:text="${progreso.unidadesConfirmadas.contains(recibo.unidad) ? 'Confirmada' : 'Sin acción disponible'}"></td>
+                </tr>
+                </tbody>
+            </table>
+
+            <form class="cancel-form"
+                  th:if="${puedeCancelar}"
+                  th:action="@{/ordenes/{id}/cancelar(id=${detalle.resumen.id})}" method="post">
+                <label>Motivo de cancelación
+                    <input name="motivo" required maxlength="160" value="Cambio de prioridad">
+                </label>
+                <button class="danger">Solicitar cancelación por Update</button>
+            </form>
+        </div>
     </section>
 </main>
 </body>

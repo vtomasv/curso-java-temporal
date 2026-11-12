@@ -18,7 +18,10 @@ label, fieldset { display: grid; gap: .35rem; }
 input, select, textarea, button { font: inherit; padding: .65rem; border: 1px solid #aab7c2; border-radius: 6px; }
 button { background: #0b6b75; color: white; border: 0; cursor: pointer; }
 button.secondary { background: transparent; border: 1px solid white; }
+button.danger { background: #943b3b; }
 .contenido { white-space: pre-wrap; background: #f5f7f9; border-left: 4px solid #d1a238; padding: 1rem; }
+.temporal-panel { margin-top: 1.5rem; padding: 1rem; border: 1px solid #b9c8d3; border-radius: 8px; background: #f7fafb; }
+.cancel-form { margin-top: 1rem; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: .75rem; }
 .eyebrow { color: #0b6b75; font-size: .8rem; font-weight: 700; letter-spacing: .08em; }
 .errors { color: #a43737; }
 dl { display: grid; grid-template-columns: 120px 1fr; gap: .4rem; }

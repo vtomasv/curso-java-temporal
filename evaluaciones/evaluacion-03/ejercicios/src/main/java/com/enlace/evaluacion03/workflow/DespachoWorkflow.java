@@ -6,6 +6,8 @@ import io.temporal.workflow.UpdateMethod;
 import io.temporal.workflow.WorkflowInterface;
 import io.temporal.workflow.WorkflowMethod;
 
+import java.util.List;
+
 @WorkflowInterface
 public interface DespachoWorkflow {
 
@@ -17,6 +19,9 @@ public interface DespachoWorkflow {
 
     @QueryMethod
     ProgresoDespacho consultarProgreso();
+
+    @QueryMethod
+    List<ReciboEnvio> consultarRecibos();
 
     @UpdateMethod
     boolean cancelar(String motivo);
