@@ -139,6 +139,11 @@ public class DespachoWorkflowImpl implements DespachoWorkflow {
     }
 
     @Override
+    public List<ReciboEnvio> consultarRecibos() {
+        return List.copyOf(recibos);
+    }
+
+    @Override
     public boolean cancelar(String motivo) {
         if (estado == EstadoDespacho.ENTREGADA || estado == EstadoDespacho.CANCELADA) return false;
         cancelada = motivo != null && !motivo.isBlank();

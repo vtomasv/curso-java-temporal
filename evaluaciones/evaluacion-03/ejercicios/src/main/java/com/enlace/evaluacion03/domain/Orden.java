@@ -103,7 +103,9 @@ public class Orden {
         if (estado != EstadoOrden.EN_DESPACHO) {
             throw new IllegalStateException("La orden " + id + " no está en despacho");
         }
-        if (nuevoEstado != EstadoOrden.ENTREGADA && nuevoEstado != EstadoOrden.PENDIENTE_REVISION) {
+        if (nuevoEstado != EstadoOrden.ENTREGADA
+                && nuevoEstado != EstadoOrden.PENDIENTE_REVISION
+                && nuevoEstado != EstadoOrden.CANCELADA) {
             throw new IllegalArgumentException("nuevoEstado");
         }
         estado = nuevoEstado;

@@ -7,10 +7,13 @@ unidades **completamente ficticias**. El escenario permite practicar diseño de
 dominio, persistencia, seguridad y orquestación durable sin representar
 procedimientos ni información operativa reales.
 
-La plantilla se entrega en un estado ejecutable y seguro. Su objetivo no es
-reemplazar toda la aplicación, sino completar siete misiones y ocho constantes
-de decisión (E07 contiene dos). En cada misión deberá elegir los caminos propuestos, implementarlos,
-justificarlo y demostrarlo con pruebas.
+La plantilla se entrega en un estado ejecutable y seguro. Al iniciarla, Spring
+crea un `WorkflowClient`, registra un Worker en la Task Queue `SICOR-EV03` y
+conecta la interfaz con un Workflow real de Temporal. Su objetivo no es
+reemplazar toda la aplicación ni construir esa infraestructura, sino completar
+siete misiones y ocho constantes de decisión (E07 contiene dos). En cada misión
+deberá elegir los caminos propuestos, implementarlos, justificarlos y
+demostrarlos con pruebas.
 
 > Alcance académico: se pueden usar únicamente conceptos cubiertos hasta la
 > clase 13 inclusive. No se requiere mensajería externa, OAuth, integración real
@@ -26,6 +29,7 @@ Al finalizar, SICOR deberá:
   confidencialidad `MAXIMA`;
 - aceptar firmas de personas distintas y habilitar el despacho sólo al alcanzar
   la política elegida;
+- iniciar o recuperar desde la interfaz un Workflow con ID estable por orden;
 - entregar una orden una sola vez por unidad, aun cuando Temporal reintente una
   Activity;
 - orquestar el despacho con código determinista;
@@ -39,8 +43,10 @@ Al finalizar, SICOR deberá:
 - JDK 25.
 - Git.
 - No necesita instalar Maven: el repositorio incluye Maven Wrapper.
-- Para las pruebas de Workflow se usa `TestWorkflowEnvironment`; no es
-  necesario levantar un servidor Temporal externo.
+- El modo predeterminado `embedded` usa el servidor de pruebas real del SDK y
+  permite ejecutar la aplicación y los tests sin instalar un servidor externo.
+- El modo `external` conecta el mismo Worker a un servidor Temporal local y
+  permite inspeccionar el History en la consola web.
 
 Compruebe el entorno:
 
@@ -53,14 +59,35 @@ java -version
 La última orden debe terminar con `BUILD SUCCESS`. Si la línea base falla antes
 de modificar el código, registre la evidencia y comuníquelo al docente.
 
+La línea base incluye `TemporalRuntimeIntegrationTest`. Esta prueba inicia el
+contexto Spring con Temporal embebido y verifica Start, Worker, Activity, Query,
+Signal, Update y la persistencia del estado final. No basta con que las
+interfaces de Workflow compilen.
+
 ## Inicio rápido
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-Abra `http://localhost:8080`. Todas las cuentas de laboratorio usan la clave
-`laboratorio`:
+Este comando usa Temporal embebido. Abra `http://localhost:8080`, reúna las
+firmas requeridas y use **Iniciar o recuperar Workflow**. La vista muestra el
+Workflow ID, la Task Queue, los recibos generados por Activities y el progreso
+obtenido por Query; desde allí también se envían Signals de confirmación y el
+Update de cancelación.
+
+Para ejecutar contra el servidor y la consola enseñados en clases 9 a 13:
+
+```bash
+temporal server start-dev
+SICOR_TEMPORAL_MODE=external ./mvnw spring-boot:run
+```
+
+En ese modo, la consola queda disponible en `http://localhost:8233`. No coloque
+el contenido confidencial de una orden en el input del Workflow: el History sólo
+debe recibir el identificador y las unidades destinatarias.
+
+Todas las cuentas de laboratorio usan la clave `laboratorio`:
 
 | Usuario | Rol |
 |---|---|
@@ -255,6 +282,9 @@ a la capa correspondiente. No desactive pruebas para entregar.
 ```bash
 # Línea base
 ./mvnw clean verify
+
+# Integración real de Spring con Temporal embebido
+./mvnw -Dtest=TemporalRuntimeIntegrationTest test
 
 # Una misión
 ./mvnw -Pev03-e04 test

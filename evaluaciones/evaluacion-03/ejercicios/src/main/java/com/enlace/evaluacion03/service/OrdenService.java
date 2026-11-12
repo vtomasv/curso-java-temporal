@@ -1,12 +1,14 @@
 package com.enlace.evaluacion03.service;
 
 import com.enlace.evaluacion03.domain.FirmaOrden;
+import com.enlace.evaluacion03.domain.EstadoOrden;
 import com.enlace.evaluacion03.domain.Orden;
 import com.enlace.evaluacion03.repository.FirmaOrdenRepository;
 import com.enlace.evaluacion03.repository.OrdenRepository;
 import com.enlace.evaluacion03.web.CrearOrdenRequest;
 import com.enlace.evaluacion03.web.OrdenDetalle;
 import com.enlace.evaluacion03.web.OrdenResumen;
+import com.enlace.evaluacion03.workflow.DespachoInput;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,6 +88,26 @@ public class OrdenService {
             orden.marcarListaParaEnvio();
         }
         return resumen(orden);
+    }
+
+    /**
+     * Confirma la precondición de firmas y deja persistido EN_DESPACHO antes de
+     * iniciar el Workflow. Una repetición devuelve la misma intención para que
+     * el Workflow ID estable haga idempotente el reintento del adaptador web.
+     */
+    @Transactional
+    public DespachoInput prepararDespacho(String id) {
+        Orden orden = buscar(id);
+        if (orden.getEstado() == EstadoOrden.LISTA_PARA_ENVIO) {
+            orden.marcarEnDespacho();
+        } else if (orden.getEstado() != EstadoOrden.EN_DESPACHO) {
+            throw new IllegalStateException(
+                    "La orden " + id + " no está lista para iniciar el despacho");
+        }
+        return new DespachoInput(
+                orden.getId(),
+                orden.getDestinatarios().stream().map(Enum::name).toList()
+        );
     }
 
     private Orden buscar(String id) {

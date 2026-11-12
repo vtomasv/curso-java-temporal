@@ -11,6 +11,16 @@ public class DespachoActivitiesImpl implements DespachoActivities {
     private final Map<String, ReciboEnvio> recibos = new ConcurrentHashMap<>();
     private final Map<String, String> clavesPorRecibo = new ConcurrentHashMap<>();
     private final AtomicInteger efectos = new AtomicInteger();
+    private final EstadoRegistrador estadoRegistrador;
+
+    public DespachoActivitiesImpl() {
+        this((ordenId, estado) -> { });
+    }
+
+    public DespachoActivitiesImpl(EstadoRegistrador estadoRegistrador) {
+        if (estadoRegistrador == null) throw new IllegalArgumentException("estadoRegistrador");
+        this.estadoRegistrador = estadoRegistrador;
+    }
 
     @Override
     public ReciboEnvio enviar(String ordenId, String unidad, String comandoId) {
@@ -44,7 +54,7 @@ public class DespachoActivitiesImpl implements DespachoActivities {
 
     @Override
     public void registrarEstado(String ordenId, EstadoDespacho estado) {
-        // Simulación didáctica. En una implementación real esta Activity persistiría el estado.
+        estadoRegistrador.registrar(texto(ordenId, "ordenId"), estado);
     }
 
     @Override
@@ -67,5 +77,10 @@ public class DespachoActivitiesImpl implements DespachoActivities {
     private static String texto(String valor, String campo) {
         if (valor == null || valor.isBlank()) throw new IllegalArgumentException(campo);
         return valor.trim();
+    }
+
+    @FunctionalInterface
+    public interface EstadoRegistrador {
+        void registrar(String ordenId, EstadoDespacho estado);
     }
 }
