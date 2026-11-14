@@ -37,7 +37,8 @@ para compilar con la versión final de la plantilla.
 La aplicación ejecutable ya contiene el puente enseñado hasta la clase 13:
 
 - `TemporalConfig` crea el `WorkflowClient`, registra un Worker en
-  `SICOR-EV03` y soporta los modos `embedded` y `external`;
+  `SICOR-EV03` y se conecta obligatoriamente al servidor local en
+  `127.0.0.1:7233`;
 - `DespachoTemporalService` usa el Workflow ID estable `despacho-<ordenId>` y
   expone Start, Query, Signal y Update a la capa web;
 - `DespachoActivitiesImpl` se registra como Activity y delega la persistencia
@@ -47,20 +48,36 @@ La aplicación ejecutable ya contiene el puente enseñado hasta la clase 13:
 
 Esta infraestructura no es una octava misión y no debe reemplazarse. Las
 misiones E05 a E07 completan las decisiones dentro de Activities y Workflows que
-el Worker ejecuta. Para comprobar que la aplicación no usa Temporal sólo en
-tests aislados, ejecute:
+el Worker ejecuta. Primero puede verificar la integración automática con:
 
 ```bash
 ./mvnw -Dtest=TemporalRuntimeIntegrationTest test
 ```
 
-Para inspeccionar el History en la consola local, levante el servidor y cambie
-el modo sin modificar código:
+Ese test usa `TestWorkflowEnvironment` exclusivamente dentro de `src/test` y no
+constituye la demostración final. Para iniciar la aplicación debe levantar
+Temporal en una terminal y mantenerlo activo:
 
 ```bash
-temporal server start-dev
-SICOR_TEMPORAL_MODE=external ./mvnw spring-boot:run
+temporal server start-dev --ip 127.0.0.1 --ui-port 8233
 ```
+
+En otra terminal:
+
+```bash
+./mvnw spring-boot:run
+```
+
+Use la Web UI en `http://localhost:8233` o la CLI para inspeccionar cada
+ejecución:
+
+```bash
+temporal workflow show --workflow-id despacho-<orden-id>
+```
+
+Registre en `BITACORA.md` un Workflow confirmado por Signal y otro cancelado
+por Update, junto con la Task Queue y la revisión del History. Si el servidor no
+está disponible, la aplicación debe fallar al arrancar; no desactive Temporal.
 
 ---
 

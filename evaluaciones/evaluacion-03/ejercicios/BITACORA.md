@@ -15,8 +15,44 @@ No pegue contraseñas, tokens ni contenidos confidenciales.
 | Fecha/hora | Comando | Resultado | Evidencia o incidencia |
 |---|---|---|---|
 | | `java -version` | | |
+| | `temporal --version` | | |
 | | `./mvnw -version` | | |
 | | `./mvnw clean verify` | | |
+
+## Evidencia obligatoria de Temporal externo
+
+Esta sección es parte de la evidencia de E05, E06 y E07. `clean verify` usa un
+motor embebido sólo para automatizar pruebas y no reemplaza este recorrido.
+Mantenga el servidor local iniciado mientras ejecuta SICOR:
+
+```bash
+temporal server start-dev --ip 127.0.0.1 --ui-port 8233
+./mvnw spring-boot:run
+```
+
+Use datos ficticios y copie sólo evidencia textual sanitizada. No incluya
+contraseñas ni el cuerpo confidencial de las órdenes.
+
+| Evidencia requerida | Workflow ID, comando u observación | Resultado verificable |
+|---|---|---|
+| Servidor y Web UI | Inicio del servidor; acceso a `http://localhost:8233` | |
+| Worker y Task Queue | Worker observado en `SICOR-EV03` | |
+| Confirmación por Signal | Workflow ID `despacho-...`; `temporal workflow show --workflow-id <id>` | Signal registrado y Workflow completado |
+| Cancelación por Update | Otro Workflow ID; `temporal workflow show --workflow-id <id>` | Update aceptado y Workflow cancelado de forma controlada |
+| Query de progreso | Consulta desde la interfaz antes de terminar el Workflow | Conteos coherentes, sin mutar el estado |
+| Confidencialidad del History | Inspección de input y eventos en Web UI o CLI | El cuerpo de la orden no aparece en el History |
+
+**Extracto sanitizado del Workflow confirmado por Signal:**
+
+```text
+<!-- Workflow ID y nombres de eventos relevantes, sin contenido confidencial. -->
+```
+
+**Extracto sanitizado del Workflow cancelado por Update:**
+
+```text
+<!-- Workflow ID y nombres de eventos relevantes, sin contenido confidencial. -->
+```
 
 ## Progreso por misión
 
@@ -88,6 +124,10 @@ decisión propia.
 ## Lista de control de entrega
 
 - [ ] La aplicación inicia y la navegación base funciona.
+- [ ] Levanté Temporal local antes de iniciar SICOR y accedí a la Web UI.
+- [ ] Observé el Worker en la Task Queue `SICOR-EV03`.
+- [ ] Registré un Workflow confirmado por Signal y otro cancelado por Update.
+- [ ] Inspeccioné el History y comprobé que no contiene el cuerpo confidencial.
 - [ ] Ninguna constante de decisión permanece en `PENDIENTE`.
 - [ ] Los siete perfiles pasan por separado.
 - [ ] El perfil `ev03-all` pasa desde una compilación limpia.

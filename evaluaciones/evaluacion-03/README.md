@@ -15,7 +15,7 @@ Esta carpeta reúne la tercera evaluación práctica del curso. El escenario, la
 
 Distribuir `ejercicios/`, `solucion/SOLUCION_GUIADA.md` y `01_Prueba_Practica_SICOR_Estudiantes.docx`. El corrector, la pauta docente y la matriz se entregan por separado al responsable y al comité.
 
-La línea base usa Temporal embebido y puede conectarse opcionalmente al servidor local enseñado en clases mediante `SICOR_TEMPORAL_MODE=external`. No se considera suficiente una entrega que sólo declare interfaces de Workflow: `./mvnw clean verify` ejecuta la integración Spring → WorkflowClient → Worker → Workflow/Activity → JPA.
+Para ejecutar SICOR, el estudiante debe levantar el servidor Temporal local enseñado en clases con `temporal server start-dev --ip 127.0.0.1 --ui-port 8233`. La aplicación se conecta obligatoriamente a `127.0.0.1:7233` y falla de forma explícita si el servidor no está disponible. El motor embebido se conserva sólo dentro de `src/test` para que `./mvnw clean verify` sea reproducible; no constituye evidencia de ejecución de la aplicación. La entrega debe incluir en `BITACORA.md` Workflows observados en la Web UI o mediante la CLI, con Signal, Query, Update, Task Queue e History.
 
 ## Custodia docente
 

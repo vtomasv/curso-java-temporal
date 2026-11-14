@@ -42,16 +42,16 @@ Al finalizar, SICOR deberá:
 
 - JDK 25.
 - Git.
+- Temporal CLI disponible en la terminal.
 - No necesita instalar Maven: el repositorio incluye Maven Wrapper.
-- El modo predeterminado `embedded` usa el servidor de pruebas real del SDK y
-  permite ejecutar la aplicación y los tests sin instalar un servidor externo.
-- El modo `external` conecta el mismo Worker a un servidor Temporal local y
-  permite inspeccionar el History en la consola web.
+- Debe levantar un servidor Temporal local para iniciar y usar SICOR. La
+  aplicación no ofrece un modo embebido de ejecución.
 
 Compruebe el entorno:
 
 ```bash
 java -version
+temporal --version
 ./mvnw -version
 ./mvnw clean verify
 ```
@@ -59,32 +59,46 @@ java -version
 La última orden debe terminar con `BUILD SUCCESS`. Si la línea base falla antes
 de modificar el código, registre la evidencia y comuníquelo al docente.
 
-La línea base incluye `TemporalRuntimeIntegrationTest`. Esta prueba inicia el
-contexto Spring con Temporal embebido y verifica Start, Worker, Activity, Query,
-Signal, Update y la persistencia del estado final. No basta con que las
-interfaces de Workflow compilen.
+La línea base incluye `TemporalRuntimeIntegrationTest`. Para hacer reproducible
+la corrección automática, esa prueba utiliza un entorno Temporal embebido que
+existe únicamente en `src/test`. Verifica Start, Worker, Activity, Query,
+Signal, Update y persistencia del estado final, pero **no reemplaza** la
+validación obligatoria de la aplicación contra el servidor local.
 
 ## Inicio rápido
+
+Abra dos terminales. En la primera, mantenga el servidor en ejecución:
+
+```bash
+temporal server start-dev --ip 127.0.0.1 --ui-port 8233
+```
+
+Compruebe la Web UI en `http://localhost:8233`. En la segunda terminal, inicie
+la aplicación:
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-Este comando usa Temporal embebido. Abra `http://localhost:8080`, reúna las
-firmas requeridas y use **Iniciar o recuperar Workflow**. La vista muestra el
-Workflow ID, la Task Queue, los recibos generados por Activities y el progreso
-obtenido por Query; desde allí también se envían Signals de confirmación y el
-Update de cancelación.
+SICOR se conecta a Temporal en `127.0.0.1:7233`. Si el servidor no está
+disponible, Spring detiene el arranque con un mensaje que indica el comando
+anterior; continuar sin Temporal no es un camino válido.
 
-Para ejecutar contra el servidor y la consola enseñados en clases 9 a 13:
+Abra `http://localhost:8080`, reúna las firmas requeridas y use **Iniciar o
+recuperar Workflow**. La vista muestra el Workflow ID, la Task Queue, los
+recibos generados por Activities y el progreso obtenido por Query; desde allí
+también se envían Signals de confirmación y el Update de cancelación.
+
+Durante la evaluación deberá inspeccionar al menos dos ejecuciones distintas:
 
 ```bash
-temporal server start-dev
-SICOR_TEMPORAL_MODE=external ./mvnw spring-boot:run
+temporal workflow show --workflow-id despacho-<orden-id>
 ```
 
-En ese modo, la consola queda disponible en `http://localhost:8233`. No coloque
-el contenido confidencial de una orden en el input del Workflow: el History sólo
+Una debe completarse mediante confirmación por Signal y otra debe cancelarse
+mediante Update. Registre en `BITACORA.md` los Workflow IDs, la Task Queue
+`SICOR-EV03`, el resultado y los eventos relevantes del History. No coloque el
+contenido confidencial de una orden en el input del Workflow: el History sólo
 debe recibir el identificador y las unidades destinatarias.
 
 Todas las cuentas de laboratorio usan la clave `laboratorio`:
@@ -111,7 +125,9 @@ Para cada misión:
 4. Complete sólo los `TODO(EV03-...)` correspondientes.
 5. Escriba el comentario `DECISION` junto a la constante elegida.
 6. Ejecute el perfil de la misión y luego toda la batería.
-7. Registre la evidencia en `BITACORA.md`.
+7. Para E05, E06 y E07, ejecute además el recorrido desde la interfaz contra el
+   servidor Temporal local y observe el Workflow en la Web UI o CLI.
+8. Registre la evidencia en `BITACORA.md`.
 
 Formato mínimo del comentario:
 
@@ -283,7 +299,7 @@ a la capa correspondiente. No desactive pruebas para entregar.
 # Línea base
 ./mvnw clean verify
 
-# Integración real de Spring con Temporal embebido
+# Integración automática en entorno Temporal de test (no reemplaza la evidencia externa)
 ./mvnw -Dtest=TemporalRuntimeIntegrationTest test
 
 # Una misión
@@ -298,6 +314,9 @@ a la capa correspondiente. No desactive pruebas para entregar.
 
 No se considera resuelta una misión si sólo pasa de manera aislada pero rompe
 otra. Antes de entregar, `clean verify -Pev03-all` debe finalizar correctamente.
+Además, E05, E06 y E07 requieren la evidencia de ejecución en el servidor
+Temporal local indicada en `BITACORA.md`; aprobar tests embebidos por sí solo no
+demuestra este requisito.
 
 ## Uso permitido de IA
 
@@ -332,7 +351,10 @@ reales. Deben estar presentes:
 - siete comentarios `DECISION(EV03-Exx)` completos;
 - al menos tres pruebas propias activas;
 - `DECISIONES.md`, `PROMPTS.md` y `BITACORA.md` completos;
-- evidencia de `./mvnw clean verify -Pev03-all`.
+- evidencia de `./mvnw clean verify -Pev03-all`;
+- evidencia de Temporal externo: servidor, Worker en `SICOR-EV03`, un Workflow
+  confirmado por Signal, otro cancelado por Update e inspección del History sin
+  contenido confidencial.
 
 La evaluación valora la coherencia entre decisión, implementación, prueba y
 explicación. No existe una única arquitectura correcta entre los caminos
