@@ -1,5 +1,6 @@
 package com.enlace.evaluacion03;
 
+import com.enlace.evaluacion03.config.TemporalConfig;
 import com.enlace.evaluacion03.domain.Confidencialidad;
 import com.enlace.evaluacion03.domain.EstadoOrden;
 import com.enlace.evaluacion03.domain.Orden;
@@ -7,17 +8,26 @@ import com.enlace.evaluacion03.domain.TipoOrden;
 import com.enlace.evaluacion03.domain.UnidadDestino;
 import com.enlace.evaluacion03.repository.OrdenRepository;
 import com.enlace.evaluacion03.service.DespachoTemporalService;
+import com.enlace.evaluacion03.service.EstadoOrdenTemporalService;
 import com.enlace.evaluacion03.service.OrdenService;
+import com.enlace.evaluacion03.workflow.DespachoActivitiesImpl;
 import com.enlace.evaluacion03.workflow.DespachoWorkflow;
+import com.enlace.evaluacion03.workflow.DespachoWorkflowImpl;
+import com.enlace.evaluacion03.workflow.EntregaUnidadWorkflowImpl;
 import com.enlace.evaluacion03.workflow.EstadoDespacho;
 import com.enlace.evaluacion03.workflow.ReciboEnvio;
 import com.enlace.evaluacion03.workflow.ResultadoDespacho;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowStub;
+import io.temporal.testing.TestWorkflowEnvironment;
+import io.temporal.worker.Worker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +35,8 @@ import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(properties = "sicor.temporal.mode=embedded")
+@SpringBootTest(properties = "sicor.temporal.enabled=false")
+@Import(TemporalRuntimeIntegrationTest.TemporalTestConfig.class)
 @EnabledIfSystemProperty(named = "ev03.exercise", matches = "base|all")
 class TemporalRuntimeIntegrationTest {
 
@@ -109,5 +120,51 @@ class TemporalRuntimeIntegrationTest {
         );
         orden.marcarListaParaEnvio();
         repository.saveAndFlush(orden);
+    }
+
+    /**
+     * El motor embebido existe exclusivamente en test. La aplicación que usa el
+     * estudiante siempre se conecta al servidor Temporal externo configurado.
+     */
+    @TestConfiguration(proxyBeanMethods = false)
+    static class TemporalTestConfig {
+
+        @Bean
+        DespachoActivitiesImpl despachoActivities(EstadoOrdenTemporalService estados) {
+            return new DespachoActivitiesImpl(estados::registrar);
+        }
+
+        @Bean(destroyMethod = "close")
+        TestMotorTemporal testMotorTemporal(DespachoActivitiesImpl activities) {
+            return new TestMotorTemporal(activities);
+        }
+
+        @Bean
+        WorkflowClient workflowClient(TestMotorTemporal motor) {
+            return motor.client;
+        }
+    }
+
+    static final class TestMotorTemporal implements AutoCloseable {
+
+        private final TestWorkflowEnvironment environment;
+        private final WorkflowClient client;
+
+        TestMotorTemporal(DespachoActivitiesImpl activities) {
+            environment = TestWorkflowEnvironment.newInstance();
+            Worker worker = environment.newWorker(TemporalConfig.TASK_QUEUE);
+            worker.registerWorkflowImplementationTypes(
+                    DespachoWorkflowImpl.class,
+                    EntregaUnidadWorkflowImpl.class
+            );
+            worker.registerActivitiesImplementations(activities);
+            client = environment.getWorkflowClient();
+            environment.start();
+        }
+
+        @Override
+        public void close() {
+            environment.close();
+        }
     }
 }
