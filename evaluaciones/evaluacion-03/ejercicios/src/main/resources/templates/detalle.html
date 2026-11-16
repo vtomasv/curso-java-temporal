@@ -15,24 +15,25 @@
         <ul><li th:each="firma : ${detalle.firmas}" th:text="|${firma.firmante} (${firma.rol})|"></li></ul>
         <form th:if="${detalle.resumen.estado.name() == 'PENDIENTE_FIRMAS'}"
               th:action="@{/ordenes/{id}/firmar(id=${detalle.resumen.id})}" method="post">
-            <button>Firmar orden</button>
+            <button>Firmar mediante Temporal</button>
         </form>
 
-        <div class="temporal-panel" th:if="${puedeDespachar}">
-            <h2>Despacho durable</h2>
-            <p>La política de firmas está completa. El ID estable permite iniciar o recuperar el mismo Workflow de Temporal.</p>
-            <form th:action="@{/ordenes/{id}/despachar(id=${detalle.resumen.id})}" method="post">
-                <button>Iniciar o recuperar Workflow</button>
-            </form>
+        <div class="temporal-panel" th:if="${firmaTemporal != null}">
+            <h2>Autorización durable</h2>
+            <p>Cada firma ingresa como Update del Workflow y se persiste mediante una Activity idempotente. El despacho comienza automáticamente al completar la política.</p>
+            <dl>
+                <dt>Workflow ID</dt><dd th:text="${workflowId}"></dd>
+                <dt>Task Queue</dt><dd>SICOR-EV03</dd>
+                <dt>Firmas en Temporal</dt><dd th:text="|${firmaTemporal.registradas} de ${firmaTemporal.requeridas}|" ></dd>
+                <dt>Política completa</dt><dd th:text="${firmaTemporal.completa ? 'Sí' : 'No'}"></dd>
+            </dl>
         </div>
 
         <div class="errors" th:if="${temporalError}" th:text="${temporalError}"></div>
 
         <div class="temporal-panel" th:if="${progreso != null}">
-            <h2>Temporal · progreso durable</h2>
+            <h2>Temporal · progreso del ciclo completo</h2>
             <dl>
-                <dt>Workflow ID</dt><dd th:text="${workflowId}"></dd>
-                <dt>Task Queue</dt><dd>SICOR-EV03</dd>
                 <dt>Estado</dt><dd th:text="${progreso.estado}"></dd>
                 <dt>Enviadas</dt><dd th:text="|${progreso.enviadas} de ${progreso.total}|"></dd>
                 <dt>Confirmadas</dt><dd th:text="|${progreso.confirmadas} de ${progreso.total}|"></dd>

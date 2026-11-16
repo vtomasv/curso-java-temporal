@@ -38,7 +38,6 @@ public class SecurityConfig {
                         .requestMatchers("/app.css", "/login").permitAll()
                         .requestMatchers("/ordenes/nueva").hasAnyRole("OPERADOR", "COMANDANTE")
                         .requestMatchers("/ordenes/*/firmar").hasAnyRole("OFICIAL", "COMANDANTE")
-                        .requestMatchers("/ordenes/*/despachar").hasAnyRole("OPERADOR", "COMANDANTE")
                         .requestMatchers("/ordenes/*/confirmar").hasAnyRole("OFICIAL", "COMANDANTE")
                         .requestMatchers("/ordenes/*/cancelar").hasRole("COMANDANTE")
                         .anyRequest().authenticated())

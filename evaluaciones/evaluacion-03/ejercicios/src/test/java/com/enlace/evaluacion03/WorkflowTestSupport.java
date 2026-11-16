@@ -5,6 +5,7 @@ import com.enlace.evaluacion03.workflow.DespachoWorkflow;
 import com.enlace.evaluacion03.workflow.DespachoWorkflowImpl;
 import com.enlace.evaluacion03.workflow.EntregaUnidadWorkflowImpl;
 import com.enlace.evaluacion03.workflow.EstadoDespacho;
+import com.enlace.evaluacion03.workflow.FirmaProgreso;
 import com.enlace.evaluacion03.workflow.ReciboEnvio;
 import io.temporal.client.WorkflowOptions;
 import io.temporal.testing.TestWorkflowEnvironment;
@@ -22,9 +23,14 @@ final class WorkflowTestSupport implements AutoCloseable {
     private static final String TASK_QUEUE = "ev03-pruebas";
 
     final TestWorkflowEnvironment environment = TestWorkflowEnvironment.newInstance();
-    final ActivitiesObservables activities = new ActivitiesObservables();
+    final ActivitiesObservables activities;
 
     WorkflowTestSupport() {
+        this(true);
+    }
+
+    WorkflowTestSupport(boolean firmasCompletas) {
+        activities = new ActivitiesObservables(firmasCompletas);
         Worker worker = environment.newWorker(TASK_QUEUE);
         worker.registerWorkflowImplementationTypes(
                 DespachoWorkflowImpl.class, EntregaUnidadWorkflowImpl.class);
@@ -56,6 +62,31 @@ final class WorkflowTestSupport implements AutoCloseable {
         private final List<String> ordenDeEnvio = new CopyOnWriteArrayList<>();
         private final Set<String> compensadas = ConcurrentHashMap.newKeySet();
         private final List<EstadoDespacho> estados = new CopyOnWriteArrayList<>();
+        private final Set<String> firmantes = ConcurrentHashMap.newKeySet();
+        private final int firmasRequeridas;
+
+        ActivitiesObservables(boolean firmasCompletas) {
+            firmasRequeridas = firmasCompletas ? 1 : 2;
+            if (firmasCompletas) firmantes.add("AUTORIZADOR_PRUEBA");
+        }
+
+        @Override
+        public FirmaProgreso consultarFirmas(String ordenId) {
+            return progresoFirmas();
+        }
+
+        @Override
+        public FirmaProgreso registrarFirma(String ordenId, String firmante, String rol) {
+            if (!firmantes.add(firmante)) {
+                throw new IllegalStateException("El usuario ya firmó la orden");
+            }
+            return progresoFirmas();
+        }
+
+        @Override
+        public void iniciarDespacho(String ordenId) {
+            // El test observa que el Workflow sólo llega a enviar tras las firmas.
+        }
 
         @Override
         public ReciboEnvio enviar(String ordenId, String unidad, String comandoId) {
@@ -90,6 +121,12 @@ final class WorkflowTestSupport implements AutoCloseable {
 
         List<EstadoDespacho> estados() {
             return List.copyOf(estados);
+        }
+
+        private FirmaProgreso progresoFirmas() {
+            return new FirmaProgreso(
+                    firmantes.size(), firmasRequeridas,
+                    firmantes.size() >= firmasRequeridas, Set.copyOf(firmantes));
         }
     }
 }

@@ -55,6 +55,7 @@ public class OrdenWebController {
             return "index";
         }
         OrdenResumen creada = ordenes.crear(crearOrdenRequest, authentication.getName());
+        temporal.iniciar(ordenes.prepararWorkflow(creada.id()));
         return "redirect:/ordenes/" + creada.id();
     }
 
@@ -90,20 +91,20 @@ public class OrdenWebController {
 
     @PostMapping("/ordenes/{id}/firmar")
     String firmar(@PathVariable String id, Authentication authentication) {
+        ordenes.resumenAutorizado(id, authentication);
         String rol = authentication.getAuthorities().stream()
                 .map(a -> a.getAuthority())
                 .filter(a -> a.startsWith("ROLE_"))
                 .map(a -> a.substring("ROLE_".length()))
                 .findFirst()
                 .orElse("SIN_ROL");
-        ordenes.firmar(id, authentication.getName(), rol);
-        return "redirect:/ordenes/" + id;
-    }
-
-    @PostMapping("/ordenes/{id}/despachar")
-    String despachar(@PathVariable String id, Authentication authentication) {
-        ordenes.resumenAutorizado(id, authentication);
-        temporal.iniciar(ordenes.prepararDespacho(id));
+        try {
+            temporal.registrarFirma(
+                    ordenes.prepararWorkflow(id), authentication.getName(), rol);
+        } catch (WorkflowException exception) {
+            throw new IllegalStateException(
+                    "Temporal no pudo registrar la firma: " + exception.getMessage(), exception);
+        }
         return "redirect:/ordenes/" + id;
     }
 
@@ -130,9 +131,6 @@ public class OrdenWebController {
     private void cargarDespacho(OrdenResumen resumen, Authentication authentication, Model model) {
         boolean enDespacho = resumen.estado() == EstadoOrden.EN_DESPACHO;
         model.addAttribute("workflowId", temporal.workflowId(resumen.id()));
-        model.addAttribute("puedeDespachar",
-                (resumen.estado() == EstadoOrden.LISTA_PARA_ENVIO || enDespacho)
-                        && tieneAlgunRol(authentication, "OPERADOR", "COMANDANTE"));
         model.addAttribute("puedeConfirmar", enDespacho
                 && tieneAlgunRol(authentication, "OFICIAL", "COMANDANTE"));
         model.addAttribute("puedeCancelar", enDespacho
@@ -140,6 +138,12 @@ public class OrdenWebController {
         if (!tieneWorkflow(resumen.estado())) return;
 
         try {
+            if (resumen.estado() == EstadoOrden.PENDIENTE_FIRMAS
+                    || resumen.estado() == EstadoOrden.LISTA_PARA_ENVIO
+                    || resumen.estado() == EstadoOrden.EN_DESPACHO) {
+                temporal.iniciar(ordenes.prepararWorkflow(resumen.id()));
+            }
+            model.addAttribute("firmaTemporal", temporal.consultarFirmas(resumen.id()));
             model.addAttribute("progreso", temporal.consultarProgreso(resumen.id()));
             model.addAttribute("recibos", temporal.consultarRecibos(resumen.id()));
         } catch (WorkflowException exception) {
@@ -149,7 +153,9 @@ public class OrdenWebController {
     }
 
     private boolean tieneWorkflow(EstadoOrden estado) {
-        return estado == EstadoOrden.EN_DESPACHO
+        return estado == EstadoOrden.PENDIENTE_FIRMAS
+                || estado == EstadoOrden.LISTA_PARA_ENVIO
+                || estado == EstadoOrden.EN_DESPACHO
                 || estado == EstadoOrden.ENTREGADA
                 || estado == EstadoOrden.PENDIENTE_REVISION
                 || estado == EstadoOrden.CANCELADA;

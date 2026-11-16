@@ -32,13 +32,28 @@ public class DespachoWorkflowImpl implements DespachoWorkflow {
 
     private final List<ReciboEnvio> recibos = new ArrayList<>();
     private final Set<String> confirmadas = new LinkedHashSet<>();
-    private EstadoDespacho estado = EstadoDespacho.PREPARANDO;
+    private EstadoDespacho estado = EstadoDespacho.ESPERANDO_FIRMAS;
+    private FirmaProgreso firmas = new FirmaProgreso(0, 1, false, Set.of());
+    private String ordenId;
     private int total;
     private boolean cancelada;
+    private boolean despachoIniciado;
+    private boolean firmasCargadas;
 
     @Override
     public ResultadoDespacho iniciar(DespachoInput input) {
+        ordenId = input.ordenId();
         total = input.unidades().size();
+        estado = EstadoDespacho.ESPERANDO_FIRMAS;
+        firmas = activities.consultarFirmas(input.ordenId());
+        firmasCargadas = true;
+
+        Workflow.await(() -> firmas.completa());
+        estado = EstadoDespacho.PREPARANDO;
+        if (!despachoIniciado) {
+            activities.iniciarDespacho(input.ordenId());
+            despachoIniciado = true;
+        }
         estado = EstadoDespacho.ENVIANDO;
 
         recibos.addAll(switch (Decisiones.ORQUESTACION) {
@@ -57,6 +72,26 @@ public class DespachoWorkflowImpl implements DespachoWorkflow {
 
         tratarIncertidumbre(input.ordenId());
         return terminar(input.ordenId(), EstadoDespacho.PENDIENTE_REVISION);
+    }
+
+    @Override
+    public FirmaProgreso registrarFirma(String firmante, String rol) {
+        Workflow.await(() -> firmasCargadas);
+        if (estado != EstadoDespacho.ESPERANDO_FIRMAS) {
+            throw new IllegalStateException("La orden ya cerró su etapa de firmas");
+        }
+        firmante = texto(firmante, "firmante", 120);
+        rol = texto(rol, "rol", 80);
+        if (firmas.firmantes().contains(firmante)) {
+            throw new IllegalStateException("El usuario ya firmó la orden");
+        }
+        firmas = activities.registrarFirma(ordenId, firmante, rol);
+        if (firmas.completa() && !despachoIniciado) {
+            estado = EstadoDespacho.PREPARANDO;
+            activities.iniciarDespacho(ordenId);
+            despachoIniciado = true;
+        }
+        return firmas;
     }
 
     private List<ReciboEnvio> enviarBaseSecuencial(DespachoInput input) {
@@ -144,9 +179,23 @@ public class DespachoWorkflowImpl implements DespachoWorkflow {
     }
 
     @Override
+    public FirmaProgreso consultarFirmas() {
+        return firmas;
+    }
+
+    @Override
     public boolean cancelar(String motivo) {
-        if (estado == EstadoDespacho.ENTREGADA || estado == EstadoDespacho.CANCELADA) return false;
+        if (estado == EstadoDespacho.ESPERANDO_FIRMAS
+                || estado == EstadoDespacho.ENTREGADA
+                || estado == EstadoDespacho.CANCELADA) return false;
         cancelada = motivo != null && !motivo.isBlank();
         return cancelada;
+    }
+
+    private String texto(String valor, String campo, int maximo) {
+        if (valor == null || valor.isBlank() || valor.length() > maximo) {
+            throw new IllegalArgumentException(campo);
+        }
+        return valor.trim();
     }
 }
