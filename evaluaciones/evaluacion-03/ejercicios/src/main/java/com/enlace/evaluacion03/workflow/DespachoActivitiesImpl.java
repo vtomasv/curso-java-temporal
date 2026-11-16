@@ -1,6 +1,7 @@
 package com.enlace.evaluacion03.workflow;
 
 import com.enlace.evaluacion03.config.Decisiones;
+import io.temporal.failure.ApplicationFailure;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,11 +50,18 @@ public class DespachoActivitiesImpl implements DespachoActivities {
 
     @Override
     public FirmaProgreso registrarFirma(String ordenId, String firmante, String rol) {
-        return ordenes.registrarFirma(
-                texto(ordenId, "ordenId"),
-                texto(firmante, "firmante"),
-                texto(rol, "rol")
-        );
+        try {
+            return ordenes.registrarFirma(
+                    texto(ordenId, "ordenId"),
+                    texto(firmante, "firmante"),
+                    texto(rol, "rol")
+            );
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            // Es un rechazo de negocio, no un fallo transitorio. El tipo coincide
+            // con doNotRetry("VALIDATION") de las opciones de la Activity.
+            throw ApplicationFailure.newNonRetryableFailure(
+                    exception.getMessage(), "VALIDATION");
+        }
     }
 
     @Override

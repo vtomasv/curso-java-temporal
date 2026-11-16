@@ -1,5 +1,6 @@
 package com.enlace.evaluacion03.workflow;
 
+import io.temporal.failure.ApplicationFailure;
 import io.temporal.workflow.Workflow;
 
 import java.util.LinkedHashMap;
@@ -22,15 +23,32 @@ public class AccesoWorkflowImpl implements AccesoWorkflow {
     }
 
     @Override
-    public AccesoProgreso registrarAcceso(
+    public void validarRegistrarAcceso(
             String accesoId, String usuario, boolean reautenticado) {
         accesoId = texto(accesoId, "accesoId", 120);
         usuario = texto(usuario, "usuario", 120);
         String evidencia = usuario + "|" + reautenticado;
-        String anterior = accesos.putIfAbsent(accesoId, evidencia);
+        String anterior = accesos.get(accesoId);
         if (anterior != null && !anterior.equals(evidencia)) {
             throw new IllegalArgumentException("El accesoId ya identifica otra lectura");
         }
+    }
+
+    @Override
+    public AccesoProgreso registrarAcceso(
+            String accesoId, String usuario, boolean reautenticado) {
+        try {
+            validarRegistrarAcceso(accesoId, usuario, reautenticado);
+        } catch (IllegalArgumentException exception) {
+            // El validador normal rechaza antes de aceptar el Update. Esta defensa
+            // evita un WorkflowTaskFailed incluso ante una invocación no estándar.
+            throw ApplicationFailure.newNonRetryableFailure(
+                    exception.getMessage(), "ACCESO_RECHAZADO");
+        }
+        accesoId = accesoId.trim();
+        usuario = usuario.trim();
+        String evidencia = usuario + "|" + reautenticado;
+        String anterior = accesos.putIfAbsent(accesoId, evidencia);
         if (anterior == null) {
             usuariosConAcceso.add(usuario);
             if (reautenticado) reautenticaciones++;

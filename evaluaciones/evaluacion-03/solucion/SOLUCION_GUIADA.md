@@ -192,6 +192,12 @@ lectura permitida atravesó Temporal, pero no decide permisos ni recibe el cuerp
 confidencial. Al ser independiente del despacho, esta auditoría sigue activa
 cuando la entrega termina. Una denegación acaba antes del Update.
 
+La plantilla asocia un `@UpdateValidatorMethod` a `registrarAcceso`. Si una
+misma clave intenta representar otra evidencia, el validador rechaza la
+solicitud antes de escribirla en History; no lance una excepción común desde el
+handler porque Temporal la interpreta como un defecto del Workflow Task y lo
+reintenta.
+
 ### Pruebas que aportan evidencia
 
 - usuario sin autenticar: denegado;
@@ -304,6 +310,13 @@ curso. El indicador se libera en `finally`; el método principal espera además
 que no quede una firma en curso antes de iniciar el despacho. Así una respuesta
 antigua no sobrescribe un quórum más nuevo y la transición se solicita una sola
 vez. No use `synchronized`, locks Java ni threads dentro del Workflow.
+
+El contrato incluye además `@UpdateValidatorMethod(updateName =
+"registrarFirma")`. Un duplicado secuencial se rechaza allí y no entra al
+History. Como dos Updates concurrentes pueden validar antes de que termine la
+primera Activity, el handler vuelve a comprobar la regla después de
+`Workflow.await`; en esa carrera debe devolver un `ApplicationFailure` no
+reintentable para fallar sólo ese Update, nunca el Workflow Task.
 
 ### Estructura para umbral
 

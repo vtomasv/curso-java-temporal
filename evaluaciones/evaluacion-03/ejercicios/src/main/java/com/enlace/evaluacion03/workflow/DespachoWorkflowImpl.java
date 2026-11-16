@@ -3,6 +3,7 @@ package com.enlace.evaluacion03.workflow;
 import com.enlace.evaluacion03.config.Decisiones;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
+import io.temporal.failure.ApplicationFailure;
 import io.temporal.workflow.Async;
 import io.temporal.workflow.ChildWorkflowOptions;
 import io.temporal.workflow.Promise;
@@ -78,18 +79,32 @@ public class DespachoWorkflowImpl implements DespachoWorkflow {
     }
 
     @Override
+    public void validarRegistrarFirma(String firmante, String rol) {
+        firmante = texto(firmante, "firmante", 120);
+        texto(rol, "rol", 80);
+
+        // Un Update puede llegar mientras el método principal aún carga las firmas.
+        // En ese caso el handler esperará firmasCargadas antes de decidir.
+        if (!firmasCargadas) return;
+        String motivo = motivoRechazoFirma(firmante);
+        if (motivo != null) throw new IllegalStateException(motivo);
+    }
+
+    @Override
     public FirmaProgreso registrarFirma(String firmante, String rol) {
         Workflow.await(() -> firmasCargadas && !firmaEnCurso);
         firmaEnCurso = true;
         FirmaProgreso resultado;
         try {
-            if (estado != EstadoDespacho.ESPERANDO_FIRMAS || firmas.completa()) {
-                throw new IllegalStateException("La orden ya cerró su etapa de firmas");
-            }
             firmante = texto(firmante, "firmante", 120);
             rol = texto(rol, "rol", 80);
-            if (firmas.firmantes().contains(firmante)) {
-                throw new IllegalStateException("El usuario ya firmó la orden");
+            String motivo = motivoRechazoFirma(firmante);
+            if (motivo != null) {
+                // Dos Updates pueden superar el validador mientras el primero espera
+                // una Activity. Esta segunda comprobación cubre la carrera sin hacer
+                // fallar y reintentar el Workflow Task.
+                throw ApplicationFailure.newNonRetryableFailure(
+                        motivo, "FIRMA_RECHAZADA");
             }
 
             // Un Update puede ceder mientras espera una Activity. Este cerrojo durable,
@@ -104,6 +119,16 @@ public class DespachoWorkflowImpl implements DespachoWorkflow {
         // haya realizado una única transición durable al despacho.
         if (resultado.completa()) Workflow.await(() -> despachoIniciado);
         return resultado;
+    }
+
+    private String motivoRechazoFirma(String firmante) {
+        if (estado != EstadoDespacho.ESPERANDO_FIRMAS || firmas.completa()) {
+            return "La orden ya cerró su etapa de firmas";
+        }
+        if (firmas.firmantes().contains(firmante)) {
+            return "El usuario ya firmó la orden";
+        }
+        return null;
     }
 
     private List<ReciboEnvio> enviarBaseSecuencial(DespachoInput input) {

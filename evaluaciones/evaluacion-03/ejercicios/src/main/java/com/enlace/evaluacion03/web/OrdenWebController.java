@@ -8,6 +8,7 @@ import com.enlace.evaluacion03.service.DespachoTemporalService;
 import com.enlace.evaluacion03.service.OrdenService;
 import com.enlace.evaluacion03.service.ReautenticacionService;
 import io.temporal.client.WorkflowException;
+import io.temporal.client.WorkflowUpdateException;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Set;
 import java.util.UUID;
@@ -97,7 +99,8 @@ public class OrdenWebController {
     }
 
     @PostMapping("/ordenes/{id}/firmar")
-    String firmar(@PathVariable String id, Authentication authentication) {
+    String firmar(@PathVariable String id, Authentication authentication,
+                  RedirectAttributes redirectAttributes) {
         ordenes.resumenAutorizado(id, authentication);
         String rol = authentication.getAuthorities().stream()
                 .map(a -> a.getAuthority())
@@ -108,6 +111,10 @@ public class OrdenWebController {
         try {
             temporal.registrarFirma(
                     ordenes.prepararWorkflow(id), authentication.getName(), rol);
+        } catch (WorkflowUpdateException exception) {
+            redirectAttributes.addFlashAttribute("firmaRechazada",
+                    "La firma no fue registrada: el usuario ya firmó, su rol no está "
+                            + "autorizado o la etapa de firmas terminó.");
         } catch (WorkflowException exception) {
             throw new IllegalStateException(
                     "Temporal no pudo registrar la firma: " + exception.getMessage(), exception);

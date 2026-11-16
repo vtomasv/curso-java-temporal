@@ -2,6 +2,7 @@ package com.enlace.evaluacion03.workflow;
 
 import io.temporal.workflow.QueryMethod;
 import io.temporal.workflow.UpdateMethod;
+import io.temporal.workflow.UpdateValidatorMethod;
 import io.temporal.workflow.WorkflowInterface;
 import io.temporal.workflow.WorkflowMethod;
 
@@ -20,8 +21,12 @@ public interface AccesoWorkflow {
      * Registra evidencia no sensible después de que la capa web autorizó la
      * lectura. La contraseña y el cuerpo de la orden nunca son argumentos.
      */
-    @UpdateMethod
+    @UpdateMethod(name = "registrarAcceso")
     AccesoProgreso registrarAcceso(String accesoId, String usuario, boolean reautenticado);
+
+    /** Rechaza un identificador inválido o reutilizado con otra evidencia. */
+    @UpdateValidatorMethod(updateName = "registrarAcceso")
+    void validarRegistrarAcceso(String accesoId, String usuario, boolean reautenticado);
 
     @QueryMethod
     AccesoProgreso consultarAccesos();
