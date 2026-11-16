@@ -1,7 +1,5 @@
 package com.enlace.evaluacion03.service;
 
-import com.enlace.evaluacion03.domain.FirmaOrden;
-import com.enlace.evaluacion03.domain.EstadoOrden;
 import com.enlace.evaluacion03.domain.Orden;
 import com.enlace.evaluacion03.repository.FirmaOrdenRepository;
 import com.enlace.evaluacion03.repository.OrdenRepository;
@@ -73,37 +71,10 @@ public class OrdenService {
         );
     }
 
-    @Transactional
-    public OrdenResumen firmar(String id, String firmante, String rol) {
+    /** Construye el input mínimo; nunca incorpora el contenido confidencial. */
+    @Transactional(readOnly = true)
+    public DespachoInput prepararWorkflow(String id) {
         Orden orden = buscar(id);
-        if (!politicaFirmas.rolPuedeFirmar(orden, rol)) {
-            throw new AccesoDenegadoException("El rol " + rol + " no puede firmar esta orden");
-        }
-        if (firmas.existsByOrdenIdAndFirmante(id, firmante)) {
-            throw new IllegalStateException("El usuario ya firmó la orden " + id);
-        }
-        firmas.saveAndFlush(new FirmaOrden(id, firmante, rol));
-        List<FirmaOrden> firmasActuales = firmas.findByOrdenIdOrderByFirmadaEnAsc(id);
-        if (politicaFirmas.requisitoCumplido(orden, firmasActuales)) {
-            orden.marcarListaParaEnvio();
-        }
-        return resumen(orden);
-    }
-
-    /**
-     * Confirma la precondición de firmas y deja persistido EN_DESPACHO antes de
-     * iniciar el Workflow. Una repetición devuelve la misma intención para que
-     * el Workflow ID estable haga idempotente el reintento del adaptador web.
-     */
-    @Transactional
-    public DespachoInput prepararDespacho(String id) {
-        Orden orden = buscar(id);
-        if (orden.getEstado() == EstadoOrden.LISTA_PARA_ENVIO) {
-            orden.marcarEnDespacho();
-        } else if (orden.getEstado() != EstadoOrden.EN_DESPACHO) {
-            throw new IllegalStateException(
-                    "La orden " + id + " no está lista para iniciar el despacho");
-        }
         return new DespachoInput(
                 orden.getId(),
                 orden.getDestinatarios().stream().map(Enum::name).toList()

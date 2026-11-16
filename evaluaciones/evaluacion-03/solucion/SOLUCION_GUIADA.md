@@ -25,7 +25,7 @@ para compilar con la versión final de la plantilla.
 | Invariantes de una orden | Dominio o política de dominio | Controlador web |
 | Autorización | `PoliticaAcceso` / Spring Security | Plantilla HTML solamente |
 | Reautorización temporal | `ReautenticacionService` y sesión | Parámetros de URL |
-| Firmas y quórum | `PoliticaFirmas` + servicio transaccional | JavaScript del navegador |
+| Firmas y quórum | Update del Workflow + Activity + `PoliticaFirmas` | Controlador o JavaScript del navegador |
 | Efecto de entrega | Activity idempotente | Código de Workflow |
 | Orden de pasos y espera | Workflow determinista | Activity monolítica |
 | Incertidumbre | Estado explícito y evidencia | Reintento infinito |
@@ -40,9 +40,11 @@ La aplicación ejecutable ya contiene el puente enseñado hasta la clase 13:
   `SICOR-EV03` y se conecta obligatoriamente al servidor local en
   `127.0.0.1:7233`;
 - `DespachoTemporalService` usa el Workflow ID estable `despacho-<ordenId>` y
-  expone Start, Query, Signal y Update a la capa web;
-- `DespachoActivitiesImpl` se registra como Activity y delega la persistencia
-  de estados terminales a un servicio Spring;
+  expone Start, firma por Update, Query, Signal y cancelación por Update;
+- el Workflow se inicia al crear la orden y espera firmas antes de ejecutar
+  cualquier entrega;
+- `DespachoActivitiesImpl` persiste firmas de forma idempotente, cambia el estado
+  y registra resultados terminales mediante un servicio Spring;
 - el input durable contiene el ID y las unidades, pero no el contenido
   confidencial que quedaría registrado en el History.
 
@@ -75,8 +77,9 @@ ejecución:
 temporal workflow show --workflow-id despacho-<orden-id>
 ```
 
-Registre en `BITACORA.md` un Workflow confirmado por Signal y otro cancelado
-por Update, junto con la Task Queue y la revisión del History. Si el servidor no
+Registre en `BITACORA.md` firmas aceptadas por Update antes del despacho, un
+Workflow confirmado por Signal y otro cancelado por Update, junto con la Task
+Queue y la revisión del History. Si el servidor no
 está disponible, la aplicación debe fallar al arrancar; no desactive Temporal.
 
 ---
@@ -260,6 +263,16 @@ personas autorizadas?
 La restricción única `(orden_id, firmante)` protege el segundo control ante
 concurrencia, además de la comprobación amigable del servicio.
 
+La firma no debe escribirse desde el controlador. El controlador autentica al
+usuario y llama al Update `registrarFirma`; el Workflow invoca una Activity que
+aplica la política y persiste. La Activity debe tratar como idempotente el retry
+de la misma operación, mientras que un segundo Update deliberado del mismo
+usuario se rechaza usando el estado durable del Workflow.
+
+El Workflow comienza con `ESPERANDO_FIRMAS`, expone el progreso por Query y sólo
+ejecuta las Activities de entrega cuando la Activity de firma devuelve
+`completa=true`. El History debe mostrar los Updates antes de la primera entrega.
+
 ### Estructura para umbral
 
 Una tabla pequeña y explícita puede expresarse con un record:
@@ -284,7 +297,9 @@ dos firmas del mismo rol, explíquelo de forma explícita.
 - un rol no habilitado no crea registro;
 - antes del límite la orden sigue `PENDIENTE_FIRMAS`;
 - justo en el límite cambia una sola vez a `LISTA_PARA_ENVIO`;
-- un intento posterior no retrocede ni duplica el estado.
+- un intento posterior no retrocede ni duplica el estado;
+- ninguna Activity de entrega ocurre antes del quórum; y
+- el History contiene los Updates de firma que habilitaron el despacho.
 
 ---
 
@@ -477,6 +492,7 @@ Antes de entregar, revise:
 - no hay pruebas desactivadas;
 - no se filtró el contenido máximo en DTOs, logs o errores;
 - no hay I/O ni APIs no deterministas dentro del Workflow;
+- las firmas llegan por Update y preceden al despacho en el History;
 - la idempotencia controla el efecto, no sólo el valor de retorno;
 - la incertidumbre se conserva como estado explícito.
 

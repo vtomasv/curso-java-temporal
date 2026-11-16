@@ -67,6 +67,7 @@ Para cada misión documente:
 **Regla para INFORMATIVA/INSTRUCCION/ORDEN:**<br>
 **Regla adicional para MAXIMA:**<br>
 **Cómo rechazo firmante duplicado y rol no autorizado:**<br>
+**Cómo demuestro que la firma entra por Update y no existe entrega antes del quórum:**<br>
 **Prueba(s):**<br>
 **Supuesto(s):**
 

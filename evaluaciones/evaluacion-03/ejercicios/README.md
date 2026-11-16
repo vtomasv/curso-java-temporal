@@ -29,7 +29,8 @@ Al finalizar, SICOR deberá:
   confidencialidad `MAXIMA`;
 - aceptar firmas de personas distintas y habilitar el despacho sólo al alcanzar
   la política elegida;
-- iniciar o recuperar desde la interfaz un Workflow con ID estable por orden;
+- iniciar un Workflow con ID estable al crear cada orden y registrar cada firma
+  como un Update durable antes de cualquier entrega;
 - entregar una orden una sola vez por unidad, aun cuando Temporal reintente una
   Activity;
 - orquestar el despacho con código determinista;
@@ -61,9 +62,10 @@ de modificar el código, registre la evidencia y comuníquelo al docente.
 
 La línea base incluye `TemporalRuntimeIntegrationTest`. Para hacer reproducible
 la corrección automática, esa prueba utiliza un entorno Temporal embebido que
-existe únicamente en `src/test`. Verifica Start, Worker, Activity, Query,
-Signal, Update y persistencia del estado final, pero **no reemplaza** la
-validación obligatoria de la aplicación contra el servidor local.
+existe únicamente en `src/test`. Verifica Start, firma por Update, Worker,
+Activity, Query, Signal, cancelación por Update y persistencia del estado final,
+pero **no reemplaza** la validación obligatoria de la aplicación contra el
+servidor local.
 
 ## Inicio rápido
 
@@ -84,10 +86,12 @@ SICOR se conecta a Temporal en `127.0.0.1:7233`. Si el servidor no está
 disponible, Spring detiene el arranque con un mensaje que indica el comando
 anterior; continuar sin Temporal no es un camino válido.
 
-Abra `http://localhost:8080`, reúna las firmas requeridas y use **Iniciar o
-recuperar Workflow**. La vista muestra el Workflow ID, la Task Queue, los
-recibos generados por Activities y el progreso obtenido por Query; desde allí
-también se envían Signals de confirmación y el Update de cancelación.
+Abra `http://localhost:8080` y cree o seleccione una orden. El Workflow existe
+desde la creación. El botón **Firmar mediante Temporal** envía un Update que
+persiste la firma por Activity; al completar la política, el mismo Workflow
+inicia el despacho automáticamente. La vista muestra el Workflow ID, la Task
+Queue, las firmas observadas por Query, los recibos de Activities y el progreso;
+desde allí también se envían Signals de confirmación y el Update de cancelación.
 
 Durante la evaluación deberá inspeccionar al menos dos ejecuciones distintas:
 
@@ -95,7 +99,8 @@ Durante la evaluación deberá inspeccionar al menos dos ejecuciones distintas:
 temporal workflow show --workflow-id despacho-<orden-id>
 ```
 
-Una debe completarse mediante confirmación por Signal y otra debe cancelarse
+Una debe mostrar al menos dos firmas aceptadas por Update antes del despacho;
+otra debe completarse mediante confirmación por Signal y otra puede cancelarse
 mediante Update. Registre en `BITACORA.md` los Workflow IDs, la Task Queue
 `SICOR-EV03`, el resultado y los eventos relevantes del History. No coloque el
 contenido confidencial de una orden en el input del Workflow: el History sólo
@@ -125,7 +130,7 @@ Para cada misión:
 4. Complete sólo los `TODO(EV03-...)` correspondientes.
 5. Escriba el comentario `DECISION` junto a la constante elegida.
 6. Ejecute el perfil de la misión y luego toda la batería.
-7. Para E05, E06 y E07, ejecute además el recorrido desde la interfaz contra el
+7. Para E04, E05, E06 y E07, ejecute además el recorrido desde la interfaz contra el
    servidor Temporal local y observe el Workflow en la Web UI o CLI.
 8. Registre la evidencia en `BITACORA.md`.
 
@@ -210,6 +215,12 @@ Una misma persona no puede firmar dos veces la misma orden. Sólo los roles
 admitidos cuentan y el estado cambia a `LISTA_PARA_ENVIO` exactamente cuando se
 alcanza el requisito.
 
+La interfaz no puede escribir directamente en `FirmaOrdenRepository` ni cambiar
+el estado. Cada firma entra por `DespachoWorkflow.registrarFirma`, un Update
+durable que invoca una Activity idempotente. El Workflow debe permanecer en
+`ESPERANDO_FIRMAS` y comenzar el despacho automáticamente sólo cuando la
+respuesta de la Activity confirme que la política está completa.
+
 Elija:
 
 - `ROLES_FIJOS`: la política exige combinaciones explícitas de roles; o
@@ -217,7 +228,8 @@ Elija:
   habilitados según tipo y confidencialidad.
 
 Debe existir al menos un caso que requiera dos personas distintas. Justifique
-el origen de la regla y pruebe duplicados, roles inválidos y el límite exacto.
+el origen de la regla y pruebe duplicados, roles inválidos, el límite exacto y
+que no se produzca ninguna entrega antes de completar las firmas.
 
 ```bash
 ./mvnw -Pev03-e04 test
@@ -314,7 +326,7 @@ a la capa correspondiente. No desactive pruebas para entregar.
 
 No se considera resuelta una misión si sólo pasa de manera aislada pero rompe
 otra. Antes de entregar, `clean verify -Pev03-all` debe finalizar correctamente.
-Además, E05, E06 y E07 requieren la evidencia de ejecución en el servidor
+Además, E04, E05, E06 y E07 requieren la evidencia de ejecución en el servidor
 Temporal local indicada en `BITACORA.md`; aprobar tests embebidos por sí solo no
 demuestra este requisito.
 
@@ -352,9 +364,9 @@ reales. Deben estar presentes:
 - al menos tres pruebas propias activas;
 - `DECISIONES.md`, `PROMPTS.md` y `BITACORA.md` completos;
 - evidencia de `./mvnw clean verify -Pev03-all`;
-- evidencia de Temporal externo: servidor, Worker en `SICOR-EV03`, un Workflow
-  confirmado por Signal, otro cancelado por Update e inspección del History sin
-  contenido confidencial.
+- evidencia de Temporal externo: servidor, Worker en `SICOR-EV03`, firmas
+  aceptadas por Update antes del despacho, un Workflow confirmado por Signal,
+  otro cancelado por Update e inspección del History sin contenido confidencial.
 
 La evaluación valora la coherencia entre decisión, implementación, prueba y
 explicación. No existe una única arquitectura correcta entre los caminos

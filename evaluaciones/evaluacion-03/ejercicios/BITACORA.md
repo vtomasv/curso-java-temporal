@@ -21,7 +21,7 @@ No pegue contraseñas, tokens ni contenidos confidenciales.
 
 ## Evidencia obligatoria de Temporal externo
 
-Esta sección es parte de la evidencia de E05, E06 y E07. `clean verify` usa un
+Esta sección es parte de la evidencia de E04, E05, E06 y E07. `clean verify` usa un
 motor embebido sólo para automatizar pruebas y no reemplaza este recorrido.
 Mantenga el servidor local iniciado mientras ejecuta SICOR:
 
@@ -37,6 +37,7 @@ contraseñas ni el cuerpo confidencial de las órdenes.
 |---|---|---|
 | Servidor y Web UI | Inicio del servidor; acceso a `http://localhost:8233` | |
 | Worker y Task Queue | Worker observado en `SICOR-EV03` | |
+| Firmas por Update | Workflow ID `despacho-...`; dos usuarios distintos firman desde la interfaz | Updates visibles, estado `ESPERANDO_FIRMAS` antes del umbral y despacho sólo después de completarlo |
 | Confirmación por Signal | Workflow ID `despacho-...`; `temporal workflow show --workflow-id <id>` | Signal registrado y Workflow completado |
 | Cancelación por Update | Otro Workflow ID; `temporal workflow show --workflow-id <id>` | Update aceptado y Workflow cancelado de forma controlada |
 | Query de progreso | Consulta desde la interfaz antes de terminar el Workflow | Conteos coherentes, sin mutar el estado |
@@ -126,6 +127,7 @@ decisión propia.
 - [ ] La aplicación inicia y la navegación base funciona.
 - [ ] Levanté Temporal local antes de iniciar SICOR y accedí a la Web UI.
 - [ ] Observé el Worker en la Task Queue `SICOR-EV03`.
+- [ ] Verifiqué en el History que las firmas entraron como Updates antes de las Activities de entrega.
 - [ ] Registré un Workflow confirmado por Signal y otro cancelado por Update.
 - [ ] Inspeccioné el History y comprobé que no contiene el cuerpo confidencial.
 - [ ] Ninguna constante de decisión permanece en `PENDIENTE`.

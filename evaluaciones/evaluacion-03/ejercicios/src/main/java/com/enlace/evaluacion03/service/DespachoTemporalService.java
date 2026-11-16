@@ -3,6 +3,7 @@ package com.enlace.evaluacion03.service;
 import com.enlace.evaluacion03.config.TemporalConfig;
 import com.enlace.evaluacion03.workflow.DespachoInput;
 import com.enlace.evaluacion03.workflow.DespachoWorkflow;
+import com.enlace.evaluacion03.workflow.FirmaProgreso;
 import com.enlace.evaluacion03.workflow.ProgresoDespacho;
 import com.enlace.evaluacion03.workflow.ReciboEnvio;
 import io.temporal.api.enums.v1.WorkflowIdReusePolicy;
@@ -46,6 +47,18 @@ public class DespachoTemporalService {
 
     public ProgresoDespacho consultarProgreso(String ordenId) {
         return workflow(ordenId).consultarProgreso();
+    }
+
+    public FirmaProgreso registrarFirma(DespachoInput input, String firmante, String rol) {
+        iniciar(input);
+        return workflow(input.ordenId()).registrarFirma(
+                texto(firmante, "firmante", 120),
+                texto(rol, "rol", 80)
+        );
+    }
+
+    public FirmaProgreso consultarFirmas(String ordenId) {
+        return workflow(ordenId).consultarFirmas();
     }
 
     public List<ReciboEnvio> consultarRecibos(String ordenId) {

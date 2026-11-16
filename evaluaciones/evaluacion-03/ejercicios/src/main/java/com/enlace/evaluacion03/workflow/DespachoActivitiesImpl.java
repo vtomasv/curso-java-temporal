@@ -11,15 +11,54 @@ public class DespachoActivitiesImpl implements DespachoActivities {
     private final Map<String, ReciboEnvio> recibos = new ConcurrentHashMap<>();
     private final Map<String, String> clavesPorRecibo = new ConcurrentHashMap<>();
     private final AtomicInteger efectos = new AtomicInteger();
-    private final EstadoRegistrador estadoRegistrador;
+    private final OrdenLifecycle ordenes;
 
     public DespachoActivitiesImpl() {
-        this((ordenId, estado) -> { });
+        this(new OrdenLifecycle() {
+            @Override
+            public FirmaProgreso consultarFirmas(String ordenId) {
+                return FirmaProgreso.autorizadaParaPruebas();
+            }
+
+            @Override
+            public FirmaProgreso registrarFirma(String ordenId, String firmante, String rol) {
+                return FirmaProgreso.autorizadaParaPruebas();
+            }
+
+            @Override
+            public void iniciarDespacho(String ordenId) {
+                // Adaptador neutro para las pruebas unitarias de idempotencia.
+            }
+
+            @Override
+            public void registrarEstado(String ordenId, EstadoDespacho estado) {
+                // Adaptador neutro para las pruebas unitarias de idempotencia.
+            }
+        });
     }
 
-    public DespachoActivitiesImpl(EstadoRegistrador estadoRegistrador) {
-        if (estadoRegistrador == null) throw new IllegalArgumentException("estadoRegistrador");
-        this.estadoRegistrador = estadoRegistrador;
+    public DespachoActivitiesImpl(OrdenLifecycle ordenes) {
+        if (ordenes == null) throw new IllegalArgumentException("ordenes");
+        this.ordenes = ordenes;
+    }
+
+    @Override
+    public FirmaProgreso consultarFirmas(String ordenId) {
+        return ordenes.consultarFirmas(texto(ordenId, "ordenId"));
+    }
+
+    @Override
+    public FirmaProgreso registrarFirma(String ordenId, String firmante, String rol) {
+        return ordenes.registrarFirma(
+                texto(ordenId, "ordenId"),
+                texto(firmante, "firmante"),
+                texto(rol, "rol")
+        );
+    }
+
+    @Override
+    public void iniciarDespacho(String ordenId) {
+        ordenes.iniciarDespacho(texto(ordenId, "ordenId"));
     }
 
     @Override
@@ -54,7 +93,7 @@ public class DespachoActivitiesImpl implements DespachoActivities {
 
     @Override
     public void registrarEstado(String ordenId, EstadoDespacho estado) {
-        estadoRegistrador.registrar(texto(ordenId, "ordenId"), estado);
+        ordenes.registrarEstado(texto(ordenId, "ordenId"), estado);
     }
 
     @Override
@@ -79,8 +118,10 @@ public class DespachoActivitiesImpl implements DespachoActivities {
         return valor.trim();
     }
 
-    @FunctionalInterface
-    public interface EstadoRegistrador {
-        void registrar(String ordenId, EstadoDespacho estado);
+    public interface OrdenLifecycle {
+        FirmaProgreso consultarFirmas(String ordenId);
+        FirmaProgreso registrarFirma(String ordenId, String firmante, String rol);
+        void iniciarDespacho(String ordenId);
+        void registrarEstado(String ordenId, EstadoDespacho estado);
     }
 }

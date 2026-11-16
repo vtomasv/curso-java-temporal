@@ -1,6 +1,6 @@
 package com.enlace.evaluacion03.config;
 
-import com.enlace.evaluacion03.service.EstadoOrdenTemporalService;
+import com.enlace.evaluacion03.service.OrdenTemporalService;
 import com.enlace.evaluacion03.workflow.DespachoActivitiesImpl;
 import com.enlace.evaluacion03.workflow.DespachoWorkflowImpl;
 import com.enlace.evaluacion03.workflow.EntregaUnidadWorkflowImpl;
@@ -28,8 +28,30 @@ public class TemporalConfig {
     public static final String TASK_QUEUE = "SICOR-EV03";
 
     @Bean
-    DespachoActivitiesImpl despachoActivities(EstadoOrdenTemporalService estados) {
-        return new DespachoActivitiesImpl(estados::registrar);
+    DespachoActivitiesImpl despachoActivities(OrdenTemporalService ordenes) {
+        return new DespachoActivitiesImpl(new DespachoActivitiesImpl.OrdenLifecycle() {
+            @Override
+            public com.enlace.evaluacion03.workflow.FirmaProgreso consultarFirmas(String ordenId) {
+                return ordenes.consultarFirmas(ordenId);
+            }
+
+            @Override
+            public com.enlace.evaluacion03.workflow.FirmaProgreso registrarFirma(
+                    String ordenId, String firmante, String rol) {
+                return ordenes.registrarFirma(ordenId, firmante, rol);
+            }
+
+            @Override
+            public void iniciarDespacho(String ordenId) {
+                ordenes.iniciarDespacho(ordenId);
+            }
+
+            @Override
+            public void registrarEstado(String ordenId,
+                                        com.enlace.evaluacion03.workflow.EstadoDespacho estado) {
+                ordenes.registrarEstado(ordenId, estado);
+            }
+        });
     }
 
     @Bean(destroyMethod = "close")
