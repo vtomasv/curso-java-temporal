@@ -5,6 +5,12 @@ import com.enlace.evaluacion03.domain.Confidencialidad;
 import com.enlace.evaluacion03.domain.Orden;
 import com.enlace.evaluacion03.domain.TipoOrden;
 import com.enlace.evaluacion03.domain.UnidadDestino;
+import com.enlace.evaluacion03.workflow.AccesoProgreso;
+import com.enlace.evaluacion03.workflow.AccesoWorkflow;
+import com.enlace.evaluacion03.workflow.DespachoInput;
+import com.enlace.evaluacion03.workflow.DespachoWorkflow;
+import com.enlace.evaluacion03.workflow.EstadoDespacho;
+import io.temporal.client.WorkflowClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
@@ -58,6 +64,23 @@ class E01ModeloInvariantesTest {
                 UnidadDestino.UNIDAD_ANDINA, UnidadDestino.UNIDAD_ANDINA)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("duplicados");
+    }
+
+    @Test
+    void una_orden_valida_inicia_su_ciclo_en_temporal_desde_la_creacion() {
+        requiereDecision();
+
+        try (WorkflowTestSupport soporte = new WorkflowTestSupport(false)) {
+            DespachoWorkflow workflow = soporte.nuevoWorkflow("workflow-e01");
+            AccesoWorkflow accesos = soporte.nuevoWorkflowAccesos("accesos-e01");
+            WorkflowClient.start(workflow::iniciar,
+                    new DespachoInput("ORDEN-E01-TEMPORAL", List.of("UNIDAD_ANDINA")));
+            WorkflowClient.start(accesos::mantener, "ORDEN-E01-TEMPORAL");
+
+            assertThat(workflow.consultarProgreso().estado())
+                    .isEqualTo(EstadoDespacho.ESPERANDO_FIRMAS);
+            assertThat(accesos.consultarAccesos()).isEqualTo(AccesoProgreso.vacio());
+        }
     }
 
     private void requiereDecision() {

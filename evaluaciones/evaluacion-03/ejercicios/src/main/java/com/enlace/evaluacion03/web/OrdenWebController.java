@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Set;
+import java.util.UUID;
 
 @Controller
 public class OrdenWebController {
@@ -69,6 +70,12 @@ public class OrdenWebController {
             model.addAttribute("usuarioActual", authentication.getName());
             return "reauth";
         }
+        temporal.registrarAcceso(
+                ordenes.prepararWorkflow(id),
+                UUID.randomUUID().toString(),
+                authentication.getName(),
+                resumen.confidencialidad() == Confidencialidad.MAXIMA
+        );
         OrdenDetalle detalle = ordenes.detalle(id, authentication);
         model.addAttribute("detalle", detalle);
         cargarDespacho(detalle.resumen(), authentication, model);
@@ -131,6 +138,7 @@ public class OrdenWebController {
     private void cargarDespacho(OrdenResumen resumen, Authentication authentication, Model model) {
         boolean enDespacho = resumen.estado() == EstadoOrden.EN_DESPACHO;
         model.addAttribute("workflowId", temporal.workflowId(resumen.id()));
+        model.addAttribute("accessWorkflowId", temporal.accessWorkflowId(resumen.id()));
         model.addAttribute("puedeConfirmar", enDespacho
                 && tieneAlgunRol(authentication, "OFICIAL", "COMANDANTE"));
         model.addAttribute("puedeCancelar", enDespacho
@@ -144,6 +152,7 @@ public class OrdenWebController {
                 temporal.iniciar(ordenes.prepararWorkflow(resumen.id()));
             }
             model.addAttribute("firmaTemporal", temporal.consultarFirmas(resumen.id()));
+            model.addAttribute("accesoTemporal", temporal.consultarAccesos(resumen.id()));
             model.addAttribute("progreso", temporal.consultarProgreso(resumen.id()));
             model.addAttribute("recibos", temporal.consultarRecibos(resumen.id()));
         } catch (WorkflowException exception) {

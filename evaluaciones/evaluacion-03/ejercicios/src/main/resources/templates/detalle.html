@@ -23,9 +23,14 @@
             <p>Cada firma ingresa como Update del Workflow y se persiste mediante una Activity idempotente. El despacho comienza automáticamente al completar la política.</p>
             <dl>
                 <dt>Workflow ID</dt><dd th:text="${workflowId}"></dd>
+                <dt>Workflow de accesos</dt><dd th:text="${accessWorkflowId}"></dd>
                 <dt>Task Queue</dt><dd>SICOR-EV03</dd>
                 <dt>Firmas en Temporal</dt><dd th:text="|${firmaTemporal.registradas} de ${firmaTemporal.requeridas}|" ></dd>
                 <dt>Política completa</dt><dd th:text="${firmaTemporal.completa ? 'Sí' : 'No'}"></dd>
+                <th:block th:if="${accesoTemporal != null}">
+                    <dt>Lecturas autorizadas</dt><dd th:text="${accesoTemporal.accesosAutorizados}"></dd>
+                    <dt>Reautenticaciones registradas</dt><dd th:text="${accesoTemporal.reautenticaciones}"></dd>
+                </th:block>
             </dl>
         </div>
 

@@ -12,6 +12,8 @@ import com.enlace.evaluacion03.service.DespachoTemporalService;
 import com.enlace.evaluacion03.service.OrdenTemporalService;
 import com.enlace.evaluacion03.service.OrdenService;
 import com.enlace.evaluacion03.service.PoliticaFirmas;
+import com.enlace.evaluacion03.workflow.AccesoProgreso;
+import com.enlace.evaluacion03.workflow.AccesoWorkflowImpl;
 import com.enlace.evaluacion03.workflow.DespachoActivitiesImpl;
 import com.enlace.evaluacion03.workflow.DespachoWorkflow;
 import com.enlace.evaluacion03.workflow.DespachoWorkflowImpl;
@@ -68,8 +70,13 @@ class TemporalRuntimeIntegrationTest {
         guardarPendienteFirmas(ordenId);
 
         temporal.iniciar(ordenes.prepararWorkflow(ordenId));
+        AccesoProgreso acceso = temporal.registrarAcceso(
+                ordenes.prepararWorkflow(ordenId), "ACCESO-" + ordenId, "auditor", true);
         FirmaProgreso firmas = autorizarMedianteTemporal(ordenId);
 
+        assertThat(acceso.accesosAutorizados()).isOne();
+        assertThat(acceso.reautenticaciones()).isOne();
+        assertThat(temporal.consultarAccesos(ordenId)).isEqualTo(acceso);
         assertThat(firmas.completa()).isTrue();
         assertThat(firmaRepository.countByOrdenId(ordenId)).isEqualTo(firmas.registradas());
         assertThat(repository.findById(ordenId).orElseThrow().getEstado())
@@ -89,6 +96,17 @@ class TemporalRuntimeIntegrationTest {
         assertThat(resultado.confirmadas()).containsExactly(UnidadDestino.UNIDAD_ANDINA.name());
         assertThat(repository.findById(ordenId).orElseThrow().getEstado())
                 .isEqualTo(EstadoOrden.ENTREGADA);
+
+        AccesoProgreso accesoPosterior = temporal.registrarAcceso(
+                ordenes.prepararWorkflow(ordenId),
+                "ACCESO-POSTERIOR-" + ordenId,
+                "auditor",
+                false);
+        assertThat(accesoPosterior.accesosAutorizados())
+                .as("la auditoría permanece disponible después de terminar el despacho")
+                .isEqualTo(2);
+        assertThat(accesoPosterior.reautenticaciones()).isOne();
+        assertThat(temporal.consultarAccesos(ordenId)).isEqualTo(accesoPosterior);
     }
 
     @Test
@@ -210,6 +228,7 @@ class TemporalRuntimeIntegrationTest {
             environment = TestWorkflowEnvironment.newInstance();
             Worker worker = environment.newWorker(TemporalConfig.TASK_QUEUE);
             worker.registerWorkflowImplementationTypes(
+                    AccesoWorkflowImpl.class,
                     DespachoWorkflowImpl.class,
                     EntregaUnidadWorkflowImpl.class
             );

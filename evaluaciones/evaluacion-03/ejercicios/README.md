@@ -9,7 +9,8 @@ procedimientos ni información operativa reales.
 
 La plantilla se entrega en un estado ejecutable y seguro. Al iniciarla, Spring
 crea un `WorkflowClient`, registra un Worker en la Task Queue `SICOR-EV03` y
-conecta la interfaz con un Workflow real de Temporal. Su objetivo no es
+conecta la interfaz con dos Workflows reales por orden: `despacho-<ordenId>`
+para firmas y entrega, y `accesos-<ordenId>` para auditoría de lecturas. Su objetivo no es
 reemplazar toda la aplicación ni construir esa infraestructura, sino completar
 siete misiones y ocho constantes de decisión (E07 contiene dos). En cada misión
 deberá elegir los caminos propuestos, implementarlos, justificarlos y
@@ -29,8 +30,11 @@ Al finalizar, SICOR deberá:
   confidencialidad `MAXIMA`;
 - aceptar firmas de personas distintas y habilitar el despacho sólo al alcanzar
   la política elegida;
-- iniciar un Workflow con ID estable al crear cada orden y registrar cada firma
-  como un Update durable antes de cualquier entrega;
+- iniciar los Workflows con ID estable al crear cada orden y registrar cada
+  firma como un Update durable antes de cualquier entrega;
+- hacer que toda lectura autorizada atraviese el Update `registrarAcceso` del
+  Workflow de accesos, incluso después de terminar el despacho, sin
+  enviar al History la contraseña ni el contenido de la orden;
 - entregar una orden una sola vez por unidad, aun cuando Temporal reintente una
   Activity;
 - orquestar el despacho con código determinista;
@@ -62,10 +66,10 @@ de modificar el código, registre la evidencia y comuníquelo al docente.
 
 La línea base incluye `TemporalRuntimeIntegrationTest`. Para hacer reproducible
 la corrección automática, esa prueba utiliza un entorno Temporal embebido que
-existe únicamente en `src/test`. Verifica Start, firma por Update, Worker,
-Activity, Query, Signal, cancelación por Update y persistencia del estado final,
-pero **no reemplaza** la validación obligatoria de la aplicación contra el
-servidor local.
+existe únicamente en `src/test`. Verifica ambos Starts, acceso autorizado por Update,
+firma por Update, Worker, Activity, Query, Signal, cancelación por Update y
+persistencia del estado final, pero **no reemplaza** la validación obligatoria
+de las siete misiones contra el servidor local.
 
 ## Inicio rápido
 
@@ -86,25 +90,35 @@ SICOR se conecta a Temporal en `127.0.0.1:7233`. Si el servidor no está
 disponible, Spring detiene el arranque con un mensaje que indica el comando
 anterior; continuar sin Temporal no es un camino válido.
 
-Abra `http://localhost:8080` y cree o seleccione una orden. El Workflow existe
-desde la creación. El botón **Firmar mediante Temporal** envía un Update que
-persiste la firma por Activity; al completar la política, el mismo Workflow
+Abra `http://localhost:8080` y cree o seleccione una orden. Los Workflows de
+despacho y accesos existen desde la creación. Una lectura permitida registra un
+Update no sensible en `accesos-<ordenId>`; en
+`MAXIMA`, ese Update sólo se envía después de validar nuevamente usuario y
+contraseña, que nunca se entregan a Temporal. El botón **Firmar mediante
+Temporal** envía otro Update que
+persiste la firma por Activity; al completar la política, `despacho-<ordenId>`
 inicia el despacho automáticamente. La vista muestra el Workflow ID, la Task
-Queue, las firmas observadas por Query, los recibos de Activities y el progreso;
-desde allí también se envían Signals de confirmación y el Update de cancelación.
+Queue, los accesos y firmas observados por Query, los recibos de Activities y el
+progreso; desde allí también se envían Signals de confirmación y el Update de
+cancelación.
 
-Durante la evaluación deberá inspeccionar al menos dos ejecuciones distintas:
+Durante la evaluación deberá inspeccionar ambos Workflows de una orden y, para
+confirmación y cancelación, al menos dos despachos distintos:
 
 ```bash
 temporal workflow show --workflow-id despacho-<orden-id>
+temporal workflow show --workflow-id accesos-<orden-id>
 ```
 
-Una debe mostrar al menos dos firmas aceptadas por Update antes del despacho;
-otra debe completarse mediante confirmación por Signal y otra puede cancelarse
-mediante Update. Registre en `BITACORA.md` los Workflow IDs, la Task Queue
+La evidencia debe mostrar ambos Starts al crear la orden, una lectura autorizada
+por Update en el Workflow de accesos, al menos dos firmas aceptadas por Update
+en el Workflow de despacho antes de la entrega, una
+ejecución completada mediante confirmación por Signal y otra cancelada mediante
+Update. Registre en `BITACORA.md` los Workflow IDs, la Task Queue
 `SICOR-EV03`, el resultado y los eventos relevantes del History. No coloque el
-contenido confidencial de una orden en el input del Workflow: el History sólo
-debe recibir el identificador y las unidades destinatarias.
+contenido confidencial de una orden en los inputs: el History de despacho sólo
+recibe el identificador y las unidades; el de accesos, identificadores opacos,
+usuario ficticio y la marca de reautenticación.
 
 Todas las cuentas de laboratorio usan la clave `laboratorio`:
 
@@ -130,8 +144,8 @@ Para cada misión:
 4. Complete sólo los `TODO(EV03-...)` correspondientes.
 5. Escriba el comentario `DECISION` junto a la constante elegida.
 6. Ejecute el perfil de la misión y luego toda la batería.
-7. Para E04, E05, E06 y E07, ejecute además el recorrido desde la interfaz contra el
-   servidor Temporal local y observe el Workflow en la Web UI o CLI.
+7. Para **cada misión, E01 a E07**, ejecute además el recorrido desde la interfaz
+   contra el servidor Temporal local y observe el Workflow en la Web UI o CLI.
 8. Registre la evidencia en `BITACORA.md`.
 
 Formato mínimo del comentario:
@@ -166,7 +180,9 @@ Elija:
 
 Justifique dónde queda la única fuente de verdad y cómo evita crear una orden
 inválida desde otro adaptador. Validar sólo en `OrdenService` no satisface el
-contrato: la construcción directa también debe quedar protegida.
+contrato: la construcción directa también debe quedar protegida. Una orden
+válida debe iniciar `despacho-<ordenId>` y `accesos-<ordenId>` en Temporal desde su creación; una
+entrada inválida debe rechazarse antes de producir ese Start.
 
 ```bash
 ./mvnw -Pev03-e01 test
@@ -185,7 +201,10 @@ Elija:
   específica.
 
 No registre el contenido de una orden `MAXIMA` en logs, excepciones ni DTO de
-listado.
+listado. Después de autorizar la lectura, la interfaz debe ejecutar el Update
+`registrarAcceso` en `accesos-<ordenId>`; una denegación no revela contenido ni genera una lectura
+exitosa. El Update contiene sólo un identificador de acceso, usuario ficticio y
+si hubo reautenticación.
 
 ```bash
 ./mvnw -Pev03-e02 test
@@ -203,7 +222,9 @@ Elija:
 - `VENTANA_CORTA_POR_ORDEN`: puede reutilizarse durante una ventana breve y
   expira de forma verificable.
 
-No almacene contraseñas ni las incluya en la URL, logs o sesión.
+No almacene contraseñas ni las incluya en la URL, logs, sesión o History de
+Temporal. Sólo después de una reautenticación válida se registra el acceso por
+Update, con `reautenticado=true` y sin la contraseña.
 
 ```bash
 ./mvnw -Pev03-e03 test
@@ -221,6 +242,10 @@ durable que invoca una Activity idempotente. El Workflow debe permanecer en
 `ESPERANDO_FIRMAS` y comenzar el despacho automáticamente sólo cuando la
 respuesta de la Activity confirme que la política está completa.
 
+El starter serializa los Updates de firma con un estado y `Workflow.await`.
+Conserve ese mecanismo: dos firmas simultáneas no pueden aplicar respuestas de
+Activities fuera de orden, hacer retroceder la Query ni iniciar dos despachos.
+
 Elija:
 
 - `ROLES_FIJOS`: la política exige combinaciones explícitas de roles; o
@@ -229,7 +254,8 @@ Elija:
 
 Debe existir al menos un caso que requiera dos personas distintas. Justifique
 el origen de la regla y pruebe duplicados, roles inválidos, el límite exacto y
-que no se produzca ninguna entrega antes de completar las firmas.
+que no se produzca ninguna entrega antes de completar las firmas. La línea base
+incluye además una regresión con dos Updates concurrentes.
 
 ```bash
 ./mvnw -Pev03-e04 test
@@ -246,8 +272,9 @@ Elija:
 - `CLAVE_ORDEN_UNIDAD`: la identidad natural es `ordenId + unidad`; o
 - `COMANDO_EXPLICITO`: el llamador entrega un `comandoId` estable.
 
-No use un UUID nuevo dentro de cada reintento. La demostración mínima es dos
-llamadas equivalentes, un mismo recibo y un único efecto registrado.
+No use un UUID nuevo dentro de cada reintento. La demostración mínima es un
+Workflow que invoca dos veces la Activity con una intención equivalente, obtiene
+el mismo recibo y observa un único efecto registrado.
 
 ```bash
 ./mvnw -Pev03-e05 test
@@ -326,9 +353,9 @@ a la capa correspondiente. No desactive pruebas para entregar.
 
 No se considera resuelta una misión si sólo pasa de manera aislada pero rompe
 otra. Antes de entregar, `clean verify -Pev03-all` debe finalizar correctamente.
-Además, E04, E05, E06 y E07 requieren la evidencia de ejecución en el servidor
-Temporal local indicada en `BITACORA.md`; aprobar tests embebidos por sí solo no
-demuestra este requisito.
+Además, **E01 a E07** requieren evidencia de ejecución en el servidor Temporal
+local indicada en `BITACORA.md`; aprobar tests embebidos por sí solo no demuestra
+este requisito.
 
 ## Uso permitido de IA
 
@@ -364,9 +391,11 @@ reales. Deben estar presentes:
 - al menos tres pruebas propias activas;
 - `DECISIONES.md`, `PROMPTS.md` y `BITACORA.md` completos;
 - evidencia de `./mvnw clean verify -Pev03-all`;
-- evidencia de Temporal externo: servidor, Worker en `SICOR-EV03`, firmas
-  aceptadas por Update antes del despacho, un Workflow confirmado por Signal,
-  otro cancelado por Update e inspección del History sin contenido confidencial.
+- evidencia de Temporal externo para E01–E07: servidor, Worker en `SICOR-EV03`,
+  Starts de despacho y accesos al crear, lectura autorizada por Update en
+  `accesos-<ordenId>`, firmas por Update en `despacho-<ordenId>` antes del
+  despacho, Activities de entrega, Query, Signal, cancelación por Update e
+  inspección del History sin contraseñas ni contenido confidencial.
 
 La evaluación valora la coherencia entre decisión, implementación, prueba y
 explicación. No existe una única arquitectura correcta entre los caminos
