@@ -77,6 +77,19 @@ class E02AccesoConfidencialidadTest {
         }
     }
 
+    @Test
+    void el_workflow_de_accesos_acepta_el_mismo_largo_de_id_que_la_orden() {
+        requiereDecision();
+        String ordenId = "O".repeat(255);
+
+        try (WorkflowTestSupport soporte = new WorkflowTestSupport(false)) {
+            AccesoWorkflow workflow = soporte.nuevoWorkflowAccesos("accesos-e02-id-largo");
+            WorkflowClient.start(workflow::mantener, ordenId);
+
+            assertThat(workflow.consultarAccesos()).isEqualTo(AccesoProgreso.vacio());
+        }
+    }
+
     private void requiereDecision() {
         assumeFalse(Decisiones.ACCESO == Decisiones.Acceso.PENDIENTE,
                 "Primero complete DECISION(EV03-E02)");

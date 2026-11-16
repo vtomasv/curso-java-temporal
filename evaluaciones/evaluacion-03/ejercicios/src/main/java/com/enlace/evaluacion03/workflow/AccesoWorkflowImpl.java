@@ -15,7 +15,7 @@ public class AccesoWorkflowImpl implements AccesoWorkflow {
 
     @Override
     public void mantener(String ordenId) {
-        texto(ordenId, "ordenId", 120);
+        texto(ordenId, "ordenId", 255);
         // La auditoría debe sobrevivir al resultado terminal del despacho. El
         // Worker puede detenerse; Temporal reconstruye este estado por replay.
         Workflow.await(() -> false);
