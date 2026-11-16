@@ -35,13 +35,17 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/app.css", "/login").permitAll()
+                        .requestMatchers("/app.css", "/app.js", "/login").permitAll()
                         .requestMatchers("/ordenes/nueva").hasAnyRole("OPERADOR", "COMANDANTE")
                         .requestMatchers("/ordenes/*/firmar").hasAnyRole("OFICIAL", "COMANDANTE")
                         .requestMatchers("/ordenes/*/confirmar").hasAnyRole("OFICIAL", "COMANDANTE")
                         .requestMatchers("/ordenes/*/cancelar").hasRole("COMANDANTE")
                         .anyRequest().authenticated())
-                .formLogin(form -> form.defaultSuccessUrl("/", true))
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .failureUrl("/login?error")
+                        .defaultSuccessUrl("/", true)
+                        .permitAll())
                 .logout(logout -> logout.logoutSuccessUrl("/login?logout"))
                 .build();
     }

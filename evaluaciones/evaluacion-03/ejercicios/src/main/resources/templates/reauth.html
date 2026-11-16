@@ -1,18 +1,39 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reautenticación SICOR</title><link rel="stylesheet" th:href="@{/app.css}"></head>
-<body>
-<header><a th:href="@{/}">← Volver</a><strong>SICOR</strong></header>
-<main><section class="narrow">
-    <p class="eyebrow">CLASIFICACIÓN MÁXIMA</p>
-    <h1>Confirme su identidad</h1>
-    <p>La orden <strong th:text="${orden.id}"></strong> requiere ingresar nuevamente el usuario actual y su contraseña. El contenido todavía no fue enviado a esta página.</p>
-    <form th:action="@{/ordenes/{id}/reauth(id=${orden.id})}" method="post" class="stack">
-        <label>Usuario<input name="usuario" th:value="${usuarioActual}" autocomplete="username"></label>
-        <label>Contraseña<input name="password" type="password" autocomplete="current-password"></label>
-        <p class="errors" th:if="${error}" th:text="${error}"></p>
-        <button type="submit">Validar y mostrar contenido</button>
-    </form>
-</section></main>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confirmar identidad · SICOR</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="auth-body reauth-body">
+<header class="topbar topbar-auth">
+    <a class="brand" th:href="@{/}"><span class="brand-mark" aria-hidden="true">S</span><span><strong>SICOR</strong><small>Acceso reforzado</small></span></a>
+    <a class="button button-ghost button-small" th:href="@{/}">Cancelar y volver</a>
+</header>
+<main class="reauth-shell">
+    <section class="reauth-card">
+        <div class="reauth-context">
+            <span class="security-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.6 2.9 8.9 7 10 4.1-1.1 7-5.4 7-10V6l-7-3Z"/><path d="m9.5 12 1.7 1.7 3.7-4"/></svg></span>
+            <p class="eyebrow">Clasificación máxima</p>
+            <h1>Confirma tu identidad</h1>
+            <p>La orden <code th:text="${orden.id}">ORD-000</code> exige una verificación adicional antes de revelar el contenido.</p>
+            <ul class="security-list">
+                <li>El permiso queda ligado al usuario y a esta orden.</li>
+                <li>La contraseña no se envía al Workflow ni al History.</li>
+                <li>El contenido todavía no fue cargado en esta página.</li>
+            </ul>
+        </div>
+        <div class="reauth-form-panel">
+            <div class="panel-heading"><p class="section-kicker">Paso de seguridad</p><h2>Reingresa tus credenciales</h2><p>Debes usar la misma identidad de la sesión actual.</p></div>
+            <form th:action="@{/ordenes/{id}/reauth(id=${orden.id})}" method="post" class="form-stack">
+                <label class="field" for="reauth-user"><span>Usuario actual</span><input id="reauth-user" name="usuario" th:value="${usuarioActual}" autocomplete="username" readonly></label>
+                <label class="field" for="reauth-password"><span>Contraseña</span><input id="reauth-password" name="password" type="password" autocomplete="current-password" required autofocus placeholder="Ingresa tu contraseña"></label>
+                <div class="alert alert-error" role="alert" th:if="${error}"><strong>Validación rechazada</strong><span th:text="${error}"></span></div>
+                <button class="button button-primary button-wide" type="submit">Validar y revelar contenido <span aria-hidden="true">→</span></button>
+            </form>
+        </div>
+    </section>
+</main>
 </body>
 </html>

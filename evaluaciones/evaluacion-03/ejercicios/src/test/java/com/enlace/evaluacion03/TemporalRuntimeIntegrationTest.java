@@ -31,8 +31,11 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Set;
 import java.util.List;
@@ -40,8 +43,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @SpringBootTest(properties = "sicor.temporal.enabled=false")
+@AutoConfigureMockMvc
 @Import(TemporalRuntimeIntegrationTest.TemporalTestConfig.class)
 @EnabledIfSystemProperty(named = "ev03.exercise", matches = "base|all")
 class TemporalRuntimeIntegrationTest {
@@ -63,6 +73,59 @@ class TemporalRuntimeIntegrationTest {
 
     @Autowired
     private PoliticaFirmas politicaFirmas;
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void la_pagina_de_ingreso_personalizada_renderiza_sin_autenticacion() throws Exception {
+        mockMvc.perform(get("/login"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("login"))
+                .andExpect(content().string(containsString("Ingresar al centro de operaciones")))
+                .andExpect(content().string(containsString("comandante2")));
+    }
+
+    @Test
+    @WithMockUser(username = "operador", roles = "OPERADOR")
+    void el_operador_recibe_un_dashboard_renderizado_y_puede_crear() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("index"))
+                .andExpect(content().string(containsString("Bandeja operacional")))
+                .andExpect(content().string(containsString("Preparar orden")));
+    }
+
+    @Test
+    @WithMockUser(username = "oficial1", roles = "OFICIAL")
+    void el_oficial_no_ve_un_formulario_que_su_rol_no_puede_enviar() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("index"))
+                .andExpect(content().string(containsString("separación de funciones")))
+                .andExpect(content().string(not(containsString("Preparar orden"))));
+    }
+
+    @Test
+    @WithMockUser(username = "operador", roles = "OPERADOR")
+    void el_detalle_interno_renderiza_la_evidencia_temporal() throws Exception {
+        mockMvc.perform(get("/ordenes/ORD-DEMO-01"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("detalle"))
+                .andExpect(content().string(containsString("Evidencia durable")))
+                .andExpect(content().string(containsString("despacho-ORD-DEMO-01")));
+    }
+
+    @Test
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
+    void la_reautenticacion_maxima_no_filtra_el_contenido_en_la_respuesta_previa() throws Exception {
+        mockMvc.perform(get("/ordenes/ORD-DEMO-02"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("reauth"))
+                .andExpect(content().string(containsString("Confirma tu identidad")))
+                .andExpect(content().string(not(containsString(
+                        "Contenido ficticio de demostración para validar la reautenticación máxima."))));
+    }
 
     @Test
     void la_aplicacion_procesa_firmas_por_update_antes_de_query_signal_y_activity() {

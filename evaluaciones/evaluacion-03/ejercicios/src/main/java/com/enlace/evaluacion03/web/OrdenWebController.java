@@ -40,9 +40,8 @@ public class OrdenWebController {
     }
 
     @GetMapping("/")
-    String inicio(Model model) {
-        cargarFormulario(model);
-        model.addAttribute("ordenes", ordenes.listar());
+    String inicio(Model model, Authentication authentication) {
+        cargarInicio(model, authentication);
         if (!model.containsAttribute("crearOrdenRequest")) {
             model.addAttribute("crearOrdenRequest", formularioVacio());
         }
@@ -53,8 +52,7 @@ public class OrdenWebController {
     String crear(@Valid @ModelAttribute CrearOrdenRequest crearOrdenRequest,
                  BindingResult errores, Authentication authentication, Model model) {
         if (errores.hasErrors()) {
-            cargarFormulario(model);
-            model.addAttribute("ordenes", ordenes.listar());
+            cargarInicio(model, authentication);
             return "index";
         }
         OrdenResumen creada = ordenes.crear(crearOrdenRequest, authentication.getName());
@@ -80,6 +78,7 @@ public class OrdenWebController {
         );
         OrdenDetalle detalle = ordenes.detalle(id, authentication);
         model.addAttribute("detalle", detalle);
+        cargarIdentidad(model, authentication);
         cargarDespacho(detalle.resumen(), authentication, model);
         return "detalle";
     }
@@ -146,6 +145,9 @@ public class OrdenWebController {
         boolean enDespacho = resumen.estado() == EstadoOrden.EN_DESPACHO;
         model.addAttribute("workflowId", temporal.workflowId(resumen.id()));
         model.addAttribute("accessWorkflowId", temporal.accessWorkflowId(resumen.id()));
+        model.addAttribute("puedeFirmar",
+                resumen.estado() == EstadoOrden.PENDIENTE_FIRMAS
+                        && tieneAlgunRol(authentication, "OFICIAL", "COMANDANTE"));
         model.addAttribute("puedeConfirmar", enDespacho
                 && tieneAlgunRol(authentication, "OFICIAL", "COMANDANTE"));
         model.addAttribute("puedeCancelar", enDespacho
@@ -189,6 +191,37 @@ public class OrdenWebController {
         model.addAttribute("tipos", TipoOrden.values());
         model.addAttribute("confidencialidades", Confidencialidad.values());
         model.addAttribute("unidades", UnidadDestino.values());
+    }
+
+    private void cargarInicio(Model model, Authentication authentication) {
+        cargarFormulario(model);
+        var listado = ordenes.listar();
+        model.addAttribute("ordenes", listado);
+        model.addAttribute("puedeCrear", tieneAlgunRol(authentication, "OPERADOR", "COMANDANTE"));
+        model.addAttribute("totalOrdenes", listado.size());
+        model.addAttribute("pendientesFirma", listado.stream()
+                .filter(orden -> orden.estado() == EstadoOrden.PENDIENTE_FIRMAS
+                        || orden.estado() == EstadoOrden.LISTA_PARA_ENVIO)
+                .count());
+        model.addAttribute("enDespacho", listado.stream()
+                .filter(orden -> orden.estado() == EstadoOrden.EN_DESPACHO)
+                .count());
+        model.addAttribute("finalizadas", listado.stream()
+                .filter(orden -> orden.estado() == EstadoOrden.ENTREGADA
+                        || orden.estado() == EstadoOrden.CANCELADA
+                        || orden.estado() == EstadoOrden.PENDIENTE_REVISION)
+                .count());
+        cargarIdentidad(model, authentication);
+    }
+
+    private void cargarIdentidad(Model model, Authentication authentication) {
+        model.addAttribute("usuarioActual", authentication.getName());
+        model.addAttribute("rolActual", authentication.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .filter(authority -> authority.startsWith("ROLE_"))
+                .map(authority -> authority.substring("ROLE_".length()))
+                .findFirst()
+                .orElse("USUARIO"));
     }
 
     private CrearOrdenRequest formularioVacio() {

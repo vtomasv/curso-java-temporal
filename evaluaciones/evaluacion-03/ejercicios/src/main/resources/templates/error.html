@@ -1,5 +1,21 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Error SICOR</title><link rel="stylesheet" th:href="@{/app.css}"></head>
-<body><main><section class="narrow"><h1 th:text="${titulo}"></h1><p th:text="${detalle}"></p><a th:href="@{/}">Volver al inicio</a></section></main></body>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Error · SICOR</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="error-body">
+<main class="error-shell">
+    <section class="error-card">
+        <a class="brand brand-error" th:href="@{/}"><span class="brand-mark" aria-hidden="true">S</span><span><strong>SICOR</strong><small>Comunicaciones resilientes</small></span></a>
+        <span class="error-code">OPERACIÓN INTERRUMPIDA</span>
+        <h1 th:text="${titulo}">No fue posible completar la operación</h1>
+        <p th:text="${detalle}">Revisa los datos e inténtalo nuevamente.</p>
+        <div class="error-actions"><a class="button button-primary" th:href="@{/}">Volver al centro de operaciones</a><button class="button button-secondary" type="button" onclick="history.back()">Regresar</button></div>
+        <p class="privacy-note">Si el problema corresponde a Temporal, conserva el Workflow ID y registra el incidente en la bitácora.</p>
+    </section>
+</main>
+</body>
 </html>

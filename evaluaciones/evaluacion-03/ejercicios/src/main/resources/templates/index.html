@@ -3,47 +3,184 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SICOR Evaluación 03</title>
+    <meta name="description" content="SICOR, sistema académico de comunicaciones y órdenes resilientes">
+    <title>SICOR · Centro de operaciones</title>
     <link rel="stylesheet" th:href="@{/app.css}">
+    <script defer th:src="@{/app.js}"></script>
 </head>
 <body>
-<header>
-    <div><strong>SICOR</strong><span> Sistema ficticio de comunicaciones y órdenes resilientes</span></div>
-    <form th:action="@{/logout}" method="post"><button class="secondary">Cerrar sesión</button></form>
+<header class="topbar">
+    <a class="brand" th:href="@{/}" aria-label="Ir al inicio de SICOR">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span><strong>SICOR</strong><small>Comunicaciones resilientes</small></span>
+    </a>
+    <div class="session-area">
+        <div class="user-chip">
+            <span class="user-avatar" aria-hidden="true"></span>
+            <span><strong th:text="${usuarioActual}">usuario</strong><small th:text="${rolActual}">ROL</small></span>
+        </div>
+        <form th:action="@{/logout}" method="post">
+            <button class="button button-ghost button-small" type="submit">Cerrar sesión</button>
+        </form>
+    </div>
 </header>
-<main>
-    <section>
-        <h1>Órdenes y comunicaciones</h1>
-        <p>La lista muestra metadatos. El contenido de clasificación máxima solo se revela después de reautenticar al usuario actual.</p>
-        <table>
-            <thead><tr><th>ID</th><th>Asunto</th><th>Tipo</th><th>Clasificación</th><th>Estado</th><th>Firmas</th></tr></thead>
-            <tbody>
-            <tr th:each="orden : ${ordenes}">
-                <td><a th:href="@{/ordenes/{id}(id=${orden.id})}" th:text="${orden.id}"></a></td>
-                <td th:text="${orden.asunto}"></td>
-                <td th:text="${orden.tipo}"></td>
-                <td th:text="${orden.confidencialidad}"></td>
-                <td th:text="${orden.estado}"></td>
-                <td th:text="|${orden.firmas}/${orden.firmasRequeridas}|"></td>
-            </tr>
-            </tbody>
-        </table>
+
+<main class="page-shell">
+    <section class="hero hero-dashboard">
+        <div>
+            <p class="eyebrow">Centro de operaciones · Evaluación 03</p>
+            <h1>Órdenes claras, trazabilidad durable</h1>
+            <p class="hero-copy">Gestiona comunicaciones ficticias, autorizaciones y entregas. Los datos sensibles permanecen fuera del History de Temporal.</p>
+        </div>
+        <div class="runtime-status" aria-label="Requisito de ejecución">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span><strong>Temporal requerido</strong><small>Task Queue · SICOR-EV03</small></span>
+        </div>
     </section>
 
-    <section>
-        <h2>Crear comunicación</h2>
-        <form th:action="@{/ordenes/nueva}" th:object="${crearOrdenRequest}" method="post" class="grid-form">
-            <label>ID<input th:field="*{id}" placeholder="ORD-100"></label>
-            <label>Clave idempotente<input th:field="*{claveIdempotencia}" placeholder="CLAVE-100"></label>
-            <label>Asunto<input th:field="*{asunto}"></label>
-            <label>Tipo<select th:field="*{tipo}"><option th:each="t : ${tipos}" th:value="${t}" th:text="${t}"></option></select></label>
-            <label>Clasificación<select th:field="*{confidencialidad}"><option th:each="c : ${confidencialidades}" th:value="${c}" th:text="${c}"></option></select></label>
-            <fieldset><legend>Unidades destinatarias</legend><label th:each="u : ${unidades}"><input type="checkbox" th:field="*{destinatarios}" th:value="${u}"><span th:text="${u}"></span></label></fieldset>
-            <label class="full">Contenido<textarea th:field="*{contenido}" rows="5"></textarea></label>
-            <div class="full errors" th:if="${#fields.hasErrors('*')}" th:errors="*{all}"></div>
-            <button class="full" type="submit">Crear borrador operativo</button>
-        </form>
+    <section class="metric-grid" aria-label="Resumen de órdenes">
+        <article class="metric-card">
+            <span class="metric-label">Total registradas</span>
+            <strong class="metric-value" th:text="${totalOrdenes}">0</strong>
+            <span class="metric-caption">Comunicaciones visibles</span>
+        </article>
+        <article class="metric-card metric-accent">
+            <span class="metric-label">Esperando autorización</span>
+            <strong class="metric-value" th:text="${pendientesFirma}">0</strong>
+            <span class="metric-caption">Firmas aún requeridas</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">En despacho</span>
+            <strong class="metric-value" th:text="${enDespacho}">0</strong>
+            <span class="metric-caption">Workflows activos</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Ciclo resuelto</span>
+            <strong class="metric-value" th:text="${finalizadas}">0</strong>
+            <span class="metric-caption">Entregadas o cerradas</span>
+        </article>
+    </section>
+
+    <div class="dashboard-grid">
+        <section class="panel orders-panel">
+            <div class="panel-heading panel-heading-row">
+                <div>
+                    <p class="section-kicker">Bandeja operacional</p>
+                    <h2>Órdenes y comunicaciones</h2>
+                    <p>El listado contiene sólo metadatos autorizados.</p>
+                </div>
+                <label class="search-field" for="order-filter">
+                    <span class="sr-only">Filtrar órdenes</span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.15A7.5 7.5 0 1 1 4 11.5a7.5 7.5 0 0 1 15 0Z"/></svg>
+                    <input id="order-filter" type="search" placeholder="Buscar ID, asunto o estado" autocomplete="off" data-order-filter>
+                </label>
+            </div>
+
+            <div class="table-wrap">
+                <table class="orders-table">
+                    <thead>
+                    <tr><th>Orden</th><th>Tipo</th><th>Clasificación</th><th>Estado</th><th>Firmas</th><th><span class="sr-only">Acción</span></th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="orden : ${ordenes}" data-order-row
+                        th:attr="data-search=|${orden.id} ${orden.asunto} ${orden.tipo} ${orden.confidencialidad} ${orden.estado}|">
+                        <td>
+                            <a class="order-link" th:href="@{/ordenes/{id}(id=${orden.id})}">
+                                <strong th:text="${orden.asunto}">Asunto</strong>
+                                <code th:text="${orden.id}">ORD-000</code>
+                            </a>
+                        </td>
+                        <td><span class="type-label" th:text="${orden.tipo}">TIPO</span></td>
+                        <td><span class="classification-badge"
+                                  th:classappend="| classification-${#strings.toLowerCase(orden.confidencialidad.name())}|"
+                                  th:text="${orden.confidencialidad}">INTERNA</span></td>
+                        <td><span class="status-badge"
+                                  th:classappend="| status-${#strings.toLowerCase(orden.estado.name())}|"
+                                  th:text="${#strings.replace(orden.estado.name(), '_', ' ')}">ESTADO</span></td>
+                        <td><span class="signature-count" th:text="|${orden.firmas}/${orden.firmasRequeridas}|">0/2</span></td>
+                        <td><a class="row-action" th:href="@{/ordenes/{id}(id=${orden.id})}">Abrir <span aria-hidden="true">→</span></a></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(ordenes)}">
+                        <td colspan="6"><div class="empty-state"><strong>No hay órdenes todavía</strong><span>Crea la primera comunicación desde el panel lateral.</span></div></td>
+                    </tr>
+                    <tr class="filter-empty" data-filter-empty hidden>
+                        <td colspan="6"><div class="empty-state"><strong>Sin coincidencias</strong><span>Prueba con otro ID, asunto o estado.</span></div></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside class="panel create-panel" th:if="${puedeCrear}">
+            <div class="panel-heading">
+                <p class="section-kicker">Nueva comunicación</p>
+                <h2>Preparar orden</h2>
+                <p>Completa la intención antes de iniciar ambos Workflows.</p>
+            </div>
+            <form th:action="@{/ordenes/nueva}" th:object="${crearOrdenRequest}" method="post" class="form-stack">
+                <div class="field-grid">
+                    <label class="field" for="order-id"><span>ID de orden</span><input id="order-id" th:field="*{id}" placeholder="ORD-100" required maxlength="255"><small>Identificador estable y único.</small></label>
+                    <label class="field" for="idempotency-key"><span>Clave idempotente</span><input id="idempotency-key" th:field="*{claveIdempotencia}" placeholder="CMD-ORD-100" required maxlength="120"><small>Reutiliza la intención, no el efecto.</small></label>
+                </div>
+                <label class="field" for="subject"><span>Asunto</span><input id="subject" th:field="*{asunto}" placeholder="Coordinación logística semanal" required minlength="5" maxlength="120"></label>
+                <div class="field-grid">
+                    <label class="field" for="order-type"><span>Tipo</span><select id="order-type" th:field="*{tipo}"><option th:each="t : ${tipos}" th:value="${t}" th:text="${t}"></option></select></label>
+                    <label class="field" for="classification"><span>Clasificación</span><select id="classification" th:field="*{confidencialidad}"><option th:each="c : ${confidencialidades}" th:value="${c}" th:text="${c}"></option></select></label>
+                </div>
+                <fieldset class="recipient-fieldset">
+                    <legend>Unidades destinatarias</legend>
+                    <p>Selecciona al menos una unidad ficticia.</p>
+                    <div class="recipient-grid">
+                        <label class="recipient-option" th:each="u : ${unidades}">
+                            <input type="checkbox" th:field="*{destinatarios}" th:value="${u}">
+                            <span th:text="${#strings.replace(u.name(), 'UNIDAD_', '')}">UNIDAD</span>
+                        </label>
+                    </div>
+                </fieldset>
+                <label class="field" for="content">
+                    <span>Contenido</span>
+                    <textarea id="content" th:field="*{contenido}" rows="7" minlength="20" maxlength="2000" required data-character-source placeholder="Describe una instrucción o información completamente ficticia..."></textarea>
+                    <small class="field-counter"><span>Entre 20 y 2.000 caracteres.</span><span><b data-character-count>0</b>/2000</span></small>
+                </label>
+                <div class="alert alert-error" role="alert" th:if="${#fields.hasErrors('*')}">
+                    <strong>Revisa los datos ingresados</strong>
+                    <span th:errors="*{all}">Hay campos inválidos.</span>
+                </div>
+                <button class="button button-primary button-wide" type="submit">Crear e iniciar Workflows <span aria-hidden="true">→</span></button>
+                <p class="form-footnote">Se iniciarán <code>despacho-&lt;id&gt;</code> y <code>accesos-&lt;id&gt;</code>.</p>
+            </form>
+        </aside>
+
+        <aside class="panel capability-panel" th:unless="${puedeCrear}">
+            <div class="panel-heading">
+                <p class="section-kicker">Perfil activo</p>
+                <h2 th:text="|Rol ${rolActual}|">Rol de consulta</h2>
+                <p>La creación de órdenes está reservada a OPERADOR y COMANDANTE.</p>
+            </div>
+            <div class="capability-body">
+                <div class="capability-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M12 15v2"/></svg>
+                </div>
+                <strong>Tu bandeja respeta la separación de funciones</strong>
+                <p>Abre una orden para consultar las acciones disponibles para tu identidad. Las opciones de firma, confirmación y auditoría se muestran sólo cuando corresponden.</p>
+                <ul>
+                    <li>OFICIAL: firma y confirma entregas autorizadas.</li>
+                    <li>AUDITOR: consulta órdenes permitidas y su evidencia.</li>
+                </ul>
+            </div>
+        </aside>
+    </div>
+
+    <section class="journey-panel" aria-labelledby="journey-title">
+        <div><p class="section-kicker">Recorrido verificable</p><h2 id="journey-title">Del acceso a la confirmación</h2></div>
+        <ol class="journey-steps">
+            <li><span>01</span><div><strong>Autoriza</strong><small>La lectura y las firmas ingresan mediante Updates.</small></div></li>
+            <li><span>02</span><div><strong>Orquesta</strong><small>El Worker ejecuta Activities con claves estables.</small></div></li>
+            <li><span>03</span><div><strong>Confirma</strong><small>Signals, Queries y cancelación dejan evidencia durable.</small></div></li>
+        </ol>
     </section>
 </main>
+
+<footer class="page-footer"><span>SICOR · Entorno académico ficticio</span><span>Java 25 · Spring Boot · Temporal</span></footer>
 </body>
 </html>
