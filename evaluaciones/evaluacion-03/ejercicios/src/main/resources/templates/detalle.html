@@ -17,6 +17,7 @@
               th:action="@{/ordenes/{id}/firmar(id=${detalle.resumen.id})}" method="post">
             <button>Firmar mediante Temporal</button>
         </form>
+        <div class="errors" th:if="${firmaRechazada}" th:text="${firmaRechazada}"></div>
 
         <div class="temporal-panel" th:if="${firmaTemporal != null}">
             <h2>Autorización durable</h2>

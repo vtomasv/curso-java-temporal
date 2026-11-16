@@ -206,6 +206,10 @@ listado. Después de autorizar la lectura, la interfaz debe ejecutar el Update
 exitosa. El Update contiene sólo un identificador de acceso, usuario ficticio y
 si hubo reautenticación.
 
+El starter valida ese Update con `@UpdateValidatorMethod`: reutilizar un
+`accesoId` con otra evidencia debe rechazar sólo la solicitud, sin producir un
+`WorkflowTaskFailed` ni dejar el Workflow en reintento.
+
 ```bash
 ./mvnw -Pev03-e02 test
 ```
@@ -245,6 +249,10 @@ respuesta de la Activity confirme que la política está completa.
 El starter serializa los Updates de firma con un estado y `Workflow.await`.
 Conserve ese mecanismo: dos firmas simultáneas no pueden aplicar respuestas de
 Activities fuera de orden, hacer retroceder la Query ni iniciar dos despachos.
+También conserva un `@UpdateValidatorMethod` para rechazar una firma duplicada
+antes de aceptarla. Un rechazo de negocio debe fallar sólo el Update; no es
+correcto lanzar una excepción Java común desde el handler y provocar el
+reintento del Workflow Task.
 
 Elija:
 
