@@ -15,5 +15,6 @@ server:
     include-message: always
 sicor:
   temporal:
-    mode: ${SICOR_TEMPORAL_MODE:embedded}
+    enabled: true
     target: ${SICOR_TEMPORAL_TARGET:127.0.0.1:7233}
+    connect-timeout: ${SICOR_TEMPORAL_CONNECT_TIMEOUT:5s}

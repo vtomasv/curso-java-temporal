@@ -7,14 +7,22 @@ import com.enlace.evaluacion03.workflow.EntregaUnidadWorkflowImpl;
 import io.temporal.client.WorkflowClient;
 import io.temporal.serviceclient.WorkflowServiceStubs;
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
-import io.temporal.testing.TestWorkflowEnvironment;
 import io.temporal.worker.Worker;
 import io.temporal.worker.WorkerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
+
 @Configuration
+@ConditionalOnProperty(
+        prefix = "sicor.temporal",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
 public class TemporalConfig {
 
     public static final String TASK_QUEUE = "SICOR-EV03";
@@ -26,11 +34,11 @@ public class TemporalConfig {
 
     @Bean(destroyMethod = "close")
     MotorTemporal motorTemporal(
-            @Value("${sicor.temporal.mode:embedded}") String mode,
             @Value("${sicor.temporal.target:127.0.0.1:7233}") String target,
+            @Value("${sicor.temporal.connect-timeout:5s}") Duration connectTimeout,
             DespachoActivitiesImpl activities
     ) {
-        return new MotorTemporal(mode, target, activities);
+        return new MotorTemporal(target, connectTimeout, activities);
     }
 
     @Bean
@@ -43,31 +51,42 @@ public class TemporalConfig {
         private final WorkflowClient client;
         private final WorkerFactory factory;
         private final WorkflowServiceStubs service;
-        private final TestWorkflowEnvironment embedded;
 
-        MotorTemporal(String mode, String target, DespachoActivitiesImpl activities) {
-            if ("embedded".equalsIgnoreCase(mode)) {
-                embedded = TestWorkflowEnvironment.newInstance();
-                service = null;
-                factory = null;
-                client = embedded.getWorkflowClient();
-                register(embedded.newWorker(TASK_QUEUE), activities);
-                embedded.start();
-                return;
+        MotorTemporal(
+                String target,
+                Duration connectTimeout,
+                DespachoActivitiesImpl activities
+        ) {
+            WorkflowServiceStubs connectedService = null;
+            WorkerFactory startedFactory = null;
+            try {
+                var options = WorkflowServiceStubsOptions.newBuilder()
+                        .setTarget(target)
+                        .build();
+                connectedService = WorkflowServiceStubs.newConnectedServiceStubs(
+                        options, connectTimeout);
+                WorkflowClient connectedClient = WorkflowClient.newInstance(connectedService);
+                startedFactory = WorkerFactory.newInstance(connectedClient);
+                register(startedFactory.newWorker(TASK_QUEUE), activities);
+                startedFactory.start();
+
+                service = connectedService;
+                client = connectedClient;
+                factory = startedFactory;
+            } catch (RuntimeException failure) {
+                if (startedFactory != null) {
+                    startedFactory.shutdown();
+                }
+                if (connectedService != null) {
+                    connectedService.shutdown();
+                }
+                throw new IllegalStateException(
+                        "No se pudo conectar a Temporal en " + target + ". "
+                                + "Ejecute 'temporal server start-dev --ip 127.0.0.1 "
+                                + "--ui-port 8233' antes de iniciar SICOR.",
+                        failure
+                );
             }
-
-            if (!"external".equalsIgnoreCase(mode)) {
-                throw new IllegalArgumentException(
-                        "sicor.temporal.mode debe ser embedded o external");
-            }
-
-            embedded = null;
-            service = WorkflowServiceStubs.newServiceStubs(
-                    WorkflowServiceStubsOptions.newBuilder().setTarget(target).build());
-            client = WorkflowClient.newInstance(service);
-            factory = WorkerFactory.newInstance(client);
-            register(factory.newWorker(TASK_QUEUE), activities);
-            factory.start();
         }
 
         private static void register(Worker worker, DespachoActivitiesImpl activities) {
@@ -80,10 +99,6 @@ public class TemporalConfig {
 
         @Override
         public void close() {
-            if (embedded != null) {
-                embedded.close();
-                return;
-            }
             factory.shutdown();
             service.shutdown();
         }
