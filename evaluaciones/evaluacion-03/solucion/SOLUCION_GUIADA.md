@@ -39,18 +39,21 @@ La aplicación ejecutable ya contiene el puente enseñado hasta la clase 13:
 - `TemporalConfig` crea el `WorkflowClient`, registra un Worker en
   `SICOR-EV03` y se conecta obligatoriamente al servidor local en
   `127.0.0.1:7233`;
-- `DespachoTemporalService` usa el Workflow ID estable `despacho-<ordenId>` y
-  expone Start, firma por Update, Query, Signal y cancelación por Update;
-- el Workflow se inicia al crear la orden y espera firmas antes de ejecutar
-  cualquier entrega;
+- `DespachoTemporalService` usa IDs estables: `despacho-<ordenId>` para la
+  entrega y `accesos-<ordenId>` para la auditoría; expone Starts, Updates,
+  Queries, Signal y cancelación por Update;
+- ambos Workflows se inician al crear la orden; el primero espera firmas antes
+  de entregar y el segundo sigue aceptando lecturas aunque el despacho termine;
 - `DespachoActivitiesImpl` persiste firmas de forma idempotente, cambia el estado
   y registra resultados terminales mediante un servicio Spring;
 - el input durable contiene el ID y las unidades, pero no el contenido
   confidencial que quedaría registrado en el History.
 
-Esta infraestructura no es una octava misión y no debe reemplazarse. Las
-misiones E05 a E07 completan las decisiones dentro de Activities y Workflows que
-el Worker ejecuta. Primero puede verificar la integración automática con:
+Esta infraestructura no es una octava misión y no debe reemplazarse. Las siete
+misiones conservan su responsabilidad propia, pero cada perfil demuestra además
+su frontera con Temporal: ambos Starts para E01, acceso por Update para E02–E03, firma
+por Update y Activity para E04, Activity para E05 y ejecución de Workflow para
+E06–E07. Primero puede verificar la integración automática con:
 
 ```bash
 ./mvnw -Dtest=TemporalRuntimeIntegrationTest test
@@ -75,12 +78,15 @@ ejecución:
 
 ```bash
 temporal workflow show --workflow-id despacho-<orden-id>
+temporal workflow show --workflow-id accesos-<orden-id>
 ```
 
-Registre en `BITACORA.md` firmas aceptadas por Update antes del despacho, un
+Registre en `BITACORA.md` ambos Starts al crear, una lectura autorizada por Update
+en `accesos-<ordenId>`,
+firmas aceptadas por Update antes del despacho, Activities de entrega, un
 Workflow confirmado por Signal y otro cancelado por Update, junto con la Task
-Queue y la revisión del History. Si el servidor no
-está disponible, la aplicación debe fallar al arrancar; no desactive Temporal.
+Queue y la revisión del History. Si el servidor no está disponible, la
+aplicación debe fallar al arrancar; no desactive Temporal.
 
 ---
 
@@ -133,6 +139,13 @@ es necesario convertir todo en una jerarquía.
 Validar sólo con anotaciones del DTO. Eso protege el formulario, pero no una
 creación desde pruebas, otro servicio o un proceso de importación.
 
+### Frontera Temporal de E01
+
+La entidad o política valida primero. Recién después de persistir una orden
+válida, el controlador inicia `despacho-<ordenId>` y `accesos-<ordenId>`. No coloque el cuerpo en
+`DespachoInput`: el Start sólo necesita identificador y unidades. El perfil E01
+debe comprobar que la ejecución queda en `ESPERANDO_FIRMAS`.
+
 ---
 
 ## EV03-E02 — Acceso y confidencialidad
@@ -172,6 +185,13 @@ Aunque la vista oculte un botón, `OrdenService.detalle()` debe volver a aplicar
 la autorización. `OrdenResumen` no debería tener un campo de contenido. No
 incluya el cuerpo en el mensaje de una excepción.
 
+Después de esa autorización, la interfaz llama al Update `registrarAcceso` de
+`accesos-<ordenId>` con
+un ID opaco y el usuario ficticio. El Update deja evidencia durable de que la
+lectura permitida atravesó Temporal, pero no decide permisos ni recibe el cuerpo
+confidencial. Al ser independiente del despacho, esta auditoría sigue activa
+cuando la entrega termina. Una denegación acaba antes del Update.
+
 ### Pruebas que aportan evidencia
 
 - usuario sin autenticar: denegado;
@@ -204,6 +224,11 @@ clave conceptual segura es:
 
 No guarde la contraseña. Verifíquela con el `PasswordEncoder` y descarte el valor
 recibido.
+
+La contraseña tampoco debe viajar como argumento de Workflow, Signal, Query,
+Update o Activity. Tras una validación exitosa, la capa web puede invocar
+`registrarAcceso(..., reautenticado=true)`; el History registra el hecho de la
+autorización, no su secreto.
 
 ### Pista para cada lectura
 
@@ -273,6 +298,13 @@ El Workflow comienza con `ESPERANDO_FIRMAS`, expone el progreso por Query y sól
 ejecuta las Activities de entrega cuando la Activity de firma devuelve
 `completa=true`. El History debe mostrar los Updates antes de la primera entrega.
 
+Un Update puede ceder el control mientras espera la Activity. Por eso el starter
+usa un indicador durable y `Workflow.await` para permitir una sola firma en
+curso. El indicador se libera en `finally`; el método principal espera además
+que no quede una firma en curso antes de iniciar el despacho. Así una respuesta
+antigua no sobrescribe un quórum más nuevo y la transición se solicita una sola
+vez. No use `synchronized`, locks Java ni threads dentro del Workflow.
+
 ### Estructura para umbral
 
 Una tabla pequeña y explícita puede expresarse con un record:
@@ -298,6 +330,8 @@ dos firmas del mismo rol, explíquelo de forma explícita.
 - antes del límite la orden sigue `PENDIENTE_FIRMAS`;
 - justo en el límite cambia una sola vez a `LISTA_PARA_ENVIO`;
 - un intento posterior no retrocede ni duplica el estado;
+- dos Updates concurrentes conservan ambas firmas y una Query completa;
+- la transición al despacho se solicita exactamente una vez;
 - ninguna Activity de entrega ocurre antes del quórum; y
 - el History contiene los Updates de firma que habilitaron el despacho.
 
@@ -338,7 +372,9 @@ payload adicional que comparar.
 - dos llamadas equivalentes: mismo recibo y `efectosRegistrados() == 1`;
 - llamadas concurrentes equivalentes: un efecto;
 - comando explícito repetido con unidad distinta: rechazo;
-- dos claves realmente distintas: dos efectos.
+- dos claves realmente distintas: dos efectos;
+- un Workflow de prueba invoca la Activity dos veces, para que E05 no se valide
+  llamando únicamente al objeto Java.
 
 ### Error frecuente
 
@@ -493,6 +529,8 @@ Antes de entregar, revise:
 - no se filtró el contenido máximo en DTOs, logs o errores;
 - no hay I/O ni APIs no deterministas dentro del Workflow;
 - las firmas llegan por Update y preceden al despacho en el History;
+- las lecturas llegan por Update a `accesos-<ordenId>` incluso después de
+  completar `despacho-<ordenId>`;
 - la idempotencia controla el efecto, no sólo el valor de retorno;
 - la incertidumbre se conserva como estado explícito.
 

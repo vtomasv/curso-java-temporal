@@ -37,8 +37,10 @@ public class DespachoWorkflowImpl implements DespachoWorkflow {
     private String ordenId;
     private int total;
     private boolean cancelada;
+    private boolean despachoSolicitado;
     private boolean despachoIniciado;
     private boolean firmasCargadas;
+    private boolean firmaEnCurso;
 
     @Override
     public ResultadoDespacho iniciar(DespachoInput input) {
@@ -48,9 +50,10 @@ public class DespachoWorkflowImpl implements DespachoWorkflow {
         firmas = activities.consultarFirmas(input.ordenId());
         firmasCargadas = true;
 
-        Workflow.await(() -> firmas.completa());
+        Workflow.await(() -> firmas.completa() && !firmaEnCurso);
         estado = EstadoDespacho.PREPARANDO;
-        if (!despachoIniciado) {
+        if (!despachoSolicitado) {
+            despachoSolicitado = true;
             activities.iniciarDespacho(input.ordenId());
             despachoIniciado = true;
         }
@@ -76,22 +79,31 @@ public class DespachoWorkflowImpl implements DespachoWorkflow {
 
     @Override
     public FirmaProgreso registrarFirma(String firmante, String rol) {
-        Workflow.await(() -> firmasCargadas);
-        if (estado != EstadoDespacho.ESPERANDO_FIRMAS) {
-            throw new IllegalStateException("La orden ya cerró su etapa de firmas");
+        Workflow.await(() -> firmasCargadas && !firmaEnCurso);
+        firmaEnCurso = true;
+        FirmaProgreso resultado;
+        try {
+            if (estado != EstadoDespacho.ESPERANDO_FIRMAS || firmas.completa()) {
+                throw new IllegalStateException("La orden ya cerró su etapa de firmas");
+            }
+            firmante = texto(firmante, "firmante", 120);
+            rol = texto(rol, "rol", 80);
+            if (firmas.firmantes().contains(firmante)) {
+                throw new IllegalStateException("El usuario ya firmó la orden");
+            }
+
+            // Un Update puede ceder mientras espera una Activity. Este cerrojo durable,
+            // construido con Workflow.await, evita snapshots de firmas fuera de orden.
+            firmas = activities.registrarFirma(ordenId, firmante, rol);
+            resultado = firmas;
+        } finally {
+            firmaEnCurso = false;
         }
-        firmante = texto(firmante, "firmante", 120);
-        rol = texto(rol, "rol", 80);
-        if (firmas.firmantes().contains(firmante)) {
-            throw new IllegalStateException("El usuario ya firmó la orden");
-        }
-        firmas = activities.registrarFirma(ordenId, firmante, rol);
-        if (firmas.completa() && !despachoIniciado) {
-            estado = EstadoDespacho.PREPARANDO;
-            activities.iniciarDespacho(ordenId);
-            despachoIniciado = true;
-        }
-        return firmas;
+
+        // El último firmante recibe confirmación sólo después de que el método principal
+        // haya realizado una única transición durable al despacho.
+        if (resultado.completa()) Workflow.await(() -> despachoIniciado);
+        return resultado;
     }
 
     private List<ReciboEnvio> enviarBaseSecuencial(DespachoInput input) {

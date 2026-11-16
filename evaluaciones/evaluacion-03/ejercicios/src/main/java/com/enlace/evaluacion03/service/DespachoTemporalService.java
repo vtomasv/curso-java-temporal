@@ -1,6 +1,8 @@
 package com.enlace.evaluacion03.service;
 
 import com.enlace.evaluacion03.config.TemporalConfig;
+import com.enlace.evaluacion03.workflow.AccesoProgreso;
+import com.enlace.evaluacion03.workflow.AccesoWorkflow;
 import com.enlace.evaluacion03.workflow.DespachoInput;
 import com.enlace.evaluacion03.workflow.DespachoWorkflow;
 import com.enlace.evaluacion03.workflow.FirmaProgreso;
@@ -19,6 +21,7 @@ import java.util.List;
 public class DespachoTemporalService {
 
     private static final String WORKFLOW_PREFIX = "despacho-";
+    private static final String ACCESS_WORKFLOW_PREFIX = "accesos-";
 
     private final WorkflowClient client;
 
@@ -27,6 +30,7 @@ public class DespachoTemporalService {
     }
 
     public String iniciar(DespachoInput input) {
+        iniciarAuditoria(input.ordenId());
         String workflowId = workflowId(input.ordenId());
         DespachoWorkflow workflow = client.newWorkflowStub(
                 DespachoWorkflow.class,
@@ -61,6 +65,20 @@ public class DespachoTemporalService {
         return workflow(ordenId).consultarFirmas();
     }
 
+    public AccesoProgreso registrarAcceso(DespachoInput input, String accesoId,
+                                          String usuario, boolean reautenticado) {
+        iniciarAuditoria(input.ordenId());
+        return workflowAccesos(input.ordenId()).registrarAcceso(
+                texto(accesoId, "accesoId", 120),
+                texto(usuario, "usuario", 120),
+                reautenticado
+        );
+    }
+
+    public AccesoProgreso consultarAccesos(String ordenId) {
+        return workflowAccesos(ordenId).consultarAccesos();
+    }
+
     public List<ReciboEnvio> consultarRecibos(String ordenId) {
         return List.copyOf(workflow(ordenId).consultarRecibos());
     }
@@ -81,8 +99,34 @@ public class DespachoTemporalService {
         return WORKFLOW_PREFIX + ordenId.trim();
     }
 
+    public String accessWorkflowId(String ordenId) {
+        if (ordenId == null || ordenId.isBlank()) throw new IllegalArgumentException("ordenId");
+        return ACCESS_WORKFLOW_PREFIX + ordenId.trim();
+    }
+
     private DespachoWorkflow workflow(String ordenId) {
         return client.newWorkflowStub(DespachoWorkflow.class, workflowId(ordenId));
+    }
+
+    private void iniciarAuditoria(String ordenId) {
+        AccesoWorkflow workflow = client.newWorkflowStub(
+                AccesoWorkflow.class,
+                WorkflowOptions.newBuilder()
+                        .setWorkflowId(accessWorkflowId(ordenId))
+                        .setTaskQueue(TemporalConfig.TASK_QUEUE)
+                        .setWorkflowIdReusePolicy(
+                                WorkflowIdReusePolicy.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE)
+                        .build()
+        );
+        try {
+            WorkflowClient.start(workflow::mantener, ordenId.trim());
+        } catch (WorkflowExecutionAlreadyStarted ignored) {
+            // La auditoría por orden es estable y conserva todos sus accesos.
+        }
+    }
+
+    private AccesoWorkflow workflowAccesos(String ordenId) {
+        return client.newWorkflowStub(AccesoWorkflow.class, accessWorkflowId(ordenId));
     }
 
     private static String texto(String valor, String campo, int maximo) {

@@ -1,6 +1,7 @@
 package com.enlace.evaluacion03.config;
 
 import com.enlace.evaluacion03.service.OrdenTemporalService;
+import com.enlace.evaluacion03.workflow.AccesoWorkflowImpl;
 import com.enlace.evaluacion03.workflow.DespachoActivitiesImpl;
 import com.enlace.evaluacion03.workflow.DespachoWorkflowImpl;
 import com.enlace.evaluacion03.workflow.EntregaUnidadWorkflowImpl;
@@ -113,6 +114,7 @@ public class TemporalConfig {
 
         private static void register(Worker worker, DespachoActivitiesImpl activities) {
             worker.registerWorkflowImplementationTypes(
+                    AccesoWorkflowImpl.class,
                     DespachoWorkflowImpl.class,
                     EntregaUnidadWorkflowImpl.class
             );

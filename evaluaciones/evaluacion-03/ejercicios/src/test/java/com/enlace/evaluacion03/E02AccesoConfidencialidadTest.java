@@ -6,6 +6,9 @@ import com.enlace.evaluacion03.domain.Orden;
 import com.enlace.evaluacion03.domain.TipoOrden;
 import com.enlace.evaluacion03.domain.UnidadDestino;
 import com.enlace.evaluacion03.service.PoliticaAcceso;
+import com.enlace.evaluacion03.workflow.AccesoProgreso;
+import com.enlace.evaluacion03.workflow.AccesoWorkflow;
+import io.temporal.client.WorkflowClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -50,6 +53,27 @@ class E02AccesoConfidencialidadTest {
                         .as("rol %s frente a confidencialidad %s", rol, nivel)
                         .isEqualTo(permitidos.get(nivel).contains(rol));
             }
+        }
+    }
+
+    @Test
+    void una_lectura_autorizada_deja_evidencia_no_sensible_en_temporal() {
+        requiereDecision();
+
+        try (WorkflowTestSupport soporte = new WorkflowTestSupport(false)) {
+            AccesoWorkflow workflow = soporte.nuevoWorkflowAccesos("accesos-orden-e02");
+            WorkflowClient.start(workflow::mantener, "ORDEN-E02-TEMPORAL");
+
+            AccesoProgreso progreso = workflow.registrarAcceso(
+                    "ACCESO-E02-1", "auditor", false);
+            AccesoProgreso reintento = workflow.registrarAcceso(
+                    "ACCESO-E02-1", "auditor", false);
+
+            assertThat(progreso.accesosAutorizados()).isOne();
+            assertThat(progreso.reautenticaciones()).isZero();
+            assertThat(progreso.usuarios()).containsExactly("auditor");
+            assertThat(reintento).isEqualTo(progreso);
+            assertThat(workflow.consultarAccesos()).isEqualTo(progreso);
         }
     }
 

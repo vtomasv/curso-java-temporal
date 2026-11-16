@@ -2,6 +2,9 @@ package com.enlace.evaluacion03;
 
 import com.enlace.evaluacion03.config.Decisiones;
 import com.enlace.evaluacion03.service.ReautenticacionService;
+import com.enlace.evaluacion03.workflow.AccesoProgreso;
+import com.enlace.evaluacion03.workflow.AccesoWorkflow;
+import io.temporal.client.WorkflowClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.mock.web.MockHttpSession;
@@ -41,6 +44,17 @@ class E03ReautenticacionTest {
                 .as("otra orden no puede reutilizar la autorización")
                 .isFalse();
         assertThat(fixture.servicio.consumir(fixture.actual, "ORDEN-1", fixture.session)).isTrue();
+
+        try (WorkflowTestSupport soporte = new WorkflowTestSupport(false)) {
+            AccesoWorkflow workflow = soporte.nuevoWorkflowAccesos("accesos-orden-e03");
+            WorkflowClient.start(workflow::mantener, "ORDEN-1");
+
+            AccesoProgreso progreso = workflow.registrarAcceso(
+                    "ACCESO-E03-1", "oficial1", true);
+            assertThat(progreso.accesosAutorizados()).isOne();
+            assertThat(progreso.reautenticaciones()).isOne();
+            assertThat(progreso.usuarios()).containsExactly("oficial1");
+        }
 
         boolean segundoUso = fixture.servicio.consumir(fixture.actual, "ORDEN-1", fixture.session);
         if (Decisiones.REAUTENTICACION == Decisiones.Reautenticacion.POR_CADA_LECTURA) {

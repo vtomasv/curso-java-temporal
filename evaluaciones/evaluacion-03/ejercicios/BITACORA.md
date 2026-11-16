@@ -21,8 +21,9 @@ No pegue contraseñas, tokens ni contenidos confidenciales.
 
 ## Evidencia obligatoria de Temporal externo
 
-Esta sección es parte de la evidencia de E04, E05, E06 y E07. `clean verify` usa un
-motor embebido sólo para automatizar pruebas y no reemplaza este recorrido.
+Esta sección es parte de la evidencia obligatoria de **E01 a E07**. `clean
+verify` usa un motor embebido sólo para automatizar pruebas y no reemplaza este
+recorrido.
 Mantenga el servidor local iniciado mientras ejecuta SICOR:
 
 ```bash
@@ -37,7 +38,10 @@ contraseñas ni el cuerpo confidencial de las órdenes.
 |---|---|---|
 | Servidor y Web UI | Inicio del servidor; acceso a `http://localhost:8233` | |
 | Worker y Task Queue | Worker observado en `SICOR-EV03` | |
+| Creación e invariantes | Crear una orden válida y rechazar una inválida desde la interfaz | La válida inicia `despacho-<ordenId>` y `accesos-<ordenId>`; la inválida no genera Workflows |
+| Acceso y reautenticación | Leer una orden permitida y una `MAXIMA` tras reingresar credenciales | Updates `registrarAcceso` visibles en `accesos-...`; contraseña y contenido ausentes del History; una lectura posterior al término del despacho sigue registrándose |
 | Firmas por Update | Workflow ID `despacho-...`; dos usuarios distintos firman desde la interfaz | Updates visibles, estado `ESPERANDO_FIRMAS` antes del umbral y despacho sólo después de completarlo |
+| Activity idempotente y orquestación | Recibos observados después del quórum | Activities ejecutadas por el Worker, claves estables y una entrega por unidad |
 | Confirmación por Signal | Workflow ID `despacho-...`; `temporal workflow show --workflow-id <id>` | Signal registrado y Workflow completado |
 | Cancelación por Update | Otro Workflow ID; `temporal workflow show --workflow-id <id>` | Update aceptado y Workflow cancelado de forma controlada |
 | Query de progreso | Consulta desde la interfaz antes de terminar el Workflow | Conteos coherentes, sin mutar el estado |
@@ -127,6 +131,8 @@ decisión propia.
 - [ ] La aplicación inicia y la navegación base funciona.
 - [ ] Levanté Temporal local antes de iniciar SICOR y accedí a la Web UI.
 - [ ] Observé el Worker en la Task Queue `SICOR-EV03`.
+- [ ] Observé `despacho-<ordenId>` y `accesos-<ordenId>` para una misma orden.
+- [ ] Registré una lectura por Update después del resultado terminal del despacho.
 - [ ] Verifiqué en el History que las firmas entraron como Updates antes de las Activities de entrega.
 - [ ] Registré un Workflow confirmado por Signal y otro cancelado por Update.
 - [ ] Inspeccioné el History y comprobé que no contiene el cuerpo confidencial.

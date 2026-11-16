@@ -1,5 +1,7 @@
 package com.enlace.evaluacion03;
 
+import com.enlace.evaluacion03.workflow.AccesoWorkflow;
+import com.enlace.evaluacion03.workflow.AccesoWorkflowImpl;
 import com.enlace.evaluacion03.workflow.DespachoActivities;
 import com.enlace.evaluacion03.workflow.DespachoWorkflow;
 import com.enlace.evaluacion03.workflow.DespachoWorkflowImpl;
@@ -33,7 +35,9 @@ final class WorkflowTestSupport implements AutoCloseable {
         activities = new ActivitiesObservables(firmasCompletas);
         Worker worker = environment.newWorker(TASK_QUEUE);
         worker.registerWorkflowImplementationTypes(
-                DespachoWorkflowImpl.class, EntregaUnidadWorkflowImpl.class);
+                AccesoWorkflowImpl.class,
+                DespachoWorkflowImpl.class,
+                EntregaUnidadWorkflowImpl.class);
         worker.registerActivitiesImplementations(activities);
         environment.start();
     }
@@ -41,6 +45,15 @@ final class WorkflowTestSupport implements AutoCloseable {
     DespachoWorkflow nuevoWorkflow(String workflowId) {
         return environment.getWorkflowClient().newWorkflowStub(
                 DespachoWorkflow.class,
+                WorkflowOptions.newBuilder()
+                        .setTaskQueue(TASK_QUEUE)
+                        .setWorkflowId(workflowId)
+                        .build());
+    }
+
+    AccesoWorkflow nuevoWorkflowAccesos(String workflowId) {
+        return environment.getWorkflowClient().newWorkflowStub(
+                AccesoWorkflow.class,
                 WorkflowOptions.newBuilder()
                         .setTaskQueue(TASK_QUEUE)
                         .setWorkflowId(workflowId)
