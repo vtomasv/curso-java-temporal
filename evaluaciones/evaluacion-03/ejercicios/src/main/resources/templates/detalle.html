@@ -1,80 +1,145 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Detalle SICOR</title><link rel="stylesheet" th:href="@{/app.css}"></head>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|${detalle.resumen.id} · SICOR|">Detalle · SICOR</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+    <script defer th:src="@{/app.js}"></script>
+</head>
 <body>
-<header><a th:href="@{/}">← Volver</a><strong>SICOR</strong></header>
-<main>
-    <section>
-        <p class="eyebrow" th:text="|${detalle.resumen.tipo} · ${detalle.resumen.confidencialidad}|"></p>
-        <h1 th:text="${detalle.resumen.asunto}"></h1>
-        <dl><dt>ID</dt><dd th:text="${detalle.resumen.id}"></dd><dt>Estado</dt><dd th:text="${detalle.resumen.estado}"></dd><dt>Destinatarios</dt><dd th:text="${detalle.resumen.destinatarios}"></dd><dt>Creador</dt><dd th:text="${detalle.creador}"></dd></dl>
-        <h2>Contenido</h2>
-        <article class="contenido" th:text="${detalle.contenido}"></article>
-        <h2>Firmas</h2>
-        <p th:text="|${detalle.resumen.firmas} de ${detalle.resumen.firmasRequeridas} requeridas|"></p>
-        <ul><li th:each="firma : ${detalle.firmas}" th:text="|${firma.firmante} (${firma.rol})|"></li></ul>
-        <form th:if="${detalle.resumen.estado.name() == 'PENDIENTE_FIRMAS'}"
-              th:action="@{/ordenes/{id}/firmar(id=${detalle.resumen.id})}" method="post">
-            <button>Firmar mediante Temporal</button>
-        </form>
-        <div class="errors" th:if="${firmaRechazada}" th:text="${firmaRechazada}"></div>
+<header class="topbar">
+    <a class="brand" th:href="@{/}" aria-label="Ir al inicio de SICOR">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span><strong>SICOR</strong><small>Comunicaciones resilientes</small></span>
+    </a>
+    <div class="session-area">
+        <div class="user-chip"><span class="user-avatar" aria-hidden="true"></span><span><strong th:text="${usuarioActual}">usuario</strong><small th:text="${rolActual}">ROL</small></span></div>
+        <a class="button button-ghost button-small" th:href="@{/}">Volver a la bandeja</a>
+        <form th:action="@{/logout}" method="post"><button class="button button-ghost button-small" type="submit">Salir</button></form>
+    </div>
+</header>
 
-        <div class="temporal-panel" th:if="${firmaTemporal != null}">
-            <h2>Autorización durable</h2>
-            <p>Cada firma ingresa como Update del Workflow y se persiste mediante una Activity idempotente. El despacho comienza automáticamente al completar la política.</p>
-            <dl>
-                <dt>Workflow ID</dt><dd th:text="${workflowId}"></dd>
-                <dt>Workflow de accesos</dt><dd th:text="${accessWorkflowId}"></dd>
-                <dt>Task Queue</dt><dd>SICOR-EV03</dd>
-                <dt>Firmas en Temporal</dt><dd th:text="|${firmaTemporal.registradas} de ${firmaTemporal.requeridas}|" ></dd>
-                <dt>Política completa</dt><dd th:text="${firmaTemporal.completa ? 'Sí' : 'No'}"></dd>
-                <th:block th:if="${accesoTemporal != null}">
-                    <dt>Lecturas autorizadas</dt><dd th:text="${accesoTemporal.accesosAutorizados}"></dd>
-                    <dt>Reautenticaciones registradas</dt><dd th:text="${accesoTemporal.reautenticaciones}"></dd>
-                </th:block>
-            </dl>
+<main class="page-shell detail-page">
+    <nav class="breadcrumbs" aria-label="Migas de pan"><a th:href="@{/}">Órdenes</a><span aria-hidden="true">/</span><span th:text="${detalle.resumen.id}">ORD-000</span></nav>
+
+    <section class="detail-hero">
+        <div class="detail-title">
+            <div class="badge-row">
+                <span class="type-label" th:text="${detalle.resumen.tipo}">ORDEN</span>
+                <span class="classification-badge" th:classappend="| classification-${#strings.toLowerCase(detalle.resumen.confidencialidad.name())}|" th:text="${detalle.resumen.confidencialidad}">RESERVADA</span>
+                <span class="status-badge" th:classappend="| status-${#strings.toLowerCase(detalle.resumen.estado.name())}|" th:text="${#strings.replace(detalle.resumen.estado.name(), '_', ' ')}">ESTADO</span>
+            </div>
+            <h1 th:text="${detalle.resumen.asunto}">Asunto de la orden</h1>
+            <p><code th:text="${detalle.resumen.id}">ORD-000</code> · Creada por <strong th:text="${detalle.creador}">usuario</strong></p>
         </div>
-
-        <div class="errors" th:if="${temporalError}" th:text="${temporalError}"></div>
-
-        <div class="temporal-panel" th:if="${progreso != null}">
-            <h2>Temporal · progreso del ciclo completo</h2>
-            <dl>
-                <dt>Estado</dt><dd th:text="${progreso.estado}"></dd>
-                <dt>Enviadas</dt><dd th:text="|${progreso.enviadas} de ${progreso.total}|"></dd>
-                <dt>Confirmadas</dt><dd th:text="|${progreso.confirmadas} de ${progreso.total}|"></dd>
-            </dl>
-
-            <h3>Recibos de las Activities</h3>
-            <table>
-                <thead><tr><th>Unidad</th><th>Recibo</th><th>Signal</th></tr></thead>
-                <tbody>
-                <tr th:each="recibo : ${recibos}">
-                    <td th:text="${recibo.unidad}"></td>
-                    <td th:text="${recibo.reciboId}"></td>
-                    <td th:if="${puedeConfirmar and !progreso.unidadesConfirmadas.contains(recibo.unidad)}">
-                        <form th:action="@{/ordenes/{id}/confirmar(id=${detalle.resumen.id})}" method="post">
-                            <input type="hidden" name="unidad" th:value="${recibo.unidad}">
-                            <input type="hidden" name="reciboId" th:value="${recibo.reciboId}">
-                            <button>Confirmar recepción</button>
-                        </form>
-                    </td>
-                    <td th:unless="${puedeConfirmar and !progreso.unidadesConfirmadas.contains(recibo.unidad)}"
-                        th:text="${progreso.unidadesConfirmadas.contains(recibo.unidad) ? 'Confirmada' : 'Sin acción disponible'}"></td>
-                </tr>
-                </tbody>
-            </table>
-
-            <form class="cancel-form"
-                  th:if="${puedeCancelar}"
-                  th:action="@{/ordenes/{id}/cancelar(id=${detalle.resumen.id})}" method="post">
-                <label>Motivo de cancelación
-                    <input name="motivo" required maxlength="160" value="Cambio de prioridad">
-                </label>
-                <button class="danger">Solicitar cancelación por Update</button>
+        <div class="detail-actions">
+            <form th:if="${puedeFirmar}" th:action="@{/ordenes/{id}/firmar(id=${detalle.resumen.id})}" method="post">
+                <button class="button button-primary" type="submit">Firmar mediante Temporal <span aria-hidden="true">→</span></button>
             </form>
+            <span class="action-hint" th:if="${detalle.resumen.estado.name() == 'PENDIENTE_FIRMAS' and !puedeFirmar}">Tu rol puede consultar, pero no firmar esta orden.</span>
         </div>
     </section>
+
+    <div class="alert alert-error" role="alert" th:if="${firmaRechazada}"><strong>Firma rechazada</strong><span th:text="${firmaRechazada}"></span></div>
+    <div class="alert alert-warning" role="status" th:if="${temporalError}"><strong>Temporal no respondió a la consulta</strong><span th:text="${temporalError}"></span></div>
+
+    <div class="detail-grid">
+        <div class="detail-main">
+            <section class="panel content-panel">
+                <div class="panel-heading"><p class="section-kicker">Contenido autorizado</p><h2>Mensaje de la comunicación</h2></div>
+                <article class="classified-content" th:text="${detalle.contenido}">Contenido ficticio de la orden.</article>
+                <dl class="metadata-grid">
+                    <div><dt>Clasificación</dt><dd th:text="${detalle.resumen.confidencialidad}">RESERVADA</dd></div>
+                    <div><dt>Destinatarios</dt><dd th:text="${detalle.resumen.destinatarios}">UNIDAD</dd></div>
+                    <div><dt>Estado de dominio</dt><dd th:text="${detalle.resumen.estado}">PENDIENTE</dd></div>
+                    <div><dt>Autor original</dt><dd th:text="${detalle.creador}">usuario</dd></div>
+                </dl>
+            </section>
+
+            <section class="panel signatures-panel">
+                <div class="panel-heading panel-heading-row">
+                    <div><p class="section-kicker">Autorización</p><h2>Firmas requeridas</h2></div>
+                    <strong class="large-ratio" th:text="|${detalle.resumen.firmas}/${detalle.resumen.firmasRequeridas}|">0/2</strong>
+                </div>
+                <progress class="progress-bar" th:value="${detalle.resumen.firmas}" th:max="${detalle.resumen.firmasRequeridas}">0%</progress>
+                <ul class="signature-list" th:if="${!#lists.isEmpty(detalle.firmas)}">
+                    <li th:each="firma : ${detalle.firmas}"><span class="signature-avatar" aria-hidden="true"></span><span><strong th:text="${firma.firmante}">firmante</strong><small th:text="${firma.rol}">ROL</small></span><span class="verified-mark">Verificada</span></li>
+                </ul>
+                <div class="empty-inline" th:if="${#lists.isEmpty(detalle.firmas)}">Todavía no se registran firmas. El despacho no comenzará antes del quórum.</div>
+            </section>
+
+            <section class="panel" th:if="${progreso != null}">
+                <div class="panel-heading panel-heading-row">
+                    <div><p class="section-kicker">Entrega durable</p><h2>Recibos y confirmaciones</h2></div>
+                    <span class="status-badge status-en_despacho" th:text="${progreso.estado}">ESTADO</span>
+                </div>
+                <div class="delivery-metrics">
+                    <div><span>Enviadas</span><strong th:text="|${progreso.enviadas}/${progreso.total}|">0/0</strong></div>
+                    <div><span>Confirmadas</span><strong th:text="|${progreso.confirmadas}/${progreso.total}|">0/0</strong></div>
+                </div>
+                <div class="table-wrap receipt-table-wrap">
+                    <table class="receipt-table">
+                        <thead><tr><th>Unidad</th><th>Recibo de Activity</th><th>Confirmación</th></tr></thead>
+                        <tbody>
+                        <tr th:each="recibo : ${recibos}">
+                            <td><strong th:text="${#strings.replace(recibo.unidad, 'UNIDAD_', '')}">UNIDAD</strong></td>
+                            <td><code th:text="${recibo.reciboId}">REC-000</code></td>
+                            <td th:if="${puedeConfirmar and !progreso.unidadesConfirmadas.contains(recibo.unidad)}">
+                                <form th:action="@{/ordenes/{id}/confirmar(id=${detalle.resumen.id})}" method="post">
+                                    <input type="hidden" name="unidad" th:value="${recibo.unidad}">
+                                    <input type="hidden" name="reciboId" th:value="${recibo.reciboId}">
+                                    <button class="button button-secondary button-small" type="submit">Enviar Signal</button>
+                                </form>
+                            </td>
+                            <td th:unless="${puedeConfirmar and !progreso.unidadesConfirmadas.contains(recibo.unidad)}">
+                                <span class="confirmation-state" th:classappend="${progreso.unidadesConfirmadas.contains(recibo.unidad)} ? ' confirmed' : ''" th:text="${progreso.unidadesConfirmadas.contains(recibo.unidad) ? 'Confirmada' : 'Sin acción disponible'}">Pendiente</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(recibos)}"><td colspan="3"><div class="empty-inline">Las Activities de entrega aparecerán después de completar las firmas.</div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <form class="cancel-form" th:if="${puedeCancelar}" th:action="@{/ordenes/{id}/cancelar(id=${detalle.resumen.id})}" method="post" data-confirm="¿Confirmas la cancelación durable de esta orden?">
+                    <label class="field" for="cancel-reason"><span>Motivo de cancelación</span><input id="cancel-reason" name="motivo" required maxlength="160" value="Cambio de prioridad"></label>
+                    <button class="button button-danger" type="submit">Cancelar por Update</button>
+                </form>
+            </section>
+        </div>
+
+        <aside class="detail-aside">
+            <section class="panel temporal-console">
+                <div class="panel-heading"><p class="section-kicker">Temporal</p><h2>Evidencia durable</h2><p>Identificadores listos para consultar en Web UI o CLI.</p></div>
+                <div class="workflow-id-card">
+                    <span>Despacho y firmas</span>
+                    <code id="dispatch-workflow-id" th:text="${workflowId}">despacho-ORD-000</code>
+                    <button class="copy-button" type="button" data-copy-target="#dispatch-workflow-id">Copiar ID</button>
+                </div>
+                <div class="workflow-id-card">
+                    <span>Auditoría de accesos</span>
+                    <code id="access-workflow-id" th:text="${accessWorkflowId}">accesos-ORD-000</code>
+                    <button class="copy-button" type="button" data-copy-target="#access-workflow-id">Copiar ID</button>
+                </div>
+                <dl class="temporal-facts">
+                    <div><dt>Task Queue</dt><dd><code>SICOR-EV03</code></dd></div>
+                    <div th:if="${firmaTemporal != null}"><dt>Firmas en Workflow</dt><dd th:text="|${firmaTemporal.registradas}/${firmaTemporal.requeridas}|">0/2</dd></div>
+                    <div th:if="${firmaTemporal != null}"><dt>Política completa</dt><dd><span class="boolean-state" th:classappend="${firmaTemporal.completa} ? ' is-true' : ''" th:text="${firmaTemporal.completa ? 'Sí' : 'No'}">No</span></dd></div>
+                    <div th:if="${accesoTemporal != null}"><dt>Lecturas autorizadas</dt><dd th:text="${accesoTemporal.accesosAutorizados}">0</dd></div>
+                    <div th:if="${accesoTemporal != null}"><dt>Reautenticaciones</dt><dd th:text="${accesoTemporal.reautenticaciones}">0</dd></div>
+                </dl>
+                <div class="history-note"><strong>History seguro</strong><span>La contraseña y el contenido de la orden no son argumentos de Temporal.</span></div>
+            </section>
+
+            <section class="panel command-panel">
+                <p class="section-kicker">Inspección</p>
+                <h2>Comando sugerido</h2>
+                <code class="command-code">temporal workflow show --workflow-id &lt;id&gt;</code>
+                <p>Usa cualquiera de los identificadores anteriores y registra evidencia sanitizada en <code>BITACORA.md</code>.</p>
+            </section>
+        </aside>
+    </div>
 </main>
+
+<footer class="page-footer"><span>SICOR · Entorno académico ficticio</span><span>Los efectos externos se ejecutan en Activities</span></footer>
 </body>
 </html>

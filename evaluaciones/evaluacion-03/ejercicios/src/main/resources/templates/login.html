@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Acceso al entorno académico SICOR">
+    <title>Ingresar · SICOR</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body class="auth-body">
+<main class="auth-layout">
+    <section class="auth-intro">
+        <a class="brand brand-auth" th:href="@{/login}" aria-label="SICOR">
+            <span class="brand-mark" aria-hidden="true">S</span>
+            <span><strong>SICOR</strong><small>Comunicaciones resilientes</small></span>
+        </a>
+        <div class="auth-copy">
+            <p class="eyebrow">Evaluación práctica 03</p>
+            <h1>Decisiones observables.<br>Procesos durables.</h1>
+            <p>Opera un sistema transaccional ficticio y comprueba cada paso en Temporal sin exponer información confidencial.</p>
+        </div>
+        <ol class="auth-features">
+            <li><span>01</span><div><strong>Controla el acceso</strong><small>RBAC y reautenticación para clasificación máxima.</small></div></li>
+            <li><span>02</span><div><strong>Autoriza con firmas</strong><small>Updates durables antes de cualquier entrega.</small></div></li>
+            <li><span>03</span><div><strong>Demuestra el resultado</strong><small>Activities, Signals y Queries visibles en History.</small></div></li>
+        </ol>
+        <p class="environment-label"><span class="status-dot"></span> Entorno académico · datos completamente ficticios</p>
+    </section>
+
+    <section class="auth-panel">
+        <div class="auth-card">
+            <div class="panel-heading">
+                <p class="section-kicker">Acceso seguro</p>
+                <h2>Iniciar sesión</h2>
+                <p>Usa una de las identidades del laboratorio según la tarea que quieras demostrar.</p>
+            </div>
+
+            <div class="alert alert-error" role="alert" th:if="${param.error}"><strong>No fue posible ingresar</strong><span>Revisa el usuario y la contraseña.</span></div>
+            <div class="alert alert-success" role="status" th:if="${param.logout}"><strong>Sesión cerrada</strong><span>La salida se completó correctamente.</span></div>
+
+            <form th:action="@{/login}" method="post" class="form-stack auth-form">
+                <label class="field" for="username"><span>Usuario</span><input id="username" name="username" autocomplete="username" placeholder="comandante1" required autofocus></label>
+                <label class="field" for="password"><span>Contraseña</span><input id="password" name="password" type="password" autocomplete="current-password" placeholder="•••••••••••" required></label>
+                <button class="button button-primary button-wide" type="submit">Ingresar al centro de operaciones <span aria-hidden="true">→</span></button>
+            </form>
+
+            <div class="lab-accounts">
+                <div>
+                    <span>Identidades disponibles</span>
+                    <div class="account-chips" aria-label="Usuarios del laboratorio">
+                        <code>operador</code><code>oficial1</code><code>oficial2</code>
+                        <code>comandante1</code><code>comandante2</code><code>auditor</code>
+                    </div>
+                </div>
+                <div><span>Clave común de laboratorio</span><code>laboratorio</code></div>
+            </div>
+            <p class="privacy-note">Las credenciales sirven sólo para este escenario local y ficticio.</p>
+        </div>
+    </section>
+</main>
+</body>
+</html>
