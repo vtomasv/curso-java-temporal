@@ -1,410 +1,170 @@
-# Evaluación 3 — SICOR
+# Evaluación 3 · SICOR
 
-## Sistema de Comunicaciones y Órdenes Resilientes
+**Prueba práctica individual** · III CRIM · Mención Comunicaciones e Informática
 
-SICOR es una aplicación didáctica para administrar comunicaciones y órdenes entre
-unidades **completamente ficticias**. El escenario permite practicar diseño de
-dominio, persistencia, seguridad y orquestación durable sin representar
-procedimientos ni información operativa reales.
+**210 minutos** · Ponderación 30 % · 100 puntos · Aprobación con 60 puntos · Clases 1 a 13
 
-La plantilla se entrega en un estado ejecutable y seguro. Al iniciarla, Spring
-crea un `WorkflowClient`, registra un Worker en la Task Queue `SICOR-EV03` y
-conecta la interfaz con dos Workflows reales por orden: `despacho-<ordenId>`
-para firmas y entrega, y `accesos-<ordenId>` para auditoría de lecturas. Su objetivo no es
-reemplazar toda la aplicación ni construir esa infraestructura, sino completar
-siete misiones y ocho constantes de decisión (E07 contiene dos). En cada misión
-deberá elegir los caminos propuestos, implementarlos, justificarlos y
-demostrarlos con pruebas.
+### Objetivo
 
-> Alcance académico: se pueden usar únicamente conceptos cubiertos hasta la
-> clase 13 inclusive. No se requiere mensajería externa, OAuth, integración real
-> con IA, cifrado de payloads de Temporal ni contenidos de clases posteriores.
+Complete el Sistema de Comunicaciones y Órdenes Resilientes (SICOR). Una orden válida debe llegar a sus unidades ficticias solo después de la autorización correspondiente. El sistema debe controlar quién puede leer el contenido, registrar las lecturas autorizadas y conservar un resultado verificable cuando una entrega se confirma, vence o se cancela.
 
-## Resultado esperado
+**Qué se entrega.** Un único ZIP con el proyecto fuente `ejercicios/`, sus pruebas y los archivos para ejecutarlo. El docente lo descomprimirá, ejecutará Maven y probará SICOR. La justificación se escribe junto al código. No se solicitan capturas, bitácoras, registros de conversaciones con IA ni informes. El Word es material de consulta.
 
-Al finalizar, SICOR deberá:
+### Cómo se calificará
 
-- crear y listar órdenes sin exponer su contenido en los resúmenes;
-- aplicar una política de lectura según rol y confidencialidad;
-- exigir nuevamente usuario y contraseña antes de revelar una orden de
-  confidencialidad `MAXIMA`;
-- aceptar firmas de personas distintas y habilitar el despacho sólo al alcanzar
-  la política elegida;
-- iniciar los Workflows con ID estable al crear cada orden y registrar cada
-  firma como un Update durable antes de cualquier entrega;
-- hacer que toda lectura autorizada atraviese el Update `registrarAcceso` del
-  Workflow de accesos, incluso después de terminar el despacho, sin
-  enviar al History la contraseña ni el contenido de la orden;
-- entregar una orden una sola vez por unidad, aun cuando Temporal reintente una
-  Activity;
-- orquestar el despacho con código determinista;
-- recibir confirmaciones por Signal, informar progreso por Query y aceptar una
-  cancelación controlada por Update;
-- dejar en `PENDIENTE_REVISION` cualquier resultado incierto, o compensar sólo
-  resultados cuya ejecución esté confirmada.
+| Ítem | Qué comprobará el docente en el proyecto | Puntos |
+|---|---|---:|
+| E01 | Construcción de órdenes válidas y transiciones de estado | 10 |
+| E02 | Acceso según rol y clasificación, privacidad del contenido | 15 |
+| E03 | Reautenticación vinculada a la persona y a la orden | 15 |
+| E04 | Firmas de personas habilitadas y despacho en el momento correcto | 15 |
+| E05 | Un solo efecto de entrega por intención, incluso ante reintentos | 15 |
+| E06 | Orquestación durable y determinista de los destinos | 15 |
+| E07 | Confirmación, cancelación y tratamiento de resultados inciertos | 10 |
+| Transversal | Coherencia entre decisiones, implementación y pruebas propias | 5 |
+| **Total** | | **100** |
 
-## Requisitos
+Trabaje sobre la plantilla. Conserve los paquetes, las firmas públicas y las pruebas proporcionadas. Puede agregar clases auxiliares y pruebas. Use las dependencias del proyecto. La guía `solucion/SOLUCION_GUIADA.md` contiene pistas autorizadas. Puede usar IA para comparar alternativas o proponer pruebas. Usted es responsable de adaptar, comprender y verificar su código. Use sólo datos ficticios.
 
-- JDK 25.
-- Git.
-- Temporal CLI disponible en la terminal.
-- No necesita instalar Maven: el repositorio incluye Maven Wrapper.
-- Debe levantar un servidor Temporal local para iniciar y usar SICOR. La
-  aplicación no ofrece un modo embebido de ejecución.
+**Distribución sugerida.** Reserve 15 minutos para verificar el entorno, 70 para E01–E03, 80 para E04–E06, 25 para E07 y 20 para terminar sus pruebas, verificar el ZIP y entregarlo. El docente podrá ejecutar pruebas adicionales que respeten estos contratos.
 
-Compruebe el entorno:
+## 1. Preparar y ejecutar SICOR
 
-```bash
+Necesita **JDK 25**, Temporal CLI y dos terminales. La plantilla incluye Maven Wrapper y utiliza Spring Boot 4.1.0, Temporal Java SDK 1.37.0 y H2 en memoria. La primera ejecución de Maven requiere conexión para descargar las dependencias que falten.
+
+1. Descomprima el material. Entre en `ejercicios/`, la carpeta que contiene `pom.xml`. Desde la raíz del repositorio, la ruta es `evaluaciones/evaluacion-03/ejercicios`.
+2. Compruebe que Java y el Wrapper indican versión **25**. Si indican otra, ajuste `JAVA_HOME` y el `PATH` de esa terminal. En Windows PowerShell sustituya `./mvnw` por `.\mvnw.cmd` en todos los comandos. En macOS/Linux, si el ZIP perdió el permiso de ejecución, use `chmod +x mvnw`.
+3. Ejecute la línea base antes de modificar el código. Debe terminar con `BUILD SUCCESS`. Las pruebas de las misiones y las propias se activan por perfil. La línea base usa un servidor de pruebas y puede ejecutarse con SICOR detenido.
+
+```text
 java -version
 temporal --version
 ./mvnw -version
 ./mvnw clean verify
 ```
 
-La última orden debe terminar con `BUILD SUCCESS`. Si la línea base falla antes
-de modificar el código, registre la evidencia y comuníquelo al docente.
+### Iniciar la aplicación
 
-La línea base incluye `TemporalRuntimeIntegrationTest`. Para hacer reproducible
-la corrección automática, esa prueba utiliza un entorno Temporal embebido que
-existe únicamente en `src/test`. Verifica ambos Starts, acceso autorizado por Update,
-firma por Update, Worker, Activity, Query, Signal, cancelación por Update y
-persistencia del estado final, pero **no reemplaza** la validación obligatoria
-de las siete misiones contra el servidor local.
+**Terminal 1.** Inicie Temporal y manténgalo activo.
 
-## Inicio rápido
-
-Abra dos terminales. En la primera, mantenga el servidor en ejecución:
-
-```bash
-temporal server start-dev --ip 127.0.0.1 --ui-port 8233
+```text
+temporal server start-dev --ip 127.0.0.1 --port 7233 --ui-port 8233
 ```
 
-Compruebe la Web UI en `http://localhost:8233`. En la segunda terminal, inicie
-la aplicación:
+**Terminal 2.** Desde `ejercicios/`, ejecute `./mvnw spring-boot:run`. Abra SICOR en `http://localhost:8080` y la interfaz de Temporal en `http://localhost:8233`. Spring conecta con el servidor en `127.0.0.1:7233` y registra el Worker en la cola `SICOR-EV03`.
 
-```bash
-./mvnw spring-boot:run
+### Si algún puerto está ocupado
+
+Puede usar tres puertos libres. Por ejemplo, en la terminal 1, repita el comando de arranque de Temporal con `--port 17233 --ui-port 18233`. En la terminal 2 use las dos líneas de su sistema antes de iniciar SICOR.
+
+```text
+# macOS / Linux
+export SICOR_TEMPORAL_TARGET=127.0.0.1:17233
+export SERVER_PORT=18080
+# Windows PowerShell
+$env:SICOR_TEMPORAL_TARGET="127.0.0.1:17233"
+$env:SERVER_PORT="18080"
 ```
 
-SICOR se conecta a Temporal en `127.0.0.1:7233`. Si el servidor no está
-disponible, Spring detiene el arranque con un mensaje que indica el comando
-anterior; continuar sin Temporal no es un camino válido.
+En ese ejemplo, SICOR queda en `http://localhost:18080` y Temporal en `http://localhost:18233`. Si Spring no conecta, compruebe que el puerto de `SICOR_TEMPORAL_TARGET` coincide con `--port`. Para repetir desde cero, detenga sus dos procesos con Ctrl+C y vuelva a iniciarlos, primero Temporal y luego SICOR. Ambos almacenan los datos de esta práctica en memoria.
 
-Abra `http://localhost:8080` y cree o seleccione una orden. Los Workflows de
-despacho y accesos existen desde la creación. Una lectura permitida registra un
-Update no sensible en `accesos-<ordenId>`; en
-`MAXIMA`, ese Update sólo se envía después de validar nuevamente usuario y
-contraseña, que nunca se entregan a Temporal. El botón **Firmar mediante
-Temporal** envía otro Update que
-persiste la firma por Activity; al completar la política, `despacho-<ordenId>`
-inicia el despacho automáticamente. La vista muestra el Workflow ID, la Task
-Queue, los accesos y firmas observados por Query, los recibos de Activities y el
-progreso; desde allí también se envían Signals de confirmación y el Update de
-cancelación.
+## 2. Decisiones, modelo y acceso
 
-Durante la evaluación deberá inspeccionar ambos Workflows de una orden y, para
-confirmación y cancelación, al menos dos despachos distintos:
+En `src/main/java/com/enlace/evaluacion03/config/Decisiones.java` hay ocho constantes para siete misiones. E07 contiene dos. Los tipos de comunicación son INFORMATIVA, INSTRUCCION y ORDEN. Para cada misión, lea su clase `E0x...Test` en `src/test/java/com/enlace/evaluacion03/`, compare las alternativas y complete los `TODO(EV03-...)` de su camino. Los TODO de los caminos descartados pueden permanecer en la plantilla.
 
-```bash
-temporal workflow show --workflow-id despacho-<orden-id>
-temporal workflow show --workflow-id accesos-<orden-id>
-```
-
-La evidencia debe mostrar ambos Starts al crear la orden, una lectura autorizada
-por Update en el Workflow de accesos, al menos dos firmas aceptadas por Update
-en el Workflow de despacho antes de la entrega, una
-ejecución completada mediante confirmación por Signal y otra cancelada mediante
-Update. Registre en `BITACORA.md` los Workflow IDs, la Task Queue
-`SICOR-EV03`, el resultado y los eventos relevantes del History. No coloque el
-contenido confidencial de una orden en los inputs: el History de despacho sólo
-recibe el identificador y las unidades; el de accesos, identificadores opacos,
-usuario ficticio y la marca de reautenticación.
-
-Todas las cuentas de laboratorio usan la clave `laboratorio`:
-
-| Usuario | Rol |
-|---|---|
-| `operador` | `OPERADOR` |
-| `oficial1` | `OFICIAL` |
-| `oficial2` | `OFICIAL` |
-| `comandante1` | `COMANDANTE` |
-| `comandante2` | `COMANDANTE` |
-| `auditor` | `AUDITOR` |
-
-Las credenciales, unidades y órdenes precargadas son ficticias y se usan sólo
-para evaluación.
-
-## Método de trabajo obligatorio
-
-Para cada misión:
-
-1. Lea el contrato y la prueba del perfil antes de cambiar código.
-2. Compare al menos los dos caminos permitidos.
-3. Elija un camino en `Decisiones.java`; no deje el valor `PENDIENTE`.
-4. Complete sólo los `TODO(EV03-...)` correspondientes.
-5. Escriba el comentario `DECISION` junto a la constante elegida.
-6. Ejecute el perfil de la misión y luego toda la batería.
-7. Para **cada misión, E01 a E07**, ejecute además el recorrido desde la interfaz
-   contra el servidor Temporal local y observe el Workflow en la Web UI o CLI.
-8. Registre la evidencia en `BITACORA.md`.
-
-Formato mínimo del comentario:
+Junto a cada decisión, complete el comentario `DECISION(EV03-Exx)`. Indique la opción elegida, la alternativa descartada, una consecuencia concreta y el nombre de una prueba que compruebe el resultado. Escriba siete comentarios en total. El de E07 debe justificar ambas constantes. Puede usar este formato.
 
 ```java
-// DECISION(EV03-E04):
-// Elegí: UMBRAL_CONFIGURABLE.
-// Alternativa descartada: ROLES_FIJOS, porque ...
-// Tradeoff aceptado: ...
-// Prueba que demuestra el camino: mi_prueba_de_umbral_maximo().
-public static final Firmas FIRMAS = Firmas.UMBRAL_CONFIGURABLE;
+// DECISION(EV03-E04): Elegí [opción] porque [regla del caso].
+// Descarté [alternativa]. Acepto [costo o limitación].
+// Lo compruebo en [nombre de la prueba].
 ```
 
-Una justificación debe explicar la consecuencia de la decisión. Frases como
-“es más fácil”, “lo indicó la IA” o “pasa el test” no son suficientes por sí
-solas.
+### E01 · Modelo e invariantes · 10 puntos
 
-## Misiones
+En `Orden`, elija `INVARIANTES_EN_ENTIDAD` o `POLITICA_DE_DOMINIO`. Proteja la construcción directa y la creación desde la web. El contenido admite entre 20 y 2000 caracteres inclusive. Debe haber al menos un destinatario y cualquier duplicado debe rechazarse antes de convertir la colección a conjunto. Preserve las transiciones de estado. Una entrada inválida no debe persistir ni iniciar Workflows. Una válida inicia `despacho-<ordenId>` y `accesos-<ordenId>`.
 
-### EV03-E01 — Modelo e invariantes (10 puntos)
+### E02 · Acceso y confidencialidad · 15 puntos
 
-Complete las invariantes avanzadas de `Orden` sin acoplar el dominio a Spring o
-a la vista. Debe rechazar destinatarios vacíos y contenidos fuera del rango que
-indican las pruebas. Mantenga las transiciones de estado válidas.
+En `PoliticaAcceso`, elija `RBAC_CENTRAL` o `ESTRATEGIA_POR_CLASIFICACION`. Una sesión sin autenticar no puede leer el contenido. Aplique la siguiente matriz. Todas las cuentas indicadas son ficticias y su contraseña de laboratorio es `laboratorio`.
 
-Elija:
+| Rol | Cuentas | INTERNA | RESERVADA | MAXIMA |
+|---|---|---|---|---|
+| OPERADOR | `operador` | Sí | No | No |
+| OFICIAL | `oficial1`, `oficial2` | Sí | Sí | No |
+| COMANDANTE | `comandante1`, `comandante2` | Sí | Sí | Sí* |
+| AUDITOR | `auditor` | Sí | Sí | Sí* |
 
-- `INVARIANTES_EN_ENTIDAD`: la entidad protege su consistencia desde su
-  constructor y métodos; o
-- `POLITICA_DE_DOMINIO`: `Orden` delega la regla variable a un componente de
-  dominio durante su construcción y conserva las invariantes estructurales.
+(*) La lectura MAXIMA requiere la reautenticación de E03. La bandeja muestra metadatos. Mantenga el cuerpo de la orden fuera de `OrdenResumen`, URLs, logs, errores y del historial de Temporal (History). Una lectura autorizada registra un Update `registrarAcceso`. Una denegación no registra una lectura. Reintentar el mismo identificador con los mismos datos cuenta una vez. Reutilizarlo con otros datos debe rechazar sólo ese Update. La auditoría permanece disponible después de terminar el despacho.
 
-Justifique dónde queda la única fuente de verdad y cómo evita crear una orden
-inválida desde otro adaptador. Validar sólo en `OrdenService` no satisface el
-contrato: la construcción directa también debe quedar protegida. Una orden
-válida debe iniciar `despacho-<ordenId>` y `accesos-<ordenId>` en Temporal desde su creación; una
-entrada inválida debe rechazarse antes de producir ese Start.
+## 3. Reautenticación, firmas y entrega
 
-```bash
-./mvnw -Pev03-e01 test
-```
+### E03 · Reautenticación de MAXIMA · 15 puntos
 
-### EV03-E02 — Acceso y confidencialidad (15 puntos)
+En `ReautenticacionService`, elija `POR_CADA_LECTURA` o `VENTANA_CORTA_POR_ORDEN`. Antes de mostrar el contenido, compruebe otra vez el usuario y la contraseña de la sesión actual. Vincule el permiso al par usuario–orden. En el primer camino, el permiso se consume una vez. En el segundo, use la ventana breve de la plantilla (dos minutos) y compruebe su expiración.
 
-Implemente `PoliticaAcceso`. Un usuario no autenticado nunca puede leer. La
-decisión debe aplicar de forma coherente la matriz de roles publicada en la
-prueba y mantener el contenido fuera de `OrdenResumen`.
+Una identidad distinta, una contraseña incorrecta o un permiso para otra orden no deben revelar el contenido. Sólo una lectura autorizada de MAXIMA envía `reautenticado=true`. La contraseña se usa en la autenticación y queda fuera de la URL, la sesión, los logs y el History.
 
-Elija:
+### E04 · Firmas múltiples · 15 puntos
 
-- `RBAC_CENTRAL`: una matriz central evalúa rol y clasificación; o
-- `ESTRATEGIA_POR_CLASIFICACION`: cada confidencialidad delega en una política
-  específica.
+En `PoliticaFirmas`, elija `ROLES_FIJOS` o `UMBRAL_CONFIGURABLE`. Sólo OFICIAL y COMANDANTE pueden ser firmantes. Defina la regla para cada tipo y confidencialidad. El caso de verificación común es una orden de tipo `ORDEN` con clasificación `MAXIMA`.
 
-No registre el contenido de una orden `MAXIMA` en logs, excepciones ni DTO de
-listado. Después de autorizar la lectura, la interfaz debe ejecutar el Update
-`registrarAcceso` en `accesos-<ordenId>`; una denegación no revela contenido ni genera una lectura
-exitosa. El Update contiene sólo un identificador de acceso, usuario ficticio y
-si hubo reautenticación.
+| Camino | Resultado que debe obtener en ese caso |
+|---|---|
+| `ROLES_FIJOS` | Un OFICIAL y un COMANDANTE distintos. Cada rol cubre un puesto. Un segundo comandante deja el avance en 1/2 mientras falta el oficial. |
+| `UMBRAL_CONFIGURABLE` | Dos personas distintas de un rol habilitado por su tabla pueden completar el umbral. Identifique en el código el mínimo y los roles admitidos. |
 
-El starter valida ese Update con `@UpdateValidatorMethod`: reutilizar un
-`accesoId` con otra evidencia debe rechazar sólo la solicitud, sin producir un
-`WorkflowTaskFailed` ni dejar el Workflow en reintento.
+La acción **Firmar despacho** de la bandeja autoriza el envío a partir de los metadatos. Un oficial puede firmar allí si E04 lo habilita, aunque E02 le impida abrir el contenido MAXIMA. Firmar desde la bandeja no registra una lectura. El auditor puede leer según E02 y E03, pero no firma.
 
-```bash
-./mvnw -Pev03-e02 test
-```
+Cada firma entra por el Update `registrarFirma` y una Activity idempotente la persiste. Conserve el validador y la serialización de Updates. La misma persona sólo cuenta una vez. Las solicitudes concurrentes o rechazadas deben dejar el Workflow operativo. Hasta completar la política, el despacho espera sin emitir recibos. Al completarla, pasa por `LISTA_PARA_ENVIO` e inicia el envío automáticamente una sola vez.
 
-### EV03-E03 — Reautenticación de máxima confidencialidad (15 puntos)
+### E05 · Entrega idempotente · 15 puntos
 
-La vista sólo puede revelar el contenido `MAXIMA` después de comprobar otra vez
-el nombre del usuario actual y su contraseña. La autorización debe estar ligada
-al par usuario–orden; no puede reutilizarse para otra cuenta u otra orden.
+En `DespachoActivitiesImpl`, elija `CLAVE_ORDEN_UNIDAD` o `COMANDO_EXPLICITO`. Dos invocaciones con la misma intención deben devolver el mismo recibo y producir un único efecto. En el primer camino, la identidad es el par orden–unidad. En el segundo, el llamador conserva el mismo `comandoId` entre intentos y se rechaza su reutilización con otra orden o unidad. Pruebe el reintento desde un Workflow.
 
-Elija:
+## 4. Despacho y pruebas propias
 
-- `POR_CADA_LECTURA`: el permiso se consume una sola vez; o
-- `VENTANA_CORTA_POR_ORDEN`: puede reutilizarse durante una ventana breve y
-  expira de forma verificable.
+### E06 · Orquestación durable · 15 puntos
 
-No almacene contraseñas ni las incluya en la URL, logs, sesión o History de
-Temporal. Sólo después de una reautenticación válida se registra el acceso por
-Update, con `reautenticado=true` y sin la contraseña.
+En `DespachoWorkflowImpl`, elija `SECUENCIAL`, `PARALELA` o `CHILD_WORKFLOW_POR_UNIDAD`. Entregue una vez por destino y conserve una clave estable por intención. En secuencia, espere cada entrega antes de la siguiente. En paralelo, use `Async` y `Promise` de Temporal. Con hijos, cree un Child Workflow con ID estable por orden y unidad.
 
-```bash
-./mvnw -Pev03-e03 test
-```
+El código de Workflow debe reproducirse de forma determinista. Las Activities realizan la entrada/salida y los efectos externos. Mantenga threads Java, `CompletableFuture`, `Instant.now()`, `UUID.randomUUID()` y clientes Spring fuera de los Workflows.
 
-### EV03-E04 — Firmas múltiples (15 puntos)
+### E07 · Confirmación e incertidumbre · 10 puntos
 
-Una misma persona no puede firmar dos veces la misma orden. Sólo los roles
-admitidos cuentan y el estado cambia a `LISTA_PARA_ENVIO` exactamente cuando se
-alcanza el requisito.
+Complete dos constantes en `Decisiones.java` e implemente el comportamiento en `DespachoWorkflowImpl`.
 
-La interfaz no puede escribir directamente en `FirmaOrdenRepository` ni cambiar
-el estado. Cada firma entra por `DespachoWorkflow.registrarFirma`, un Update
-durable que invoca una Activity idempotente. El Workflow debe permanecer en
-`ESPERANDO_FIRMAS` y comenzar el despacho automáticamente sólo cuando la
-respuesta de la Activity confirme que la política está completa.
+| Decisión | Alternativas y comportamiento esperado |
+|---|---|
+| `CONFIRMACION` | `TODAS_LAS_UNIDADES` exige todos los destinos. `QUORUM_CONFIGURABLE` usa un umbral explícito y justificable. Con tres unidades, dos confirmaciones alcanzan el quórum. |
+| `INCERTIDUMBRE` | `REVISION_MANUAL` termina en `PENDIENTE_REVISION` sin compensar. `COMPENSAR_SOLO_CONFIRMADOS` termina en ese mismo estado y compensa exclusivamente los recibos confirmados. |
 
-El starter serializa los Updates de firma con un estado y `Workflow.await`.
-Conserve ese mecanismo: dos firmas simultáneas no pueden aplicar respuestas de
-Activities fuera de orden, hacer retroceder la Query ni iniciar dos despachos.
-También conserva un `@UpdateValidatorMethod` para rechazar una firma duplicada
-antes de aceptarla. Un rechazo de negocio debe fallar sólo el Update; no es
-correcto lanzar una excepción Java común desde el handler y provocar el
-reintento del Workflow Task.
+Valide cada Signal con la unidad y el identificador de su recibo. Una confirmación repetida cuenta una sola vez. La Query informa el progreso sin modificarlo. El Update de cancelación acepta una solicitud válida y termina en `CANCELADA`. Si se alcanza la confirmación, termina en `ENTREGADA`. Si vencen las 12 horas del Workflow, aplique la política de incertidumbre. Pruebe el plazo con el reloj virtual de Temporal.
 
-Elija:
+### Tres pruebas propias obligatorias
 
-- `ROLES_FIJOS`: la política exige combinaciones explícitas de roles; o
-- `UMBRAL_CONFIGURABLE`: una tabla de política define el número y los roles
-  habilitados según tipo y confidencialidad.
+Reemplace los tres ejemplos de `PruebasPropiasTest.java` por al menos tres pruebas activas sobre **tres decisiones distintas**. Identifique la decisión en un comentario. Cada prueba debe incluir una aserción observable, ser determinista y fallar si se rompe la regla. Puede probar, por ejemplo, el aislamiento entre dos órdenes, un reintento de entrega o un Signal duplicado. Use el tiempo virtual cuando corresponda y evite `Thread.sleep`.
 
-Debe existir al menos un caso que requiera dos personas distintas. Justifique
-el origen de la regla y pruebe duplicados, roles inválidos, el límite exacto y
-que no se produzca ninguna entrega antes de completar las firmas. La línea base
-incluye además una regresión con dos Updates concurrentes.
+Para probar una misión, use `./mvnw -Pev03-e04 test` sustituyendo `e04` por `e01` a `e07`. Para ejecutar únicamente sus pruebas, use `./mvnw -Pev03-all -Dtest=PruebasPropiasTest test`. La plantilla conserva tres pruebas que fallan deliberadamente en el perfil final hasta que las reemplace por sus casos.
 
-```bash
-./mvnw -Pev03-e04 test
-```
+## 5. Probar el recorrido y entregar
 
-### EV03-E05 — Entrega idempotente (15 puntos)
+Con la solución implementada, inicie Temporal y SICOR como en la sección 1. Use dos órdenes distintas, una por cada desenlace. Si repite la práctica en la misma sesión, elija IDs y claves de creación nuevos.
 
-Implemente `DespachoActivitiesImpl` para que un reintento con la misma intención
-devuelva el mismo recibo sin repetir el efecto. En el camino de comando
-explícito, reutilizar un `comandoId` con otra orden o unidad debe rechazarse.
+1. **Crear.** Ingrese como `operador`. Cree dos órdenes de tipo `ORDEN` y nivel `MAXIMA`, por ejemplo `ORD-101` y `ORD-102`, con claves `CMD-101` y `CMD-102`. Use asunto de 5 a 120 caracteres, contenido ficticio de 20 a 2000 y una unidad por orden. Volverá a la bandeja. Para cada ID busque `despacho-` y `accesos-` en Temporal. El despacho debe estar esperando firmas.
+2. **Probar permisos.** Como `oficial1`, pulse **Abrir** en una orden máxima. Debe obtener acceso denegado. Como `auditor`, abra la misma orden y confirme su propia identidad. La Query `consultarAccesos` debe contar la lectura autorizada. Un intento fallido no incrementa el contador.
+3. **Firmar.** Cambie de cuenta con **Cerrar sesión**. En `ROLES_FIJOS`, firme ambas órdenes desde la bandeja como `comandante1` y luego como `oficial1`. Entre ambas firmas, `comandante2` no tiene un puesto pendiente. En `UMBRAL_CONFIGURABLE`, use dos cuentas distintas del rol habilitado por su tabla. Antes de la última firma habrá cero recibos. Después, la Query `consultarFirmas` indica que la política está completa y la entrega genera un recibo por destino.
+4. **Confirmar la primera y cancelar la segunda.** Como `comandante1`, abra la primera orden, reautentíquese cuando se le solicite y pulse **Enviar Signal** en el recibo. Compruebe `ENTREGADA`. Abra la segunda, aún en despacho, indique un motivo y pulse **Cancelar por Update**. Compruebe `CANCELADA`. Si el recibo todavía no aparece, actualice el detalle. La auditoría de ambas órdenes sigue disponible.
+5. **Inspeccionar.** En la interfaz de Temporal, abra el History de ambos Workflows. Compruebe el orden de las firmas y entregas, la confirmación o cancelación y la ausencia de contraseñas y cuerpos de órdenes. Por CLI puede usar `temporal workflow show --workflow-id despacho-ORD-101` y repetir con `accesos-ORD-101`. Con puertos alternativos, añada `--address 127.0.0.1:17233` a cada comando de consulta.
 
-Elija:
+### Verificación y única entrega
 
-- `CLAVE_ORDEN_UNIDAD`: la identidad natural es `ordenId + unidad`; o
-- `COMANDO_EXPLICITO`: el llamador entrega un `comandoId` estable.
+Ejecute la verificación completa desde `ejercicios/`.
 
-No use un UUID nuevo dentro de cada reintento. La demostración mínima es un
-Workflow que invoca dos veces la Activity con una intención equivalente, obtiene
-el mismo recibo y observa un único efecto registrado.
-
-```bash
-./mvnw -Pev03-e05 test
-```
-
-### EV03-E06 — Orquestación durable (15 puntos)
-
-Complete un camino de `DespachoWorkflowImpl`:
-
-- `SECUENCIAL`: entrega una unidad después de otra;
-- `PARALELA`: usa `Async` y `Promise` de Temporal; o
-- `CHILD_WORKFLOW_POR_UNIDAD`: crea un hijo con Workflow ID estable por destino.
-
-El Workflow debe ser determinista: no haga I/O, no use `Instant.now()`,
-`UUID.randomUUID()`, `CompletableFuture`, threads ni clientes Spring desde el
-código del Workflow. Los efectos externos pertenecen a Activities.
-
-```bash
-./mvnw -Pev03-e06 test
-```
-
-### EV03-E07 — Confirmación e incertidumbre (10 puntos)
-
-Complete dos decisiones relacionadas:
-
-1. `TODAS_LAS_UNIDADES` o `QUORUM_CONFIGURABLE` para determinar cuándo la
-   entrega está confirmada.
-2. `REVISION_MANUAL` o `COMPENSAR_SOLO_CONFIRMADOS` cuando vence la espera.
-
-Las confirmaciones llegan por Signal, el progreso se obtiene por Query y la
-cancelación se solicita por Update. Las señales duplicadas no deben aumentar el
-conteo. Nunca compense ni reenvíe un resultado incierto como si fuera conocido.
-
-```bash
-./mvnw -Pev03-e07 test
-```
-
-## Pruebas propias
-
-Además de las pruebas proporcionadas, entregue **al menos tres pruebas propias
-activas**, asociadas a **tres decisiones distintas**. Nómbrelas de manera que
-expliquen el riesgo, por ejemplo:
-
-- `otra_orden_no_reutiliza_la_reautorizacion()`;
-- `un_reintento_no_duplica_el_efecto()`;
-- `una_confirmacion_duplicada_no_altera_el_quorum()`.
-
-Cada prueba debe:
-
-- tener una aserción observable, no sólo ejecutar código;
-- poder fallar si se revierte la implementación;
-- indicar en un comentario qué decisión demuestra;
-- ser determinista y no depender de pausas reales (`Thread.sleep`).
-
-Use `src/test/java/.../PruebasPropiasTest.java` o agregue pruebas pequeñas junto
-a la capa correspondiente. No desactive pruebas para entregar.
-
-## Comandos de validación
-
-```bash
-# Línea base
-./mvnw clean verify
-
-# Integración automática en entorno Temporal de test (no reemplaza la evidencia externa)
-./mvnw -Dtest=TemporalRuntimeIntegrationTest test
-
-# Una misión
-./mvnw -Pev03-e04 test
-
-# Todas las pruebas de misiones
-./mvnw -Pev03-all test
-
-# Validación final desde cero
+```text
 ./mvnw clean verify -Pev03-all
 ```
 
-No se considera resuelta una misión si sólo pasa de manera aislada pero rompe
-otra. Antes de entregar, `clean verify -Pev03-all` debe finalizar correctamente.
-Además, **E01 a E07** requieren evidencia de ejecución en el servidor Temporal
-local indicada en `BITACORA.md`; aprobar tests embebidos por sí solo no demuestra
-este requisito.
+El resultado debe ser **BUILD SUCCESS**. Compruebe que ninguna de las ocho constantes está en `PENDIENTE`, que hay siete comentarios de decisión completos y que pasaron sus tres pruebas propias. En el camino `CLAVE_ORDEN_UNIDAD` la prueba exclusiva de comando explícito se omite por diseño.
 
-## Uso permitido de IA
-
-Puede usar un LLM como asistente para comparar alternativas, producir un primer
-borrador o proponer casos de prueba. La autoría y responsabilidad siguen siendo
-suyas. Debe:
-
-- registrar cada interacción relevante en `PROMPTS.md`;
-- contrastar la respuesta con el contrato y las pruebas;
-- adaptar el código a la decisión elegida;
-- poder explicar el código sin ayuda durante una defensa breve.
-
-No está permitido ocultar prompts, presentar código que no comprende, pedir a
-otra persona que rinda la evaluación ni incorporar dependencias o contenidos
-fuera del alcance para eludir los contratos.
-
-## Archivos que acompañan el trabajo
-
-- `DECISIONES.md`: registro consolidado de las ocho constantes elegidas en siete misiones.
-- `PROMPTS.md`: trazabilidad del uso de IA.
-- `BITACORA.md`: comandos, resultados e incidentes.
-- `../solucion/SOLUCION_GUIADA.md`: pistas de inspiración para usar sólo si se
-  bloquea; consultarla debe registrarse en la bitácora.
-
-## Entrega
-
-Entregue el repositorio sin `target/`, archivos de IDE, secretos ni credenciales
-reales. Deben estar presentes:
-
-- código fuente y pruebas;
-- las ocho constantes de las siete misiones sin `PENDIENTE`;
-- siete comentarios `DECISION(EV03-Exx)` completos;
-- al menos tres pruebas propias activas;
-- `DECISIONES.md`, `PROMPTS.md` y `BITACORA.md` completos;
-- evidencia de `./mvnw clean verify -Pev03-all`;
-- evidencia de Temporal externo para E01–E07: servidor, Worker en `SICOR-EV03`,
-  Starts de despacho y accesos al crear, lectura autorizada por Update en
-  `accesos-<ordenId>`, firmas por Update en `despacho-<ordenId>` antes del
-  despacho, Activities de entrega, Query, Signal, cancelación por Update e
-  inspección del History sin contraseñas ni contenido confidencial.
-
-La evaluación valora la coherencia entre decisión, implementación, prueba y
-explicación. No existe una única arquitectura correcta entre los caminos
-permitidos.
+Comprima la carpeta **ejercicios/**. Incluya `pom.xml`, `mvnw`, `mvnw.cmd`, la carpeta oculta `.mvn/`, `src/main/java/`, `src/main/resources/` y `src/test/java/`. Excluya `target/`, `.git/`, archivos del IDE y credenciales personales. Entregue ese ZIP por el canal del examen. Para comprobar el paquete, descomprímalo en otra carpeta y repita allí la verificación final.

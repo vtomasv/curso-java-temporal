@@ -1,22 +1,11 @@
-# Evaluación 3 — SICOR
+# Evaluación 3 · SICOR
 
-Esta carpeta reúne la tercera evaluación práctica del curso. El escenario, las unidades y los usuarios son completamente ficticios y se usan solo con fines educativos.
+La guía del examen está disponible en dos formatos con las mismas instrucciones, reglas, puntajes y entrega.
 
-## Estructura
+- [Enunciado en Word](01_Prueba_Practica_SICOR_Estudiantes.docx)
+- [Enunciado en Markdown e instrucciones de ejecución](ejercicios/README.md)
+- [Pistas autorizadas](solucion/SOLUCION_GUIADA.md)
 
-| Recurso | Contenido | Distribución |
-|---|---|---|
-| `ejercicios/` | Aplicación Spring–Temporal funcional con cliente, Worker y Task Queue; siete misiones, pruebas públicas y archivos de decisiones/evidencias que completa el estudiante. | **Entregar al alumno.** |
-| `solucion/` | Solución guiada con pistas progresivas para destrabar misiones; exige registrar la consulta y adaptar la idea. | **Entregar al alumno** como ayuda autorizada. |
-| `01_Prueba_Practica_SICOR_Estudiantes.docx` | Enunciado formal de aplicación. | **Entregar al alumno.** |
-| Paquete docente separado | Corrector, pauta docente, matriz de revisores y copia oficial del starter. | **Confidencial docente.** No publicar en esta rama. |
+Distribuya esta carpeta completa. El alumno entrega un único ZIP con el proyecto fuente de `ejercicios/`, sus recursos, Maven Wrapper y sus pruebas. El corrector docente y cualquier pauta interna se distribuyen por separado.
 
-## Paquete para estudiantes
-
-Distribuir `ejercicios/`, `solucion/SOLUCION_GUIADA.md` y `01_Prueba_Practica_SICOR_Estudiantes.docx`. El corrector, la pauta docente y la matriz se entregan por separado al responsable y al comité.
-
-Para ejecutar SICOR, el estudiante debe levantar el servidor Temporal local enseñado en clases con `temporal server start-dev --ip 127.0.0.1 --ui-port 8233`. La aplicación se conecta obligatoriamente a `127.0.0.1:7233` y falla de forma explícita si el servidor no está disponible. E01 a E07 deben observarse en el ciclo real: cada orden válida inicia `despacho-<ordenId>` y `accesos-<ordenId>`; las lecturas autorizadas ingresan por Update en el segundo y las firmas por Update en el primero; el despacho usa Activities, Query, Signal y cancelación por Update. La auditoría de acceso permanece disponible aunque el despacho termine. Contraseñas y contenido confidencial no se envían al History. El motor embebido se conserva sólo dentro de `src/test` para que `./mvnw clean verify` sea reproducible; no constituye evidencia de ejecución de la aplicación. La entrega debe documentar el recorrido externo completo en `BITACORA.md`.
-
-## Custodia docente
-
-Las pruebas oficiales adicionales, el corrector, la pauta y la matriz deben mantenerse en un repositorio o canal de acceso restringido. La solución guiada sí forma parte de la ayuda autorizada al alumno. El reporte automático es evidencia auxiliar: la nota final requiere revisar las decisiones justificadas, las pruebas propias y la defensa del estudiante.
+Desde `ejercicios/`, `./mvnw clean verify` comprueba la plantilla inicial con Java 25. Para corregir una entrega, ejecute `./mvnw clean verify -Pev03-all` y pruebe el recorrido de las dos órdenes descrito en el enunciado.

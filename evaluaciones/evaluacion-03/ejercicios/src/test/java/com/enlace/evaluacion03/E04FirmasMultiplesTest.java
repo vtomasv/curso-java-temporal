@@ -100,7 +100,7 @@ class E04FirmasMultiplesTest {
             assertThat(politica.rolPuedeFirmar(orden, "COMANDANTE")).isTrue();
             return List.of("OFICIAL", "COMANDANTE");
         }
-        String rol = Stream.of("OFICIAL", "COMANDANTE", "AUDITOR")
+        String rol = Stream.of("OFICIAL", "COMANDANTE")
                 .filter(candidato -> politica.rolPuedeFirmar(orden, candidato))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("La política no habilitó un rol firmante"));

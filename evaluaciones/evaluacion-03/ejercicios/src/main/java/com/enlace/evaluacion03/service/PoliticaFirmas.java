@@ -22,6 +22,7 @@ public class PoliticaFirmas {
     }
 
     public boolean rolPuedeFirmar(Orden orden, String rol) {
+        if (!"OFICIAL".equals(rol) && !"COMANDANTE".equals(rol)) return false;
         if (Decisiones.FIRMAS == Decisiones.Firmas.PENDIENTE) {
             return orden.getConfidencialidad() == Confidencialidad.MAXIMA
                     ? "COMANDANTE".equals(rol)
@@ -34,11 +35,19 @@ public class PoliticaFirmas {
         };
     }
 
+    public boolean faltaFirmaDelRol(Orden orden, String rol, List<FirmaOrden> firmas) {
+        if (!rolPuedeFirmar(orden, rol)) return false;
+        return Decisiones.FIRMAS != Decisiones.Firmas.ROLES_FIJOS
+                || firmas.stream().noneMatch(firma -> firma.getRol().equals(rol));
+    }
+
     public boolean requisitoCumplido(Orden orden, List<FirmaOrden> firmas) {
         return switch (Decisiones.FIRMAS) {
             case PENDIENTE -> firmas.size() >= umbralConservador(orden);
             case ROLES_FIJOS -> rolesObligatoriosCompletos(orden, firmas);
             case UMBRAL_CONFIGURABLE -> firmas.stream()
+                    .filter(firma -> orden.getId().equals(firma.getOrdenId()))
+                    .filter(firma -> rolPuedeFirmar(orden, firma.getRol()))
                     .map(FirmaOrden::getFirmante)
                     .distinct()
                     .count() >= firmasPorUmbral(orden);

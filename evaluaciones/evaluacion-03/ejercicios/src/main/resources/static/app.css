@@ -188,6 +188,8 @@ tbody tr[data-order-row]:hover { background: #f8fbfc; }
 .order-link { display: grid; min-width: 200px; gap: .25rem; color: var(--navy-900); }
 .order-link strong { font-size: .87rem; }
 .order-link code { color: var(--steel-500); font-size: .68rem; }
+.order-destinations { display: block; margin-top: .25rem; color: var(--steel-700); }
+.row-action + form { margin-top: .4rem; }
 .row-action { display: inline-flex; align-items: center; gap: .4rem; color: var(--blue-700); font-weight: 750; white-space: nowrap; }
 .row-action:hover { color: var(--teal-700); }
 .type-label { color: var(--steel-700); font-size: .68rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }

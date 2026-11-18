@@ -14,7 +14,7 @@
         <h1 th:text="${titulo}">No fue posible completar la operación</h1>
         <p th:text="${detalle}">Revisa los datos e inténtalo nuevamente.</p>
         <div class="error-actions"><a class="button button-primary" th:href="@{/}">Volver al centro de operaciones</a><button class="button button-secondary" type="button" onclick="history.back()">Regresar</button></div>
-        <p class="privacy-note">Si el problema corresponde a Temporal, conserva el Workflow ID y registra el incidente en la bitácora.</p>
+        <p class="privacy-note">Si Temporal no responde, comprueba que el servidor local esté activo y vuelve a abrir la orden.</p>
     </section>
 </main>
 </body>

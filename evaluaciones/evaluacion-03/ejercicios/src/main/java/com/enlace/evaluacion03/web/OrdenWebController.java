@@ -50,13 +50,18 @@ public class OrdenWebController {
 
     @PostMapping("/ordenes/nueva")
     String crear(@Valid @ModelAttribute CrearOrdenRequest crearOrdenRequest,
-                 BindingResult errores, Authentication authentication, Model model) {
+                 BindingResult errores, Authentication authentication, Model model,
+                 RedirectAttributes redirectAttributes) {
         if (errores.hasErrors()) {
             cargarInicio(model, authentication);
             return "index";
         }
         OrdenResumen creada = ordenes.crear(crearOrdenRequest, authentication.getName());
         temporal.iniciar(ordenes.prepararWorkflow(creada.id()));
+        if (!ordenes.puedeLeer(creada.id(), authentication)) {
+            redirectAttributes.addFlashAttribute("mensaje", "Orden " + creada.id() + " registrada.");
+            return "redirect:/";
+        }
         return "redirect:/ordenes/" + creada.id();
     }
 
@@ -99,26 +104,21 @@ public class OrdenWebController {
 
     @PostMapping("/ordenes/{id}/firmar")
     String firmar(@PathVariable String id, Authentication authentication,
+                  @RequestParam(defaultValue = "false") boolean desdeBandeja,
                   RedirectAttributes redirectAttributes) {
-        ordenes.resumenAutorizado(id, authentication);
-        String rol = authentication.getAuthorities().stream()
-                .map(a -> a.getAuthority())
-                .filter(a -> a.startsWith("ROLE_"))
-                .map(a -> a.substring("ROLE_".length()))
-                .findFirst()
-                .orElse("SIN_ROL");
+        String rol = rolActual(authentication);
+        var input = ordenes.prepararFirma(id, rol);
         try {
-            temporal.registrarFirma(
-                    ordenes.prepararWorkflow(id), authentication.getName(), rol);
+            temporal.registrarFirma(input, authentication.getName(), rol);
+            redirectAttributes.addFlashAttribute("mensaje", "Firma registrada para " + id + ".");
         } catch (WorkflowUpdateException exception) {
             redirectAttributes.addFlashAttribute("firmaRechazada",
-                    "La firma no fue registrada: el usuario ya firmó, su rol no está "
-                            + "autorizado o la etapa de firmas terminó.");
+                    "La orden " + id + " ya cuenta con esa firma o cerró la etapa de autorización.");
         } catch (WorkflowException exception) {
             throw new IllegalStateException(
                     "Temporal no pudo registrar la firma: " + exception.getMessage(), exception);
         }
-        return "redirect:/ordenes/" + id;
+        return desdeBandeja || !ordenes.puedeLeer(id, authentication) ? "redirect:/" : "redirect:/ordenes/" + id;
     }
 
     @PostMapping("/ordenes/{id}/confirmar")
@@ -145,9 +145,8 @@ public class OrdenWebController {
         boolean enDespacho = resumen.estado() == EstadoOrden.EN_DESPACHO;
         model.addAttribute("workflowId", temporal.workflowId(resumen.id()));
         model.addAttribute("accessWorkflowId", temporal.accessWorkflowId(resumen.id()));
-        model.addAttribute("puedeFirmar",
-                resumen.estado() == EstadoOrden.PENDIENTE_FIRMAS
-                        && tieneAlgunRol(authentication, "OFICIAL", "COMANDANTE"));
+        model.addAttribute("puedeFirmar", ordenes.puedeFirmar(
+                resumen.id(), authentication.getName(), rolActual(authentication)));
         model.addAttribute("puedeConfirmar", enDespacho
                 && tieneAlgunRol(authentication, "OFICIAL", "COMANDANTE"));
         model.addAttribute("puedeCancelar", enDespacho
@@ -195,7 +194,9 @@ public class OrdenWebController {
 
     private void cargarInicio(Model model, Authentication authentication) {
         cargarFormulario(model);
-        var listado = ordenes.listar();
+        var bandeja = ordenes.bandeja(authentication.getName(), rolActual(authentication));
+        var listado = bandeja.ordenes();
+        model.addAttribute("firmables", bandeja.firmables());
         model.addAttribute("ordenes", listado);
         model.addAttribute("puedeCrear", tieneAlgunRol(authentication, "OPERADOR", "COMANDANTE"));
         model.addAttribute("totalOrdenes", listado.size());
@@ -216,12 +217,16 @@ public class OrdenWebController {
 
     private void cargarIdentidad(Model model, Authentication authentication) {
         model.addAttribute("usuarioActual", authentication.getName());
-        model.addAttribute("rolActual", authentication.getAuthorities().stream()
+        model.addAttribute("rolActual", rolActual(authentication));
+    }
+
+    private String rolActual(Authentication authentication) {
+        return authentication.getAuthorities().stream()
                 .map(authority -> authority.getAuthority())
                 .filter(authority -> authority.startsWith("ROLE_"))
                 .map(authority -> authority.substring("ROLE_".length()))
                 .findFirst()
-                .orElse("USUARIO"));
+                .orElse("USUARIO");
     }
 
     private CrearOrdenRequest formularioVacio() {

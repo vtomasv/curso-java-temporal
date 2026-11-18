@@ -1,5 +1,6 @@
 package com.enlace.evaluacion03;
 
+import com.enlace.evaluacion03.config.Decisiones;
 import com.enlace.evaluacion03.config.TemporalConfig;
 import com.enlace.evaluacion03.domain.Confidencialidad;
 import com.enlace.evaluacion03.domain.EstadoOrden;
@@ -45,8 +46,13 @@ import java.util.concurrent.locks.LockSupport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -125,6 +131,77 @@ class TemporalRuntimeIntegrationTest {
                 .andExpect(content().string(containsString("Confirma tu identidad")))
                 .andExpect(content().string(not(containsString(
                         "Contenido ficticio de demostración para validar la reautenticación máxima."))));
+    }
+
+    @Test
+    @WithMockUser(username = "operador", roles = "OPERADOR")
+    void crear_una_orden_maxima_retorna_a_la_bandeja_y_conserva_cero_lecturas() throws Exception {
+        String id = "ORD-WEB-ALTA";
+        mockMvc.perform(post("/ordenes/nueva").with(csrf())
+                        .param("id", id).param("asunto", "Alta de prueba")
+                        .param("contenido", "Contenido de prueba para el alta web.")
+                        .param("tipo", "ORDEN").param("confidencialidad", "MAXIMA")
+                        .param("destinatarios", "UNIDAD_ANDINA").param("claveIdempotencia", "IDEM-" + id))
+                .andExpect(redirectedUrl("/")).andExpect(flash().attributeExists("mensaje"));
+        assertThat(temporal.consultarAccesos(id)).isEqualTo(AccesoProgreso.vacio());
+        assertThat(temporal.consultarFirmas(id).registradas()).isZero();
+    }
+
+    @Test
+    @WithMockUser(username = "operador", roles = "OPERADOR")
+    void la_creacion_web_rechaza_destinatarios_duplicados_antes_del_start() throws Exception {
+        String id = "ORD-WEB-DUP";
+        mockMvc.perform(post("/ordenes/nueva").with(csrf())
+                        .param("id", id).param("asunto", "Alta repetida")
+                        .param("contenido", "Contenido de prueba para destinatarios repetidos.")
+                        .param("tipo", "ORDEN").param("confidencialidad", "INTERNA")
+                        .param("destinatarios", "UNIDAD_ANDINA", "UNIDAD_ANDINA")
+                        .param("claveIdempotencia", "IDEM-" + id))
+                .andExpect(status().isConflict());
+        assertThat(repository.existsById(id)).isFalse();
+    }
+
+    @Test
+    void la_firma_de_bandeja_respeta_la_politica_sin_abrir_el_contenido() throws Exception {
+        String id = "ORD-WEB-FIRMAS";
+        guardarPendienteFirmas(id);
+        temporal.iniciar(ordenes.prepararWorkflow(id));
+        String ruta = "/ordenes/" + id + "/firmar";
+        var orden = repository.findById(id).orElseThrow();
+        boolean fijos = Decisiones.FIRMAS == Decisiones.Firmas.ROLES_FIJOS;
+        String rol = fijos || politicaFirmas.rolPuedeFirmar(orden, "COMANDANTE") ? "COMANDANTE" : "OFICIAL";
+        var primero = user("usuario-firma-1").roles(rol);
+        var segundoMismoRol = user("usuario-firma-2").roles(rol);
+
+        mockMvc.perform(get("/ordenes/" + id).with(user("oficial1").roles("OFICIAL")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/").with(user("auditor").roles("AUDITOR")))
+                .andExpect(content().string(not(containsString(ruta))));
+        mockMvc.perform(post(ruta).with(user("auditor").roles("AUDITOR")).with(csrf()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/").with(primero))
+                .andExpect(content().string(containsString(ruta)))
+                .andExpect(content().string(not(containsString(orden.getContenido()))));
+        mockMvc.perform(post(ruta).with(primero).with(csrf()).param("desdeBandeja", "true"))
+                .andExpect(redirectedUrl("/")).andExpect(flash().attributeExists("mensaje"));
+        mockMvc.perform(get("/").with(primero))
+                .andExpect(content().string(not(containsString(ruta))));
+        assertThat(temporal.consultarFirmas(id).registradas()).isOne();
+        assertThat(temporal.consultarRecibos(id)).isEmpty();
+        if (fijos) {
+            mockMvc.perform(get("/").with(segundoMismoRol))
+                    .andExpect(content().string(not(containsString(ruta))));
+            mockMvc.perform(post(ruta).with(segundoMismoRol).with(csrf()).param("desdeBandeja", "true"))
+                    .andExpect(redirectedUrl("/")).andExpect(flash().attributeExists("firmaRechazada"));
+            assertThat(temporal.consultarFirmas(id).registradas()).isOne();
+        }
+        var ultimo = fijos ? user("oficial1").roles("OFICIAL") : segundoMismoRol;
+        mockMvc.perform(get("/").with(ultimo)).andExpect(content().string(containsString(ruta)));
+        mockMvc.perform(post(ruta).with(ultimo).with(csrf()).param("desdeBandeja", "true"))
+                .andExpect(redirectedUrl("/")).andExpect(flash().attributeExists("mensaje"));
+        assertThat(temporal.consultarFirmas(id).completa()).isTrue();
+        assertThat(temporal.consultarAccesos(id)).isEqualTo(AccesoProgreso.vacio());
+        assertThat(esperarRecibos(id)).hasSize(1);
     }
 
     @Test
@@ -211,7 +288,7 @@ class TemporalRuntimeIntegrationTest {
         if (requeridas < 1 || requeridas > 10) {
             throw new AssertionError("Cantidad de firmas no implementada: " + requeridas);
         }
-        List<String> permitidos = List.of("OFICIAL", "COMANDANTE", "AUDITOR").stream()
+        List<String> permitidos = List.of("OFICIAL", "COMANDANTE").stream()
                 .filter(rol -> politicaFirmas.rolPuedeFirmar(orden, rol))
                 .toList();
         if (permitidos.isEmpty()) throw new AssertionError("La política no admite roles de prueba");

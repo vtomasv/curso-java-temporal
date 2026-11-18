@@ -105,8 +105,9 @@ public class TemporalConfig {
                 }
                 throw new IllegalStateException(
                         "No se pudo conectar a Temporal en " + target + ". "
-                                + "Ejecute 'temporal server start-dev --ip 127.0.0.1 "
-                                + "--ui-port 8233' antes de iniciar SICOR.",
+                                + "Inicie el servidor de desarrollo antes de SICOR. "
+                                + "El puerto de 'temporal server start-dev --port' debe coincidir "
+                                + "con el de SICOR_TEMPORAL_TARGET (7233 por defecto).",
                         failure
                 );
             }

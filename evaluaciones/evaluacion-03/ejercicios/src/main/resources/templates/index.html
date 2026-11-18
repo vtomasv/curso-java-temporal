@@ -38,6 +38,9 @@
         </div>
     </section>
 
+    <p class="alert" role="status" th:if="${mensaje}" th:text="${mensaje}"></p>
+    <p class="alert alert-error" role="alert" th:if="${firmaRechazada}" th:text="${firmaRechazada}"></p>
+
     <section class="metric-grid" aria-label="Resumen de órdenes">
         <article class="metric-card">
             <span class="metric-label">Total registradas</span>
@@ -89,6 +92,9 @@
                                 <strong th:text="${orden.asunto}">Asunto</strong>
                                 <code th:text="${orden.id}">ORD-000</code>
                             </a>
+                            <small class="order-destinations">Destinos:
+                                <span th:each="unidad, paso : ${orden.destinatarios}" th:text="|${#strings.replace(unidad.name(), 'UNIDAD_', '')}${paso.last ? '' : ', '}|"></span>
+                            </small>
                         </td>
                         <td><span class="type-label" th:text="${orden.tipo}">TIPO</span></td>
                         <td><span class="classification-badge"
@@ -98,7 +104,13 @@
                                   th:classappend="| status-${#strings.toLowerCase(orden.estado.name())}|"
                                   th:text="${#strings.replace(orden.estado.name(), '_', ' ')}">ESTADO</span></td>
                         <td><span class="signature-count" th:text="|${orden.firmas}/${orden.firmasRequeridas}|">0/2</span></td>
-                        <td><a class="row-action" th:href="@{/ordenes/{id}(id=${orden.id})}">Abrir <span aria-hidden="true">→</span></a></td>
+                        <td>
+                            <a class="row-action" th:href="@{/ordenes/{id}(id=${orden.id})}">Abrir <span aria-hidden="true">→</span></a>
+                            <form th:if="${firmables.contains(orden.id)}" th:action="@{/ordenes/{id}/firmar(id=${orden.id})}" method="post">
+                                <input type="hidden" name="desdeBandeja" value="true">
+                                <button class="button button-small" type="submit" th:attr="aria-label=|Firmar despacho de ${orden.id}|">Firmar despacho</button>
+                            </form>
+                        </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(ordenes)}">
                         <td colspan="6"><div class="empty-state"><strong>No hay órdenes todavía</strong><span>Crea la primera comunicación desde el panel lateral.</span></div></td>
@@ -162,7 +174,7 @@
                     <svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M12 15v2"/></svg>
                 </div>
                 <strong>Tu bandeja respeta la separación de funciones</strong>
-                <p>Abre una orden para consultar las acciones disponibles para tu identidad. Las opciones de firma, confirmación y auditoría se muestran sólo cuando corresponden.</p>
+                <p>Si tu cuenta tiene una firma pendiente, usa Firmar despacho en la bandeja. Para leer una orden o confirmar su recepción, elige Abrir.</p>
                 <ul>
                     <li>OFICIAL: firma y confirma entregas autorizadas.</li>
                     <li>AUDITOR: consulta órdenes permitidas y su evidencia.</li>

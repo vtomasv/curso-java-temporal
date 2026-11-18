@@ -7,13 +7,7 @@ Este archivo ofrece pistas cuando una misión queda bloqueada. No define una
 permitidos pueden obtener el mismo puntaje si cumplen el contrato y están
 respaldados por pruebas.
 
-Si consulta una sección:
-
-1. registre el bloqueo y la sección en `../ejercicios/BITACORA.md`;
-2. elija conscientemente una alternativa;
-3. adapte la idea al código existente;
-4. escriba una prueba que pueda refutar su implementación;
-5. explique el tradeoff con sus propias palabras.
+Elija una alternativa, adapte la idea al proyecto, escriba una prueba que pueda detectar un error y explique la consecuencia en el comentario de la decisión correspondiente.
 
 Los fragmentos son ilustrativos. Pueden necesitar cambios de nombres o tipos
 para compilar con la versión final de la plantilla.
@@ -37,8 +31,8 @@ para compilar con la versión final de la plantilla.
 La aplicación ejecutable ya contiene el puente enseñado hasta la clase 13:
 
 - `TemporalConfig` crea el `WorkflowClient`, registra un Worker en
-  `SICOR-EV03` y se conecta obligatoriamente al servidor local en
-  `127.0.0.1:7233`;
+  `SICOR-EV03` y se conecta al servidor local indicado por
+  `SICOR_TEMPORAL_TARGET` (por defecto, `127.0.0.1:7233`);
 - `DespachoTemporalService` usa IDs estables: `despacho-<ordenId>` para la
   entrega y `accesos-<ordenId>` para la auditoría; expone Starts, Updates,
   Queries, Signal y cancelación por Update;
@@ -59,34 +53,7 @@ E06–E07. Primero puede verificar la integración automática con:
 ./mvnw -Dtest=TemporalRuntimeIntegrationTest test
 ```
 
-Ese test usa `TestWorkflowEnvironment` exclusivamente dentro de `src/test` y no
-constituye la demostración final. Para iniciar la aplicación debe levantar
-Temporal en una terminal y mantenerlo activo:
-
-```bash
-temporal server start-dev --ip 127.0.0.1 --ui-port 8233
-```
-
-En otra terminal:
-
-```bash
-./mvnw spring-boot:run
-```
-
-Use la Web UI en `http://localhost:8233` o la CLI para inspeccionar cada
-ejecución:
-
-```bash
-temporal workflow show --workflow-id despacho-<orden-id>
-temporal workflow show --workflow-id accesos-<orden-id>
-```
-
-Registre en `BITACORA.md` ambos Starts al crear, una lectura autorizada por Update
-en `accesos-<ordenId>`,
-firmas aceptadas por Update antes del despacho, Activities de entrega, un
-Workflow confirmado por Signal y otro cancelado por Update, junto con la Task
-Queue y la revisión del History. Si el servidor no está disponible, la
-aplicación debe fallar al arrancar; no desactive Temporal.
+Ese test usa `TestWorkflowEnvironment` dentro de `src/test`. Para comprobar el recorrido de la aplicación, siga los pasos de [la guía del examen](../ejercicios/README.md). En el servidor local podrá consultar los dos Starts, las firmas por Update, las Activities y el desenlace de cada despacho.
 
 ---
 
@@ -333,8 +300,7 @@ en servicio, controlador y vista.
 ### Estructura para roles fijos
 
 La cantidad por sí sola no prueba la combinación. Para una regla de roles,
-compare el conjunto de roles presentes con el conjunto obligatorio. Si permite
-dos firmas del mismo rol, explíquelo de forma explícita.
+compare el conjunto de roles presentes con el conjunto obligatorio. Para ORDEN de clasificación MAXIMA se requiere un OFICIAL y un COMANDANTE. El oficial firma el despacho desde la bandeja de metadatos. Una segunda firma del mismo rol no cubre el puesto pendiente.
 
 ### Pruebas que aportan evidencia
 
@@ -526,7 +492,7 @@ void otra_orden_no_reutiliza_la_reautorizacion() {
 ```
 
 Una prueba es valiosa si falla al introducir el defecto que declara detectar.
-Compruébelo temporalmente, revierta el defecto y registre la evidencia.
+Puede comprobarlo introduciendo temporalmente ese defecto y revirtiéndolo antes de entregar.
 
 ## Comprobación final
 
@@ -536,9 +502,9 @@ Compruébelo temporalmente, revierta el defecto y registre la evidencia.
 
 Antes de entregar, revise:
 
-- las decisiones de código y `DECISIONES.md` coinciden;
+- las ocho constantes y los siete comentarios de decisión coinciden con la implementación;
 - ninguna misión sigue en `PENDIENTE`;
-- no hay pruebas desactivadas;
+- hay al menos tres pruebas propias activas sobre tres decisiones distintas en `PruebasPropiasTest.java`;
 - no se filtró el contenido máximo en DTOs, logs o errores;
 - no hay I/O ni APIs no deterministas dentro del Workflow;
 - las firmas llegan por Update y preceden al despacho en el History;

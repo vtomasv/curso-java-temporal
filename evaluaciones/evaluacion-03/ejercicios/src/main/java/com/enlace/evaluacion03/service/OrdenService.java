@@ -1,5 +1,7 @@
 package com.enlace.evaluacion03.service;
 
+import com.enlace.evaluacion03.domain.EstadoOrden;
+import com.enlace.evaluacion03.domain.FirmaOrden;
 import com.enlace.evaluacion03.domain.Orden;
 import com.enlace.evaluacion03.repository.FirmaOrdenRepository;
 import com.enlace.evaluacion03.repository.OrdenRepository;
@@ -11,7 +13,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class OrdenService {
@@ -42,7 +48,47 @@ public class OrdenService {
 
     @Transactional(readOnly = true)
     public List<OrdenResumen> listar() {
-        return ordenes.findAllByOrderByCreadaEnDesc().stream().map(this::resumen).toList();
+        return bandeja(null, null).ordenes();
+    }
+
+    public record Bandeja(List<OrdenResumen> ordenes, Set<String> firmables) {}
+
+    @Transactional(readOnly = true)
+    public Bandeja bandeja(String usuario, String rol) {
+        var porOrden = firmas.findAll().stream().collect(Collectors.groupingBy(FirmaOrden::getOrdenId));
+        var resumenes = new ArrayList<OrdenResumen>();
+        var firmables = new HashSet<String>();
+        for (Orden orden : ordenes.findAllByOrderByCreadaEnDesc()) {
+            var actuales = porOrden.getOrDefault(orden.getId(), List.of());
+            resumenes.add(resumen(orden, actuales.size()));
+            if (puedeFirmar(orden, usuario, rol, actuales)) firmables.add(orden.getId());
+        }
+        return new Bandeja(List.copyOf(resumenes), Set.copyOf(firmables));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean puedeLeer(String id, Authentication authentication) {
+        return acceso.puedeLeer(authentication, buscar(id));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean puedeFirmar(String id, String usuario, String rol) {
+        return puedeFirmar(buscar(id), usuario, rol, firmas.findByOrdenIdOrderByFirmadaEnAsc(id));
+    }
+
+    private boolean puedeFirmar(Orden orden, String usuario, String rol, List<FirmaOrden> actuales) {
+        return orden.getEstado() == EstadoOrden.PENDIENTE_FIRMAS
+                && politicaFirmas.faltaFirmaDelRol(orden, rol, actuales)
+                && actuales.stream().noneMatch(firma -> firma.getFirmante().equals(usuario));
+    }
+
+    @Transactional(readOnly = true)
+    public DespachoInput prepararFirma(String id, String rol) {
+        Orden orden = buscar(id);
+        if (!politicaFirmas.rolPuedeFirmar(orden, rol)) {
+            throw new AccesoDenegadoException("Su rol no puede firmar el despacho de " + id);
+        }
+        return inputDespacho(orden);
     }
 
     @Transactional(readOnly = true)
@@ -74,7 +120,10 @@ public class OrdenService {
     /** Construye el input mínimo; nunca incorpora el contenido confidencial. */
     @Transactional(readOnly = true)
     public DespachoInput prepararWorkflow(String id) {
-        Orden orden = buscar(id);
+        return inputDespacho(buscar(id));
+    }
+
+    private DespachoInput inputDespacho(Orden orden) {
         return new DespachoInput(
                 orden.getId(),
                 orden.getDestinatarios().stream().map(Enum::name).toList()
@@ -86,7 +135,10 @@ public class OrdenService {
     }
 
     private OrdenResumen resumen(Orden orden) {
-        long cantidadFirmas = firmas.countByOrdenId(orden.getId());
+        return resumen(orden, firmas.countByOrdenId(orden.getId()));
+    }
+
+    private OrdenResumen resumen(Orden orden, long cantidadFirmas) {
         return new OrdenResumen(
                 orden.getId(), orden.getAsunto(), orden.getTipo(), orden.getConfidencialidad(),
                 orden.getDestinatarios(), orden.getEstado(), cantidadFirmas,

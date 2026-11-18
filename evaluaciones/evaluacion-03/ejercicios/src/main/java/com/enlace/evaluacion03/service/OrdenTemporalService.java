@@ -57,8 +57,8 @@ public class OrdenTemporalService {
         if (orden.getEstado() != EstadoOrden.PENDIENTE_FIRMAS) {
             throw new IllegalStateException("La orden " + ordenId + " no admite más firmas");
         }
-        if (!politicaFirmas.rolPuedeFirmar(orden, rol)) {
-            throw new IllegalArgumentException("El rol " + rol + " no puede firmar esta orden");
+        if (!politicaFirmas.faltaFirmaDelRol(orden, rol, firmas.findByOrdenIdOrderByFirmadaEnAsc(ordenId))) {
+            throw new IllegalArgumentException("La política no requiere otra firma del rol " + rol);
         }
 
         firmas.saveAndFlush(new FirmaOrden(ordenId, firmante, rol));

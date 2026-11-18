@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.util.Set;
+import java.util.Collection;
 
 public record CrearOrdenRequest(
         @NotBlank String id,
@@ -16,7 +16,7 @@ public record CrearOrdenRequest(
         @NotBlank @Size(min = 20, max = 2000) String contenido,
         @NotNull TipoOrden tipo,
         @NotNull Confidencialidad confidencialidad,
-        @NotEmpty Set<UnidadDestino> destinatarios,
+        @NotEmpty Collection<UnidadDestino> destinatarios,
         @NotBlank String claveIdempotencia
 ) {
 }
